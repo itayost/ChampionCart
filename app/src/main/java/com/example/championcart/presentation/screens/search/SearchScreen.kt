@@ -20,9 +20,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.championcart.data.local.preferences.TokenManager
 import com.example.championcart.domain.models.GroupedProduct
 import com.example.championcart.domain.models.ProductStorePrice
 import com.example.championcart.presentation.ViewModelFactory
+import com.example.championcart.presentation.components.CityIndicator
+import com.example.championcart.presentation.components.rememberCitySelectionDialog
 import com.example.championcart.presentation.theme.SavingsGreen
 import com.example.championcart.presentation.theme.PriceRed
 
@@ -33,18 +36,38 @@ fun SearchScreen() {
     val uiState by viewModel.uiState.collectAsState()
     val focusManager = LocalFocusManager.current
 
+    // City selection
+    val tokenManager = remember { TokenManager(context) }
+    val (currentCity, showCityDialog) = rememberCitySelectionDialog(
+        tokenManager = tokenManager,
+        onCitySelected = { city ->
+            viewModel.onCityChange(city)
+        }
+    )
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        // City indicator
-        Text(
-            text = "Searching in ${uiState.selectedCity}",
-            fontSize = 14.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
+        // City indicator - clickable
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Searching in",
+                fontSize = 14.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            CityIndicator(
+                city = uiState.selectedCity,
+                onClick = showCityDialog
+            )
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
 
         // Search Bar
         OutlinedTextField(
@@ -125,6 +148,22 @@ fun SearchScreen() {
                         onAddToCart = { viewModel.addToCart(groupedProduct) }
                     )
                 }
+            }
+        }
+
+        // Empty state
+        if (!uiState.isLoading && uiState.searchQuery.isNotBlank() && uiState.groupedProducts.isEmpty() && uiState.error == null) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(32.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "No products found for \"${uiState.searchQuery}\" in $currentCity",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
     }

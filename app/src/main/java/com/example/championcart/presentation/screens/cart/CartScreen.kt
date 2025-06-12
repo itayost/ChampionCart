@@ -8,6 +8,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -21,7 +22,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.championcart.data.local.CartItem
+import com.example.championcart.data.local.preferences.TokenManager
 import com.example.championcart.presentation.ViewModelFactory
+import com.example.championcart.presentation.components.CityIndicator
+import com.example.championcart.presentation.components.rememberCitySelectionDialog
 import com.example.championcart.presentation.theme.SavingsGreen
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -31,11 +35,37 @@ fun CartScreen() {
     val viewModel: CartViewModel = viewModel(factory = ViewModelFactory(context))
     val uiState by viewModel.uiState.collectAsState()
 
+    // City selection
+    val tokenManager = remember { TokenManager(context) }
+    val (currentCity, showCityDialog) = rememberCitySelectionDialog(
+        tokenManager = tokenManager,
+        onCitySelected = { city ->
+            viewModel.onCityChange(city)
+        }
+    )
+
+    // Save cart dialog
+    var showSaveDialog by remember { mutableStateOf(false) }
+    var showSuccessMessage by remember { mutableStateOf(false) }
+
     // Show result dialog if available
     uiState.cheapestCartResult?.let { result ->
         CheapestStoreDialog(
             result = result,
             onDismiss = { viewModel.dismissResult() }
+        )
+    }
+
+    // Show save cart dialog
+    if (showSaveDialog) {
+        SaveCartDialog(
+            cartItems = uiState.cartItems,
+            city = uiState.selectedCity,
+            tokenManager = tokenManager,
+            onDismiss = { showSaveDialog = false },
+            onSaved = {
+                showSuccessMessage = true
+            }
         )
     }
 
@@ -60,6 +90,15 @@ fun CartScreen() {
                 },
                 actions = {
                     if (uiState.cartItems.isNotEmpty()) {
+                        // Save cart button
+                        IconButton(onClick = { showSaveDialog = true }) {
+                            Icon(
+                                Icons.Default.Save,
+                                contentDescription = "Save Cart",
+                                tint = MaterialTheme.colorScheme.onPrimary
+                            )
+                        }
+                        // Clear cart button
                         TextButton(
                             onClick = { viewModel.clearCart() },
                             colors = ButtonDefaults.textButtonColors(
@@ -75,6 +114,24 @@ fun CartScreen() {
                     titleContentColor = MaterialTheme.colorScheme.onPrimary
                 )
             )
+        },
+        snackbarHost = {
+            SnackbarHost(hostState = remember { SnackbarHostState() }) { data ->
+                if (showSuccessMessage) {
+                    Snackbar(
+                        modifier = Modifier.padding(16.dp),
+                        action = {
+                            TextButton(
+                                onClick = { showSuccessMessage = false }
+                            ) {
+                                Text("Dismiss")
+                            }
+                        }
+                    ) {
+                        Text("Cart saved successfully!")
+                    }
+                }
+            }
         }
     ) { paddingValues ->
         if (uiState.cartItems.isEmpty()) {
@@ -91,6 +148,29 @@ fun CartScreen() {
                     .fillMaxSize()
                     .padding(paddingValues)
             ) {
+                // City indicator at the top
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Finding best prices in",
+                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        CityIndicator(
+                            city = uiState.selectedCity,
+                            onClick = showCityDialog
+                        )
+                    }
+                }
+
                 // Cart items list
                 LazyColumn(
                     modifier = Modifier.weight(1f),

@@ -2,6 +2,7 @@ package com.example.championcart.di
 
 import android.content.Context
 import com.example.championcart.data.api.AuthApi
+import com.example.championcart.data.api.CartApi
 import com.example.championcart.data.api.PriceApi
 import com.example.championcart.data.local.preferences.TokenManager
 import com.example.championcart.utils.Constants
@@ -14,45 +15,87 @@ import java.util.concurrent.TimeUnit
 
 object NetworkModule {
 
-    private lateinit var tokenManager: TokenManager
+    private var tokenManager: TokenManager? = null
+    private var isInitialized = false
 
     fun initialize(context: Context) {
-        tokenManager = TokenManager(context)
-    }
-
-    private val authInterceptor = Interceptor { chain ->
-        val original = chain.request()
-        val token = tokenManager.getToken()
-
-        val request = if (token != null && !original.url.encodedPath.contains("login") && !original.url.encodedPath.contains("register")) {
-            original.newBuilder()
-                .header("Authorization", "Bearer $token")
-                .build()
-        } else {
-            original
+        if (!isInitialized) {
+            tokenManager = TokenManager(context.applicationContext)
+            isInitialized = true
         }
-
-        chain.proceed(request)
     }
 
-    private val loggingInterceptor = HttpLoggingInterceptor().apply {
-        level = HttpLoggingInterceptor.Level.BODY
+    private fun getTokenManager(): TokenManager {
+        return tokenManager ?: throw IllegalStateException("NetworkModule not initialized. Call initialize() first.")
     }
 
-    private val okHttpClient = OkHttpClient.Builder()
-        .addInterceptor(authInterceptor)
-        .addInterceptor(loggingInterceptor)
-        .connectTimeout(30, TimeUnit.SECONDS)
-        .readTimeout(30, TimeUnit.SECONDS)
-        .writeTimeout(30, TimeUnit.SECONDS)
-        .build()
+    private val authInterceptor by lazy {
+        Interceptor { chain ->
+            val original = chain.request()
+            val token = try {
+                getTokenManager().getToken()
+            } catch (e: Exception) {
+                null
+            }
 
-    private val retrofit = Retrofit.Builder()
-        .baseUrl(Constants.BASE_URL)
-        .client(okHttpClient)
-        .addConverterFactory(GsonConverterFactory.create())
-        .build()
+            val request = if (token != null &&
+                !original.url.encodedPath.contains("login") &&
+                !original.url.encodedPath.contains("register")) {
+                original.newBuilder()
+                    .header("Authorization", "Bearer $token")
+                    .header("Content-Type", "application/json")
+                    .build()
+            } else {
+                original.newBuilder()
+                    .header("Content-Type", "application/json")
+                    .build()
+            }
 
-    val authApi: AuthApi = retrofit.create(AuthApi::class.java)
-    val priceApi: PriceApi = retrofit.create(PriceApi::class.java)
+            chain.proceed(request)
+        }
+    }
+
+    private val loggingInterceptor by lazy {
+        HttpLoggingInterceptor().apply {
+            level = HttpLoggingInterceptor.Level.BODY
+            // This will log the raw JSON responses
+        }
+    }
+
+    // Add a custom logging interceptor for debugging
+    private val debugInterceptor by lazy {
+        Interceptor { chain ->
+            val request = chain.request()
+            val response = chain.proceed(request)
+
+            // Log the URL and response code
+            println("==> API Request: ${request.method} ${request.url}")
+            println("<== API Response: ${response.code} from ${response.request.url}")
+
+            response
+        }
+    }
+
+    private val okHttpClient by lazy {
+        OkHttpClient.Builder()
+            .addInterceptor(authInterceptor)
+            .addInterceptor(debugInterceptor)  // Add debug interceptor
+            .addInterceptor(loggingInterceptor)
+            .connectTimeout(Constants.CONNECT_TIMEOUT, TimeUnit.SECONDS)
+            .readTimeout(Constants.READ_TIMEOUT, TimeUnit.SECONDS)
+            .writeTimeout(Constants.WRITE_TIMEOUT, TimeUnit.SECONDS)
+            .build()
+    }
+
+    private val retrofit by lazy {
+        Retrofit.Builder()
+            .baseUrl(Constants.BASE_URL)
+            .client(okHttpClient)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+    }
+
+    val authApi: AuthApi by lazy { retrofit.create(AuthApi::class.java) }
+    val priceApi: PriceApi by lazy { retrofit.create(PriceApi::class.java) }
+    val cartApi: CartApi by lazy { retrofit.create(CartApi::class.java) }
 }
