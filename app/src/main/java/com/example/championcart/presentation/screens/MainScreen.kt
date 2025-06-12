@@ -36,7 +36,7 @@ fun MainScreen() {
                 CartScreen()
             }
             composable(Screen.Profile.route) {
-                ProfileScreen()
+                ProfileScreen(navController)
             }
         }
     }

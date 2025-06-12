@@ -2,6 +2,7 @@ package com.example.championcart.presentation.screens.profile
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -84,7 +85,7 @@ fun ProfileScreen(navController: NavController) {
                                     }
                                 }) {
                                     Icon(
-                                        Icons.Default.Logout,
+                                        Icons.AutoMirrored.Filled.Logout,
                                         contentDescription = "Logout",
                                         tint = MaterialTheme.colorScheme.error
                                     )
@@ -152,7 +153,7 @@ fun ProfileScreen(navController: NavController) {
                                 }
                             }
 
-                            Divider()
+                            HorizontalDivider()
                         }
 
                         // City selection
@@ -184,7 +185,7 @@ fun ProfileScreen(navController: NavController) {
                             }
                         }
 
-                        Divider()
+                        HorizontalDivider()
 
                         // Language selection
                         TextButton(
@@ -215,7 +216,7 @@ fun ProfileScreen(navController: NavController) {
                             }
                         }
 
-                        Divider()
+                        HorizontalDivider()
 
                         // About
                         TextButton(

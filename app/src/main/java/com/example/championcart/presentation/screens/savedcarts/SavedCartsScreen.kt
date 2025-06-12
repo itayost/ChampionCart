@@ -4,11 +4,13 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -128,11 +130,12 @@ fun SavedCartsScreen(
     onNavigateToCart: () -> Unit,
     onBack: () -> Unit
 ) {
+    val context = LocalContext.current
     val viewModel: SavedCartsViewModel = remember {
         SavedCartsViewModel(
             cartApi = NetworkModule.cartApi,
-            tokenManager = TokenManager(androidx.compose.ui.platform.LocalContext.current),
-            cartManager = CartManager.getInstance(androidx.compose.ui.platform.LocalContext.current)
+            tokenManager = TokenManager(context),
+            cartManager = CartManager.getInstance(context)
         )
     }
     val uiState by viewModel.uiState.collectAsState()
@@ -143,7 +146,7 @@ fun SavedCartsScreen(
                 title = { Text("Saved Carts") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
                 actions = {
@@ -185,7 +188,7 @@ fun SavedCartsScreen(
                             tint = MaterialTheme.colorScheme.error
                         )
                         Text(
-                            text = uiState.error,
+                            text = uiState.error ?: "An error occurred",
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.error
                         )
@@ -314,20 +317,22 @@ private fun SavedCartItem(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
-                    // Date
+                    // Date - Fixed to avoid try-catch around composable
                     val dateFormat = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
-                    try {
+                    val dateString = try {
                         val date = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
                             .parse(savedCart.createdAt)
-                        date?.let {
-                            Text(
-                                text = "Saved on ${dateFormat.format(it)}",
-                                fontSize = 12.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+                        date?.let { dateFormat.format(it) }
                     } catch (e: Exception) {
-                        // Handle date parsing error
+                        null
+                    }
+
+                    dateString?.let {
+                        Text(
+                            text = "Saved on $it",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
 
@@ -392,7 +397,7 @@ private fun SavedCartItem(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            text = "₪${String.format("%.2f")} at $bestChain",
+                            text = "₪${String.format("%.2f", bestPrice)} at $bestChain",
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
                             color = SavingsGreen
