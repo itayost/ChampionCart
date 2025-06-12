@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -15,7 +16,7 @@ import com.example.championcart.presentation.screens.profile.ProfileScreen
 import com.example.championcart.presentation.screens.search.SearchScreen
 
 @Composable
-fun MainScreen() {
+fun MainScreen(mainNavController: NavController) {  // Add parameter
     val navController = rememberNavController()
 
     Scaffold(
@@ -36,7 +37,7 @@ fun MainScreen() {
                 CartScreen()
             }
             composable(Screen.Profile.route) {
-                ProfileScreen(navController)
+                ProfileScreen(mainNavController)  // Pass main nav controller
             }
         }
     }

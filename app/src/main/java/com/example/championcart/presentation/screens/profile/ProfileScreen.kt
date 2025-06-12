@@ -1,6 +1,8 @@
 package com.example.championcart.presentation.screens.profile
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.*
@@ -14,236 +16,285 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.championcart.data.local.preferences.TokenManager
+import com.example.championcart.presentation.components.rememberCitySelectionDialog
 import com.example.championcart.presentation.screens.savedcarts.SavedCartsScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfileScreen(navController: NavController) {
+fun ProfileScreen(mainNavController: NavController) {
     val context = LocalContext.current
     val tokenManager = remember { TokenManager(context) }
     val userEmail = tokenManager.getUserEmail()
     var showSavedCarts by remember { mutableStateOf(false) }
 
+    // City selection dialog
+    val (currentCity, showCityDialog) = rememberCitySelectionDialog(
+        tokenManager = tokenManager,
+        onCitySelected = { city ->
+            // City selected, could trigger refresh if needed
+        }
+    )
+
+    // Show saved carts screen if selected
     if (showSavedCarts) {
         SavedCartsScreen(
             onNavigateToCart = {
                 showSavedCarts = false
-                navController.navigate("cart")
+                // Navigate to cart tab - you might need to adjust this based on your navigation setup
             },
             onBack = { showSavedCarts = false }
         )
-    } else {
-        Scaffold(
-            topBar = {
-                TopAppBar(
-                    title = { Text("Profile") },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        titleContentColor = MaterialTheme.colorScheme.onPrimary
-                    )
+        return
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Profile") },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary
                 )
-            }
-        ) { paddingValues ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-                    .padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                // User info card
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp)
-                    ) {
-                        if (userEmail != null) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column {
-                                    Text(
-                                        text = "Logged in as",
-                                        fontSize = 14.sp,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                    Text(
-                                        text = userEmail,
-                                        fontSize = 18.sp,
-                                        fontWeight = FontWeight.Medium
-                                    )
-                                }
-
-                                IconButton(onClick = {
-                                    tokenManager.clearToken()
-                                    navController.navigate("login") {
-                                        popUpTo("main") { inclusive = true }
-                                    }
-                                }) {
-                                    Icon(
-                                        Icons.AutoMirrored.Filled.Logout,
-                                        contentDescription = "Logout",
-                                        tint = MaterialTheme.colorScheme.error
-                                    )
-                                }
-                            }
-                        } else {
-                            Text(
-                                text = "Guest User",
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            Text(
-                                text = "Sign in to save your preferences",
-                                fontSize = 14.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-
-                            Spacer(modifier = Modifier.height(12.dp))
-
-                            Button(
-                                onClick = {
-                                    navController.navigate("login")
-                                },
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text("Sign In")
-                            }
+            )
+        }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // User Info Card
+            UserInfoCard(
+                userEmail = userEmail,
+                onLogout = {
+                    // Clear all user data
+                    tokenManager.clearToken()
+                    // Navigate to login screen
+                    mainNavController.navigate("login") {
+                        popUpTo(mainNavController.graph.id) {
+                            inclusive = true
                         }
                     }
+                },
+                onSignIn = {
+                    mainNavController.navigate("login")
                 }
+            )
+
+            // Menu Options
+            ProfileMenuCard(
+                userEmail = userEmail,
+                currentCity = currentCity,
+                onSavedCartsClick = { showSavedCarts = true },
+                onCityClick = showCityDialog,
+                onLanguageClick = { /* TODO */ },
+                onAboutClick = { /* TODO */ }
+            )
+        }
+    }
+}
+
+@Composable
+private fun UserInfoCard(
+    userEmail: String?,
+    onLogout: () -> Unit,
+    onSignIn: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        if (userEmail != null) {
+            // Logged in user
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = "Logged in as",
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = userEmail,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+
+                FilledTonalIconButton(
+                    onClick = onLogout,
+                    colors = IconButtonDefaults.filledTonalIconButtonColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                        contentColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.Logout,
+                        contentDescription = "Logout"
+                    )
+                }
+            }
+        } else {
+            // Guest user
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Icon(
+                    Icons.Default.Person,
+                    contentDescription = null,
+                    modifier = Modifier.size(64.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Menu options
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                Text(
+                    text = "Guest User",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = "Sign in to save your preferences and shopping lists",
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Button(
+                    onClick = onSignIn,
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Column {
-                        // Saved Carts
-                        if (userEmail != null) {
-                            TextButton(
-                                onClick = { showSavedCarts = true },
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.Start,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(
-                                        Icons.Default.ShoppingCart,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(24.dp),
-                                        tint = MaterialTheme.colorScheme.primary
-                                    )
-                                    Spacer(modifier = Modifier.width(16.dp))
-                                    Text(
-                                        "Saved Carts",
-                                        style = MaterialTheme.typography.bodyLarge
-                                    )
-                                }
-                            }
+                    Text("Sign In")
+                }
+            }
+        }
+    }
+}
 
-                            HorizontalDivider()
-                        }
+@Composable
+private fun ProfileMenuCard(
+    userEmail: String?,
+    currentCity: String,
+    onSavedCartsClick: () -> Unit,
+    onCityClick: () -> Unit,
+    onLanguageClick: () -> Unit,
+    onAboutClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            // Saved Carts (only for logged-in users)
+            if (userEmail != null) {
+                ProfileMenuItem(
+                    icon = Icons.Default.ShoppingCart,
+                    title = "Saved Carts",
+                    subtitle = null,
+                    onClick = onSavedCartsClick
+                )
+                HorizontalDivider()
+            }
 
-                        // City selection
-                        TextButton(
-                            onClick = { /* TODO: City selection */ },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(
-                                        Icons.Default.LocationOn,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(24.dp),
-                                        tint = MaterialTheme.colorScheme.primary
-                                    )
-                                    Spacer(modifier = Modifier.width(16.dp))
-                                    Text("City")
-                                }
-                                Text(
-                                    tokenManager.getSelectedCity(),
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
+            // City Selection
+            ProfileMenuItem(
+                icon = Icons.Default.LocationOn,
+                title = "City",
+                subtitle = currentCity,
+                onClick = onCityClick
+            )
+            HorizontalDivider()
 
-                        HorizontalDivider()
+            // Language
+            ProfileMenuItem(
+                icon = Icons.Default.Language,
+                title = "Language",
+                subtitle = "English",
+                onClick = onLanguageClick
+            )
+            HorizontalDivider()
 
-                        // Language selection
-                        TextButton(
-                            onClick = { /* TODO: Language selection */ },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(
-                                        Icons.Default.Language,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(24.dp),
-                                        tint = MaterialTheme.colorScheme.primary
-                                    )
-                                    Spacer(modifier = Modifier.width(16.dp))
-                                    Text("Language")
-                                }
-                                Text(
-                                    "English",
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
+            // About
+            ProfileMenuItem(
+                icon = Icons.Default.Info,
+                title = "About",
+                subtitle = "Version 1.0",
+                onClick = onAboutClick
+            )
+        }
+    }
+}
 
-                        HorizontalDivider()
+@Composable
+private fun ProfileMenuItem(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    subtitle: String?,
+    onClick: () -> Unit
+) {
+    Surface(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.weight(1f)
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    modifier = Modifier.size(24.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
 
-                        // About
-                        TextButton(
-                            onClick = { /* TODO: About screen */ },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.Start,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    Icons.Default.Info,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(24.dp),
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                                Spacer(modifier = Modifier.width(16.dp))
-                                Text(
-                                    "About",
-                                    style = MaterialTheme.typography.bodyLarge
-                                )
-                            }
-                        }
+                Column {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium
+                    )
+                    subtitle?.let {
+                        Text(
+                            text = it,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
             }
+
+            Icon(
+                Icons.Default.ChevronRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }

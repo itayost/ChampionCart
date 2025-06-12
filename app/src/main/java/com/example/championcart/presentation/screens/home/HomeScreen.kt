@@ -9,15 +9,31 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.championcart.presentation.screens.test.ApiTestScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(navController: NavController) {
     var showApiTest by remember { mutableStateOf(false) }
+
+    if (showApiTest) {
+        ApiTestScreen()
+    } else {
         Scaffold(
             topBar = {
                 TopAppBar(
                     title = { Text("Champion Cart") },
+                    actions = {
+                        // Temporary button for testing
+                        TextButton(
+                            onClick = { showApiTest = true },
+                            colors = ButtonDefaults.textButtonColors(
+                                contentColor = MaterialTheme.colorScheme.onPrimary
+                            )
+                        ) {
+                            Text("API Test")
+                        }
+                    },
                     colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = MaterialTheme.colorScheme.primary,
                         titleContentColor = MaterialTheme.colorScheme.onPrimary
@@ -49,3 +65,4 @@ fun HomeScreen(navController: NavController) {
             }
         }
     }
+}
