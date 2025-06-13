@@ -26,8 +26,8 @@ import com.example.championcart.domain.models.ProductStorePrice
 import com.example.championcart.presentation.ViewModelFactory
 import com.example.championcart.presentation.components.CityIndicator
 import com.example.championcart.presentation.components.rememberCitySelectionDialog
-import com.example.championcart.presentation.theme.SavingsGreen
-import com.example.championcart.presentation.theme.PriceRed
+import androidx.compose.material3.MaterialTheme
+import com.example.championcart.presentation.theme.extendedColors
 
 @Composable
 fun SearchScreen() {
@@ -208,7 +208,7 @@ fun GroupedProductCard(
                                 text = "₪${String.format("%.2f", groupedProduct.lowestPrice)}",
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = SavingsGreen
+                                color = MaterialTheme.extendedColors.savings
                             )
                             if (groupedProduct.highestPrice != groupedProduct.lowestPrice) {
                                 Text(
@@ -224,7 +224,7 @@ fun GroupedProductCard(
                             Text(
                                 text = "Save ₪${String.format("%.2f", groupedProduct.savings)}",
                                 fontSize = 12.sp,
-                                color = SavingsGreen
+                                color = MaterialTheme.extendedColors.savings
                             )
                         }
                     }
@@ -285,7 +285,7 @@ fun GroupedProductCard(
                             fontWeight = if (storePrice.price == groupedProduct.lowestPrice)
                                 FontWeight.Bold else FontWeight.Normal,
                             color = if (storePrice.price == groupedProduct.lowestPrice)
-                                SavingsGreen else MaterialTheme.colorScheme.onSurface
+                                MaterialTheme.extendedColors.savings else MaterialTheme.colorScheme.onSurface
                         )
                     }
                 }

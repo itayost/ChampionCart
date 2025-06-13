@@ -26,7 +26,8 @@ import com.example.championcart.data.local.preferences.TokenManager
 import com.example.championcart.presentation.ViewModelFactory
 import com.example.championcart.presentation.components.CityIndicator
 import com.example.championcart.presentation.components.rememberCitySelectionDialog
-import com.example.championcart.presentation.theme.SavingsGreen
+import com.example.championcart.presentation.theme.ChampionCartColors
+import com.example.championcart.presentation.theme.extendedColors
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -279,7 +280,7 @@ private fun CartItemCard(
                         Text(
                             text = "₪${String.format("%.2f", price)}",
                             fontSize = 14.sp,
-                            color = SavingsGreen,
+                            color = MaterialTheme.extendedColors.savings,
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -459,7 +460,7 @@ private fun CartSummaryCard(
                     .height(56.dp),
                 enabled = !isAnalyzing,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = SavingsGreen
+                    containerColor = MaterialTheme.extendedColors.savings
                 )
             ) {
                 if (isAnalyzing) {

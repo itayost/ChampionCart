@@ -23,7 +23,8 @@ import com.example.championcart.data.local.CartManager
 import com.example.championcart.data.local.preferences.TokenManager
 import com.example.championcart.data.models.response.SavedCart
 import com.example.championcart.di.NetworkModule
-import com.example.championcart.presentation.theme.SavingsGreen
+import androidx.compose.material3.MaterialTheme
+import com.example.championcart.presentation.theme.extendedColors
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -400,7 +401,7 @@ private fun SavedCartItem(
                             text = "₪${String.format("%.2f", bestPrice)} at $bestChain",
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
-                            color = SavingsGreen
+                            color = MaterialTheme.extendedColors.savings
                         )
                     }
 

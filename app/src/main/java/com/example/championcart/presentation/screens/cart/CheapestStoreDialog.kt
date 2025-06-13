@@ -11,7 +11,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.championcart.domain.models.CheapestCartResult
-import com.example.championcart.presentation.theme.SavingsGreen
+import androidx.compose.material3.MaterialTheme
+import com.example.championcart.presentation.theme.extendedColors
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -91,12 +92,12 @@ fun CheapestStoreDialog(
                                 text = "₪${String.format("%.2f", result.savingsAmount)}",
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = SavingsGreen
+                                color = MaterialTheme.extendedColors.savings
                             )
                             Text(
                                 text = "${String.format("%.1f", result.savingsPercentage)}%",
                                 fontSize = 14.sp,
-                                color = SavingsGreen
+                                color = MaterialTheme.extendedColors.savings
                             )
                         }
                     }
