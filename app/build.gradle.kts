@@ -103,5 +103,4 @@ dependencies {
     implementation("com.google.accompanist:accompanist-permissions:0.32.0")
     implementation("com.google.accompanist:accompanist-systemuicontroller:0.32.0")
     implementation("com.google.accompanist:accompanist-swiperefresh:0.32.0")
-    implementation("com.google.accompanist:accompanist-insets:0.32.0")
 }

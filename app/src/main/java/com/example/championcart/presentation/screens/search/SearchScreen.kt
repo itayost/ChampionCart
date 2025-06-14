@@ -29,6 +29,7 @@ import com.example.championcart.presentation.components.rememberCitySelectionDia
 import androidx.compose.material3.MaterialTheme
 import com.example.championcart.presentation.theme.extendedColors
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchScreen() {
     val context = LocalContext.current
@@ -45,125 +46,126 @@ fun SearchScreen() {
         }
     )
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        // City indicator - clickable
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "Searching in",
-                fontSize = 14.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            CityIndicator(
-                city = uiState.selectedCity,
-                onClick = showCityDialog
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Search Products") },
+                actions = {
+                    CityIndicator(
+                        city = uiState.selectedCity,
+                        onClick = showCityDialog,
+                        modifier = Modifier.padding(end = 8.dp)
+                    )
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary
+                )
             )
         }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // Search Bar
-        OutlinedTextField(
-            value = uiState.searchQuery,
-            onValueChange = viewModel::onSearchQueryChange,
-            modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text("Search for products...") },
-            trailingIcon = {
-                IconButton(
-                    onClick = {
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(16.dp)
+        ) {
+            // Search Bar
+            OutlinedTextField(
+                value = uiState.searchQuery,
+                onValueChange = viewModel::onSearchQueryChange,
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text("Search for products...") },
+                trailingIcon = {
+                    IconButton(
+                        onClick = {
+                            focusManager.clearFocus()
+                            viewModel.searchProducts()
+                        },
+                        enabled = uiState.searchQuery.isNotBlank()
+                    ) {
+                        Icon(Icons.Default.Search, contentDescription = "Search")
+                    }
+                },
+                keyboardOptions = KeyboardOptions(
+                    imeAction = ImeAction.Search
+                ),
+                keyboardActions = KeyboardActions(
+                    onSearch = {
                         focusManager.clearFocus()
                         viewModel.searchProducts()
-                    },
-                    enabled = uiState.searchQuery.isNotBlank()
-                ) {
-                    Icon(Icons.Default.Search, contentDescription = "Search")
-                }
-            },
-            keyboardOptions = KeyboardOptions(
-                imeAction = ImeAction.Search
-            ),
-            keyboardActions = KeyboardActions(
-                onSearch = {
-                    focusManager.clearFocus()
-                    viewModel.searchProducts()
-                }
-            ),
-            singleLine = true
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Error Message
-        uiState.error?.let { error ->
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer
-                )
-            ) {
-                Text(
-                    text = error,
-                    modifier = Modifier.padding(16.dp),
-                    color = MaterialTheme.colorScheme.onErrorContainer
-                )
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-        }
-
-        // Loading State
-        if (uiState.isLoading) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
-            }
-        }
-
-        // Results
-        if (!uiState.isLoading && uiState.groupedProducts.isNotEmpty()) {
-            Text(
-                text = "Found ${uiState.groupedProducts.size} products",
-                fontSize = 14.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = 8.dp)
+                    }
+                ),
+                singleLine = true
             )
 
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(uiState.groupedProducts) { groupedProduct ->
-                    GroupedProductCard(
-                        groupedProduct = groupedProduct,
-                        cartQuantity = uiState.cartItemsCount[groupedProduct.itemCode] ?: 0,
-                        onAddToCart = { viewModel.addToCart(groupedProduct) }
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Error Message
+            uiState.error?.let { error ->
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer
+                    )
+                ) {
+                    Text(
+                        text = error,
+                        modifier = Modifier.padding(16.dp),
+                        color = MaterialTheme.colorScheme.onErrorContainer
                     )
                 }
+                Spacer(modifier = Modifier.height(8.dp))
             }
-        }
 
-        // Empty state
-        if (!uiState.isLoading && uiState.searchQuery.isNotBlank() && uiState.groupedProducts.isEmpty() && uiState.error == null) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(32.dp),
-                contentAlignment = Alignment.Center
-            ) {
+            // Loading State
+            if (uiState.isLoading) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
+
+            // Results
+            if (!uiState.isLoading && uiState.groupedProducts.isNotEmpty()) {
                 Text(
-                    text = "No products found for \"${uiState.searchQuery}\" in $currentCity",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    text = "Found ${uiState.groupedProducts.size} products",
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 8.dp)
                 )
+
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(uiState.groupedProducts) { groupedProduct ->
+                        GroupedProductCard(
+                            groupedProduct = groupedProduct,
+                            cartQuantity = uiState.cartItemsCount[groupedProduct.itemCode] ?: 0,
+                            onAddToCart = { viewModel.addToCart(groupedProduct) }
+                        )
+                    }
+                }
+            }
+
+            // Empty state
+            if (!uiState.isLoading && uiState.searchQuery.isNotBlank() && uiState.groupedProducts.isEmpty() && uiState.error == null) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(32.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "No products found for \"${uiState.searchQuery}\" in $currentCity",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
     }
