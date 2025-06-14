@@ -1,6 +1,7 @@
 package com.example.championcart.presentation.components
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.*
 import androidx.compose.animation.fadeIn
@@ -31,6 +32,7 @@ import com.example.championcart.ui.theme.*
 /**
  * Primary action button with press animation and haptic feedback
  */
+@OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun ActionButton(
     text: String,

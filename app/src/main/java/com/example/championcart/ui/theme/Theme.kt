@@ -113,7 +113,11 @@ data class ExtendedColors(
     val shufersal: Color,
     val victory: Color,
     val ramiLevy: Color,
-    val mega: Color
+    val mega: Color,
+    val tertiary: Color,
+    val tertiaryContainer: Color,
+    val onTertiary: Color,
+    val onTertiaryContainer: Color
 )
 
 val lightExtendedColors = ExtendedColors(
@@ -138,7 +142,11 @@ val lightExtendedColors = ExtendedColors(
     shufersal = ChampionCartColors.shufersal,
     victory = ChampionCartColors.victory,
     ramiLevy = ChampionCartColors.ramiLevy,
-    mega = ChampionCartColors.mega
+    mega = ChampionCartColors.mega,
+    tertiary = ChampionCartColors.tertiary,
+    tertiaryContainer = ChampionCartColors.tertiaryLight,
+    onTertiary = ChampionCartColors.onTertiary,
+    onTertiaryContainer = ChampionCartColors.tertiaryDark
 )
 
 val darkExtendedColors = ExtendedColors(
@@ -163,7 +171,11 @@ val darkExtendedColors = ExtendedColors(
     shufersal = Color(0xFF4D94FF),
     victory = Color(0xFFFF6B6B),
     ramiLevy = Color(0xFFFF8C42),
-    mega = Color(0xFF66D966)
+    mega = Color(0xFF66D966),
+    tertiary = ChampionCartColors.darkTertiary,
+    tertiaryContainer = ChampionCartColors.darkTertiaryContainer,
+    onTertiary = ChampionCartColors.darkOnTertiary,
+    onTertiaryContainer = ChampionCartColors.darkOnTertiaryContainer
 )
 
 val LocalExtendedColors = staticCompositionLocalOf {

@@ -151,6 +151,15 @@ val Typography = Typography(
 
 // Custom text styles for specific use cases
 object AppTextStyles {
+    // Body text - for consistency with Material3
+    val bodyLarge = TextStyle(
+        fontFamily = AssistantFontFamily,
+        fontWeight = FontWeight.Normal,
+        fontSize = 16.sp,
+        lineHeight = 24.sp,
+        letterSpacing = 0.5.sp
+    )
+
     // Price displays using Roboto Mono for better number alignment
     val priceDisplay = TextStyle(
         fontFamily = RobotoMonoFontFamily,

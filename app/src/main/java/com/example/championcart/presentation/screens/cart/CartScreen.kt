@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -129,7 +130,8 @@ fun CartScreen() {
                 LazyColumn(
                     modifier = Modifier.weight(1f),
                     contentPadding = PaddingValues(
-                        horizontal = Dimensions.screenPadding,
+                        start = Dimensions.screenPadding,
+                        end = Dimensions.screenPadding,
                         bottom = Dimensions.paddingLarge
                     ),
                     verticalArrangement = Arrangement.spacedBy(Dimensions.spacingMedium)
