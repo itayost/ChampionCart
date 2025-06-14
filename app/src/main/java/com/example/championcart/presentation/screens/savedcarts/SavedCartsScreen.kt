@@ -17,14 +17,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.championcart.data.api.CartApi
 import com.example.championcart.data.local.CartManager
 import com.example.championcart.data.local.preferences.TokenManager
 import com.example.championcart.data.models.response.SavedCart
 import com.example.championcart.di.NetworkModule
 import androidx.compose.material3.MaterialTheme
-import com.example.championcart.presentation.theme.extendedColors
+import com.example.championcart.ui.theme.extendedColors
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

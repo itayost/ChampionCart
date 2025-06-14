@@ -26,8 +26,7 @@ import com.example.championcart.data.local.preferences.TokenManager
 import com.example.championcart.presentation.ViewModelFactory
 import com.example.championcart.presentation.components.CityIndicator
 import com.example.championcart.presentation.components.rememberCitySelectionDialog
-import com.example.championcart.presentation.theme.ChampionCartColors
-import com.example.championcart.presentation.theme.extendedColors
+import com.example.championcart.ui.theme.extendedColors
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

@@ -12,7 +12,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.championcart.domain.models.CheapestCartResult
 import androidx.compose.material3.MaterialTheme
-import com.example.championcart.presentation.theme.extendedColors
+import com.example.championcart.ui.theme.extendedColors
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

@@ -1,4 +1,4 @@
-package com.example.championcart.presentation.theme
+package com.example.championcart.ui.theme
 
 import androidx.compose.ui.unit.dp
 

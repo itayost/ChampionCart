@@ -15,22 +15,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.championcart.data.local.CartManager
 import com.example.championcart.data.local.preferences.TokenManager
-import com.example.championcart.presentation.ViewModelFactory
 import com.example.championcart.presentation.components.CityIndicator
 import com.example.championcart.presentation.components.rememberCitySelectionDialog
 import com.example.championcart.presentation.navigation.Screen
-import com.example.championcart.presentation.theme.*
+import com.example.championcart.ui.theme.ComponentShapes
+import com.example.championcart.ui.theme.extendedColors
 import com.google.accompanist.swiperefresh.SwipeRefresh
 import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 

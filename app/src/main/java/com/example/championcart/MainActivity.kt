@@ -8,10 +8,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
-import androidx.core.view.WindowCompat
 import com.example.championcart.di.NetworkModule
 import com.example.championcart.presentation.navigation.ChampionCartNavigation
-import com.example.championcart.presentation.theme.ChampionCartTheme
+import com.example.championcart.ui.theme.ChampionCartTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

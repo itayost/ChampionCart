@@ -1,4 +1,4 @@
-package com.example.championcart.presentation.theme
+package com.example.championcart.ui.theme
 
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Shapes

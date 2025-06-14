@@ -11,7 +11,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
@@ -22,12 +21,11 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.championcart.data.local.preferences.TokenManager
 import com.example.championcart.domain.models.GroupedProduct
-import com.example.championcart.domain.models.ProductStorePrice
 import com.example.championcart.presentation.ViewModelFactory
 import com.example.championcart.presentation.components.CityIndicator
 import com.example.championcart.presentation.components.rememberCitySelectionDialog
 import androidx.compose.material3.MaterialTheme
-import com.example.championcart.presentation.theme.extendedColors
+import com.example.championcart.ui.theme.extendedColors
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
