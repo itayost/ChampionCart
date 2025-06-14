@@ -9,14 +9,14 @@ import androidx.compose.ui.unit.sp
 import com.example.championcart.R
 
 // Font Families
-// Rubik - Excellent for both Hebrew and English
+// Rubik - For headlines and Hebrew text
 val RubikFontFamily = FontFamily(
     Font(R.font.rubik_regular, FontWeight.Normal),
     Font(R.font.rubik_medium, FontWeight.Medium),
     Font(R.font.rubik_bold, FontWeight.Bold)
 )
 
-
+// Assistant - For body text and UI elements (Hebrew + English optimized)
 val AssistantFontFamily = FontFamily(
     Font(R.font.assistant_regular, FontWeight.Normal),
     Font(R.font.assistant_medium, FontWeight.Medium),
@@ -24,20 +24,18 @@ val AssistantFontFamily = FontFamily(
     Font(R.font.assistant_bold, FontWeight.Bold)
 )
 
-
-val DefaultFontFamily = RubikFontFamily
-
-
+// Roboto Mono - For prices and numbers
 val RobotoMonoFontFamily = FontFamily(
     Font(R.font.roboto_mono_regular, FontWeight.Normal),
     Font(R.font.roboto_mono_medium, FontWeight.Medium),
     Font(R.font.roboto_mono_bold, FontWeight.Bold)
 )
 
-// Hebrew-optimized Typography
+// Typography with proper font usage
 val Typography = Typography(
+    // Display styles - Using Rubik for headlines
     displayLarge = TextStyle(
-        fontFamily = RubikFontFamily,  // Rubik for all text (Hebrew + English)
+        fontFamily = RubikFontFamily,
         fontWeight = FontWeight.Bold,
         fontSize = 57.sp,
         lineHeight = 64.sp,
@@ -57,6 +55,8 @@ val Typography = Typography(
         lineHeight = 44.sp,
         letterSpacing = 0.sp
     ),
+
+    // Headlines - Using Rubik
     headlineLarge = TextStyle(
         fontFamily = RubikFontFamily,
         fontWeight = FontWeight.Bold,
@@ -78,64 +78,70 @@ val Typography = Typography(
         lineHeight = 32.sp,
         letterSpacing = 0.sp
     ),
+
+    // Titles - Using Assistant for better readability
     titleLarge = TextStyle(
-        fontFamily = RubikFontFamily,  // Using Rubik for body text too
-        fontWeight = FontWeight.Medium,
+        fontFamily = AssistantFontFamily,
+        fontWeight = FontWeight.SemiBold,
         fontSize = 22.sp,
         lineHeight = 28.sp,
         letterSpacing = 0.sp
     ),
     titleMedium = TextStyle(
-        fontFamily = RubikFontFamily,
-        fontWeight = FontWeight.Medium,
+        fontFamily = AssistantFontFamily,
+        fontWeight = FontWeight.SemiBold,
         fontSize = 16.sp,
         lineHeight = 24.sp,
         letterSpacing = 0.15.sp
     ),
     titleSmall = TextStyle(
-        fontFamily = RubikFontFamily,
+        fontFamily = AssistantFontFamily,
         fontWeight = FontWeight.Medium,
         fontSize = 14.sp,
         lineHeight = 20.sp,
         letterSpacing = 0.1.sp
     ),
+
+    // Body text - Using Assistant
     bodyLarge = TextStyle(
-        fontFamily = RubikFontFamily,
+        fontFamily = AssistantFontFamily,
         fontWeight = FontWeight.Normal,
         fontSize = 16.sp,
         lineHeight = 24.sp,
         letterSpacing = 0.5.sp
     ),
     bodyMedium = TextStyle(
-        fontFamily = RubikFontFamily,
+        fontFamily = AssistantFontFamily,
         fontWeight = FontWeight.Normal,
         fontSize = 14.sp,
         lineHeight = 20.sp,
         letterSpacing = 0.25.sp
     ),
     bodySmall = TextStyle(
-        fontFamily = RubikFontFamily,
+        fontFamily = AssistantFontFamily,
         fontWeight = FontWeight.Normal,
         fontSize = 12.sp,
         lineHeight = 16.sp,
         letterSpacing = 0.4.sp
     ),
+
+    // Labels - Using Assistant
     labelLarge = TextStyle(
-        fontFamily = RubikFontFamily,
+        fontFamily = AssistantFontFamily,
         fontWeight = FontWeight.Medium,
         fontSize = 14.sp,
         lineHeight = 20.sp,
         letterSpacing = 0.1.sp
     ),
     labelMedium = TextStyle(
-        fontFamily = RubikFontFamily,
+        fontFamily = AssistantFontFamily,
         fontWeight = FontWeight.Medium,
         fontSize = 12.sp,
         lineHeight = 16.sp,
         letterSpacing = 0.5.sp
     ),
     labelSmall = TextStyle(
-        fontFamily = RubikFontFamily,
+        fontFamily = AssistantFontFamily,
         fontWeight = FontWeight.Medium,
         fontSize = 11.sp,
         lineHeight = 16.sp,
@@ -174,24 +180,24 @@ object AppTextStyles {
         lineHeight = 24.sp
     )
 
-    // All text uses Rubik for Hebrew/English support
+    // Product names - Using Assistant for clarity
     val productName = TextStyle(
-        fontFamily = RubikFontFamily,
+        fontFamily = AssistantFontFamily,
         fontWeight = FontWeight.Medium,
         fontSize = 16.sp,
         lineHeight = 24.sp
     )
 
     val productNameLarge = TextStyle(
-        fontFamily = RubikFontFamily,
+        fontFamily = AssistantFontFamily,
         fontWeight = FontWeight.Bold,
         fontSize = 20.sp,
         lineHeight = 28.sp
     )
 
-    // Store names
+    // Store names - Using Assistant
     val storeName = TextStyle(
-        fontFamily = RubikFontFamily,
+        fontFamily = AssistantFontFamily,
         fontWeight = FontWeight.SemiBold,
         fontSize = 14.sp,
         lineHeight = 20.sp,
@@ -199,15 +205,15 @@ object AppTextStyles {
     )
 
     val storeNameLarge = TextStyle(
-        fontFamily = RubikFontFamily,
+        fontFamily = AssistantFontFamily,
         fontWeight = FontWeight.Bold,
         fontSize = 18.sp,
         lineHeight = 24.sp
     )
 
-    // Buttons
+    // Buttons - Using Assistant
     val buttonText = TextStyle(
-        fontFamily = RubikFontFamily,
+        fontFamily = AssistantFontFamily,
         fontWeight = FontWeight.Medium,
         fontSize = 14.sp,
         lineHeight = 20.sp,
@@ -215,32 +221,47 @@ object AppTextStyles {
     )
 
     val buttonTextLarge = TextStyle(
-        fontFamily = RubikFontFamily,
+        fontFamily = AssistantFontFamily,
         fontWeight = FontWeight.Medium,
         fontSize = 18.sp,
         lineHeight = 24.sp,
         letterSpacing = 0.5.sp
     )
 
-    // Chips and badges
+    // Chips and badges - Using Assistant
     val chipText = TextStyle(
-        fontFamily = RubikFontFamily,
+        fontFamily = AssistantFontFamily,
         fontWeight = FontWeight.Medium,
         fontSize = 12.sp,
         lineHeight = 16.sp
     )
 
     val badgeText = TextStyle(
-        fontFamily = RubikFontFamily,
+        fontFamily = AssistantFontFamily,
         fontWeight = FontWeight.Bold,
         fontSize = 10.sp,
         lineHeight = 12.sp
     )
 
-    // Search placeholder
+    // Search placeholder - Using Assistant
     val searchHint = TextStyle(
+        fontFamily = AssistantFontFamily,
+        fontWeight = FontWeight.Normal,
+        fontSize = 16.sp,
+        lineHeight = 24.sp
+    )
+
+    // Hebrew-specific text - Using Rubik for better Hebrew rendering
+    val hebrewText = TextStyle(
         fontFamily = RubikFontFamily,
         fontWeight = FontWeight.Normal,
+        fontSize = 16.sp,
+        lineHeight = 24.sp
+    )
+
+    val hebrewTextBold = TextStyle(
+        fontFamily = RubikFontFamily,
+        fontWeight = FontWeight.Bold,
         fontSize = 16.sp,
         lineHeight = 24.sp
     )

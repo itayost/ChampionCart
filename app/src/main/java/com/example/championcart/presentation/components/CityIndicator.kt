@@ -10,7 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.championcart.ui.theme.*
 
 @Composable
@@ -40,8 +40,16 @@ fun CityIndicator(
             )
             Text(
                 text = city,
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Medium,
+                // Use appropriate font based on whether the city name is in Hebrew
+                style = if (isHebrewText(city)) {
+                    AppTextStyles.hebrewText.copy(
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                } else {
+                    // Use Assistant for English city names
+                    MaterialTheme.typography.labelLarge
+                },
                 color = MaterialTheme.colorScheme.onSecondaryContainer
             )
             Icon(
@@ -51,5 +59,12 @@ fun CityIndicator(
                 tint = MaterialTheme.colorScheme.onSecondaryContainer
             )
         }
+    }
+}
+
+// Helper function to detect Hebrew text
+private fun isHebrewText(text: String): Boolean {
+    return text.any { char ->
+        Character.UnicodeBlock.of(char) == Character.UnicodeBlock.HEBREW
     }
 }

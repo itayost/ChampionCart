@@ -15,6 +15,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.championcart.data.local.CartManager
@@ -95,7 +96,10 @@ fun BottomNavBar(navController: NavController) {
                 label = {
                     Text(
                         text = item.label,
-                        style = MaterialTheme.typography.labelMedium
+                        // Using custom button text style for navigation labels
+                        style = AppTextStyles.buttonText.copy(
+                            fontSize = 12.sp // Slightly smaller for navigation
+                        )
                     )
                 },
                 colors = NavigationBarItemDefaults.colors(

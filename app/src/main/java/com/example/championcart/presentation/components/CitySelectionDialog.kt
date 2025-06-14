@@ -159,7 +159,13 @@ fun CitySelectionDialog(
                     value = uiState.searchQuery,
                     onValueChange = viewModel::onSearchQueryChange,
                     modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("Search cities...") },
+                    placeholder = {
+                        Text(
+                            "Search cities...",
+                            style = AppTextStyles.searchHint
+                        )
+                    },
+                    textStyle = AppTextStyles.bodyLarge,
                     leadingIcon = {
                         Icon(Icons.Default.Search, contentDescription = null)
                     },
@@ -181,7 +187,8 @@ fun CitySelectionDialog(
                         Text(
                             text = error,
                             modifier = Modifier.padding(Dimensions.paddingMedium),
-                            color = MaterialTheme.colorScheme.onErrorContainer
+                            color = MaterialTheme.colorScheme.onErrorContainer,
+                            style = MaterialTheme.typography.bodyMedium
                         )
                     }
                     Spacer(modifier = Modifier.height(Dimensions.spacingSmall))
@@ -239,7 +246,10 @@ fun CitySelectionDialog(
                     horizontalArrangement = Arrangement.End
                 ) {
                     TextButton(onClick = onDismiss) {
-                        Text("Cancel")
+                        Text(
+                            "Cancel",
+                            style = AppTextStyles.buttonText
+                        )
                     }
                 }
             }
@@ -276,7 +286,12 @@ private fun CityItem(
         ) {
             Text(
                 text = city,
-                style = MaterialTheme.typography.bodyLarge,
+                // Use Assistant font for English city names, but ready for Hebrew
+                style = if (isHebrewText(city)) {
+                    AppTextStyles.hebrewText
+                } else {
+                    MaterialTheme.typography.bodyLarge
+                },
                 fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal
             )
 
@@ -289,6 +304,13 @@ private fun CityItem(
                 )
             }
         }
+    }
+}
+
+// Helper function to detect Hebrew text
+private fun isHebrewText(text: String): Boolean {
+    return text.any { char ->
+        Character.UnicodeBlock.of(char) == Character.UnicodeBlock.HEBREW
     }
 }
 
