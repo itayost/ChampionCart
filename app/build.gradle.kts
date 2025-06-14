@@ -18,7 +18,6 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // Add vector drawable support
         vectorDrawables {
             useSupportLibrary = true
         }
@@ -42,9 +41,8 @@ android {
     }
     buildFeatures {
         compose = true
-        buildConfig = true  // Add this for BuildConfig access
+        buildConfig = true
     }
-    // Add packaging options
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
@@ -101,7 +99,9 @@ dependencies {
     // DataStore (for preferences)
     implementation("androidx.datastore:datastore-preferences:1.0.0")
 
-    // Accompanist (for permissions, system UI controller)
+    // Accompanist libraries for edge-to-edge and additional features
     implementation("com.google.accompanist:accompanist-permissions:0.32.0")
     implementation("com.google.accompanist:accompanist-systemuicontroller:0.32.0")
+    implementation("com.google.accompanist:accompanist-swiperefresh:0.32.0")
+    implementation("com.google.accompanist:accompanist-insets:0.32.0")
 }

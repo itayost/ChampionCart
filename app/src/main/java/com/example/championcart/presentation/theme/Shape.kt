@@ -21,6 +21,7 @@ object ComponentShapes {
     val Dialog = RoundedCornerShape(16.dp)
     val SearchBar = RoundedCornerShape(28.dp)
     val Chip = RoundedCornerShape(16.dp)
+    val Badge = RoundedCornerShape(4.dp)  // Added Badge shape
     val PriceTag = RoundedCornerShape(
         topStart = 4.dp,
         topEnd = 12.dp,

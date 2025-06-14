@@ -13,6 +13,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
+import com.google.accompanist.systemuicontroller.rememberSystemUiController
 
 // Light Color Scheme
 private val lightColorScheme = lightColorScheme(
@@ -92,7 +93,7 @@ private val darkColorScheme = darkColorScheme(
     inversePrimary = ChampionCartColors.primary
 )
 
-// Custom color extensions
+// Extended colors data class
 data class ExtendedColors(
     val savings: Color,
     val savingsLight: Color,
@@ -189,12 +190,23 @@ fun ChampionCartTheme(
         else -> lightColorScheme
     }
 
+    // System UI Controller for edge-to-edge
+    val systemUiController = rememberSystemUiController()
     val view = LocalView.current
+
     if (!view.isInEditMode) {
         SideEffect {
-            val window = (view.context as Activity).window
-            window.statusBarColor = colorScheme.primary.toArgb()
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
+            // Set system bars to be transparent for edge-to-edge
+            systemUiController.setStatusBarColor(
+                color = Color.Transparent,
+                darkIcons = !darkTheme
+            )
+
+            systemUiController.setNavigationBarColor(
+                color = Color.Transparent,
+                darkIcons = !darkTheme,
+                navigationBarContrastEnforced = false
+            )
         }
     }
 

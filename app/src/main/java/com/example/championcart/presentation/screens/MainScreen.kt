@@ -1,5 +1,6 @@
 package com.example.championcart.presentation.screens
 
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -16,11 +17,15 @@ import com.example.championcart.presentation.screens.profile.ProfileScreen
 import com.example.championcart.presentation.screens.search.SearchScreen
 
 @Composable
-fun MainScreen(mainNavController: NavController) {  // Add parameter
+fun MainScreen(mainNavController: NavController) {
     val navController = rememberNavController()
 
     Scaffold(
-        bottomBar = { BottomNavBar(navController) }
+        bottomBar = {
+            BottomNavBar(navController)
+        },
+        // Let content go edge-to-edge
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { paddingValues ->
         NavHost(
             navController = navController,
@@ -37,7 +42,7 @@ fun MainScreen(mainNavController: NavController) {  // Add parameter
                 CartScreen()
             }
             composable(Screen.Profile.route) {
-                ProfileScreen(mainNavController)  // Pass main nav controller
+                ProfileScreen(mainNavController)
             }
         }
     }

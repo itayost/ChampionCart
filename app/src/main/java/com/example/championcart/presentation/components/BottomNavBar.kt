@@ -1,5 +1,8 @@
 package com.example.championcart.presentation.components
 
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
@@ -9,6 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavController
@@ -30,7 +34,7 @@ sealed class BottomNavItem(
 @Composable
 fun BottomNavBar(navController: NavController) {
     val context = LocalContext.current
-    val cartManager = CartManager.getInstance(context) // Use singleton
+    val cartManager = CartManager.getInstance(context)
     val cartCount by cartManager.cartCount.collectAsState()
 
     val items = listOf(
@@ -40,7 +44,10 @@ fun BottomNavBar(navController: NavController) {
         BottomNavItem.Profile
     )
 
-    NavigationBar {
+    NavigationBar(
+        // Add padding for navigation bar insets
+        modifier = Modifier.windowInsetsPadding(WindowInsets.navigationBars)
+    ) {
         val navBackStackEntry by navController.currentBackStackEntryAsState()
         val currentRoute = navBackStackEntry?.destination?.route
 
