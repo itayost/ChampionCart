@@ -1,203 +1,311 @@
 package com.example.championcart.ui.theme
 
+import android.app.Activity
 import android.os.Build
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.SideEffect
-import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
+import java.time.LocalTime
 
-// Light Color Scheme
-private val lightColorScheme = lightColorScheme(
-    primary = ChampionCartColors.primary,           // Forest Green
-    onPrimary = ChampionCartColors.onPrimary,
-    primaryContainer = ChampionCartColors.primaryLight,
-    onPrimaryContainer = ChampionCartColors.primaryDark,
+/**
+ * Champion Cart - Electric Harmony Theme
+ * Dynamic, vibrant theme with glassmorphism and time-based colors
+ */
 
-    secondary = ChampionCartColors.secondary,        // Trust Blue
-    onSecondary = ChampionCartColors.onSecondary,
-    secondaryContainer = ChampionCartColors.secondaryLight,
-    onSecondaryContainer = ChampionCartColors.secondaryDark,
+// Light Color Scheme - Electric Harmony
+private fun lightColorScheme(timeBasedColors: TimeBasedColors? = null) = lightColorScheme(
+    primary = timeBasedColors?.primary ?: ChampionCartColors.electricMint,
+    onPrimary = ChampionCartColors.textOnPrimary,
+    primaryContainer = ChampionCartColors.electricMintLight,
+    onPrimaryContainer = ChampionCartColors.electricMintDark,
 
-    tertiary = ChampionCartColors.tertiary,          // Action Orange
-    onTertiary = ChampionCartColors.onTertiary,
-    tertiaryContainer = ChampionCartColors.tertiaryLight,
-    onTertiaryContainer = ChampionCartColors.tertiaryDark,
+    secondary = ChampionCartColors.cosmicPurple,
+    onSecondary = ChampionCartColors.textOnSecondary,
+    secondaryContainer = ChampionCartColors.cosmicPurpleLight,
+    onSecondaryContainer = ChampionCartColors.cosmicPurpleDark,
 
-    error = ChampionCartColors.error,
-    errorContainer = ChampionCartColors.errorContainer,
-    onError = ChampionCartColors.onError,
-    onErrorContainer = ChampionCartColors.onErrorContainer,
+    tertiary = timeBasedColors?.accent ?: ChampionCartColors.neonCoral,
+    onTertiary = ChampionCartColors.textOnAccent,
+    tertiaryContainer = ChampionCartColors.neonCoralLight,
+    onTertiaryContainer = ChampionCartColors.neonCoralDark,
 
-    background = ChampionCartColors.background,
-    onBackground = ChampionCartColors.onBackground,
+    error = ChampionCartColors.errorRed,
+    errorContainer = ChampionCartColors.errorRed.copy(alpha = 0.1f),
+    onError = Color.White,
+    onErrorContainer = ChampionCartColors.errorRed,
 
-    surface = ChampionCartColors.surface,
-    onSurface = ChampionCartColors.onSurface,
-    surfaceVariant = ChampionCartColors.surfaceVariant,
-    onSurfaceVariant = ChampionCartColors.onSurfaceVariant,
+    background = timeBasedColors?.gradientStart ?: ChampionCartColors.backgroundLight,
+    onBackground = ChampionCartColors.textPrimary,
 
-    outline = ChampionCartColors.outline,
-    outlineVariant = ChampionCartColors.outlineVariant,
-    scrim = ChampionCartColors.scrim,
+    surface = ChampionCartColors.surfaceLight,
+    onSurface = ChampionCartColors.textPrimary,
+    surfaceVariant = ChampionCartColors.surfaceVariantLight,
+    onSurfaceVariant = ChampionCartColors.textSecondary,
 
-    inverseSurface = ChampionCartColors.onSurface,
-    inverseOnSurface = ChampionCartColors.surface,
-    inversePrimary = ChampionCartColors.primaryLight
+    outline = ChampionCartColors.textTertiary.copy(alpha = 0.5f),
+    outlineVariant = ChampionCartColors.textTertiary.copy(alpha = 0.25f),
+    scrim = ChampionCartColors.shadowDark,
+
+    inverseSurface = ChampionCartColors.textPrimary,
+    inverseOnSurface = ChampionCartColors.surfaceLight,
+    inversePrimary = ChampionCartColors.electricMintLight
 )
 
-// Dark Color Scheme
+// Dark Color Scheme - Night Mode
 private val darkColorScheme = darkColorScheme(
-    primary = ChampionCartColors.darkPrimary,
-    onPrimary = ChampionCartColors.darkOnPrimary,
-    primaryContainer = ChampionCartColors.darkPrimaryContainer,
-    onPrimaryContainer = ChampionCartColors.darkOnPrimaryContainer,
+    primary = ChampionCartColors.electricMintLight,
+    onPrimary = ChampionCartColors.electricMintDark,
+    primaryContainer = ChampionCartColors.electricMint.copy(alpha = 0.3f),
+    onPrimaryContainer = ChampionCartColors.electricMintLight,
 
-    secondary = ChampionCartColors.darkSecondary,
-    onSecondary = ChampionCartColors.darkOnSecondary,
-    secondaryContainer = ChampionCartColors.darkSecondaryContainer,
-    onSecondaryContainer = ChampionCartColors.darkOnSecondaryContainer,
+    secondary = ChampionCartColors.cosmicPurpleLight,
+    onSecondary = ChampionCartColors.cosmicPurpleDark,
+    secondaryContainer = ChampionCartColors.cosmicPurple.copy(alpha = 0.3f),
+    onSecondaryContainer = ChampionCartColors.cosmicPurpleLight,
 
-    tertiary = ChampionCartColors.darkTertiary,
-    onTertiary = ChampionCartColors.darkOnTertiary,
-    tertiaryContainer = ChampionCartColors.darkTertiaryContainer,
-    onTertiaryContainer = ChampionCartColors.darkOnTertiaryContainer,
+    tertiary = ChampionCartColors.neonCoralLight,
+    onTertiary = ChampionCartColors.neonCoralDark,
+    tertiaryContainer = ChampionCartColors.neonCoral.copy(alpha = 0.3f),
+    onTertiaryContainer = ChampionCartColors.neonCoralLight,
 
-    error = ChampionCartColors.darkError,
-    errorContainer = ChampionCartColors.darkErrorContainer,
-    onError = ChampionCartColors.darkOnError,
-    onErrorContainer = ChampionCartColors.darkOnErrorContainer,
+    error = ChampionCartColors.errorRed,
+    errorContainer = ChampionCartColors.errorRed.copy(alpha = 0.2f),
+    onError = ChampionCartColors.textPrimary,
+    onErrorContainer = ChampionCartColors.errorRed,
 
-    background = ChampionCartColors.darkBackground,
-    onBackground = ChampionCartColors.darkOnBackground,
+    background = ChampionCartColors.backgroundDark,
+    onBackground = ChampionCartColors.textPrimaryDark,
 
-    surface = ChampionCartColors.darkSurface,
-    onSurface = ChampionCartColors.darkOnSurface,
-    surfaceVariant = ChampionCartColors.darkSurfaceVariant,
-    onSurfaceVariant = ChampionCartColors.darkOnSurfaceVariant,
+    surface = ChampionCartColors.surfaceDark,
+    onSurface = ChampionCartColors.textPrimaryDark,
+    surfaceVariant = ChampionCartColors.surfaceVariantDark,
+    onSurfaceVariant = ChampionCartColors.textSecondaryDark,
 
-    outline = ChampionCartColors.darkOutline,
-    outlineVariant = ChampionCartColors.darkOutlineVariant,
-    scrim = ChampionCartColors.scrim,
+    outline = ChampionCartColors.textSecondaryDark.copy(alpha = 0.5f),
+    outlineVariant = ChampionCartColors.textSecondaryDark.copy(alpha = 0.25f),
+    scrim = ChampionCartColors.shadowDark,
 
-    inverseSurface = ChampionCartColors.darkOnSurface,
-    inverseOnSurface = ChampionCartColors.darkSurface,
-    inversePrimary = ChampionCartColors.primary
+    inverseSurface = ChampionCartColors.textPrimaryDark,
+    inverseOnSurface = ChampionCartColors.surfaceDark,
+    inversePrimary = ChampionCartColors.electricMint
 )
 
-// Extended colors data class
+// Extended theme colors
 data class ExtendedColors(
-    val savings: Color,
-    val savingsLight: Color,
-    val bestDeal: Color,
-    val compare: Color,
-    val priceHigh: Color,
-    val priceLow: Color,
+    // Primary actions
+    val electricMint: Color,
+    val electricMintGlow: Color,
+    val cosmicPurple: Color,
+    val cosmicPurpleGlow: Color,
+    val neonCoral: Color,
+    val neonCoralGlow: Color,
+
+    // Semantic colors
     val success: Color,
-    val successContainer: Color,
-    val onSuccess: Color,
-    val onSuccessContainer: Color,
+    val successGlow: Color,
     val warning: Color,
-    val warningContainer: Color,
-    val onWarning: Color,
-    val onWarningContainer: Color,
+    val warningGlow: Color,
+    val error: Color,
+    val errorGlow: Color,
     val info: Color,
-    val infoContainer: Color,
-    val onInfo: Color,
-    val onInfoContainer: Color,
+    val infoGlow: Color,
+
+    // Price indicators
+    val bestPrice: Color,
+    val bestPriceGlow: Color,
+    val midPrice: Color,
+    val highPrice: Color,
+
+    // Glass effects
+    val glass: Color,
+    val glassBorder: Color,
+    val glassFrosted: Color,
+    val glassFrostedBorder: Color,
+
+    // Store brands
     val shufersal: Color,
+    val shufersalGlow: Color,
     val victory: Color,
-    val ramiLevy: Color,
-    val mega: Color,
-    val tertiary: Color,
-    val tertiaryContainer: Color,
-    val onTertiary: Color,
-    val onTertiaryContainer: Color
+    val victoryGlow: Color,
+
+    // Gradients
+    val primaryGradient: GradientColors,
+    val premiumGradient: GradientColors,
+    val dealsGradient: GradientColors,
+    val backgroundGradient: GradientColors
 )
 
+// Light theme extended colors
 val lightExtendedColors = ExtendedColors(
-    savings = ChampionCartColors.savings,
-    savingsLight = ChampionCartColors.savingsLight,
-    bestDeal = ChampionCartColors.bestDeal,
-    compare = ChampionCartColors.compare,
-    priceHigh = ChampionCartColors.priceHigh,
-    priceLow = ChampionCartColors.priceLow,
-    success = ChampionCartColors.success,
-    successContainer = ChampionCartColors.successContainer,
-    onSuccess = ChampionCartColors.onSuccess,
-    onSuccessContainer = ChampionCartColors.onSuccessContainer,
-    warning = ChampionCartColors.warning,
-    warningContainer = ChampionCartColors.warningContainer,
-    onWarning = ChampionCartColors.onWarning,
-    onWarningContainer = ChampionCartColors.onWarningContainer,
-    info = ChampionCartColors.info,
-    infoContainer = ChampionCartColors.infoContainer,
-    onInfo = ChampionCartColors.onInfo,
-    onInfoContainer = ChampionCartColors.onInfoContainer,
-    shufersal = ChampionCartColors.shufersal,
-    victory = ChampionCartColors.victory,
-    ramiLevy = ChampionCartColors.ramiLevy,
-    mega = ChampionCartColors.mega,
-    tertiary = ChampionCartColors.tertiary,
-    tertiaryContainer = ChampionCartColors.tertiaryLight,
-    onTertiary = ChampionCartColors.onTertiary,
-    onTertiaryContainer = ChampionCartColors.tertiaryDark
+    electricMint = ChampionCartColors.electricMint,
+    electricMintGlow = ChampionCartColors.electricMintGlow,
+    cosmicPurple = ChampionCartColors.cosmicPurple,
+    cosmicPurpleGlow = ChampionCartColors.cosmicPurpleGlow,
+    neonCoral = ChampionCartColors.neonCoral,
+    neonCoralGlow = ChampionCartColors.neonCoralGlow,
+
+    success = ChampionCartColors.successGreen,
+    successGlow = ChampionCartColors.successGreenGlow,
+    warning = ChampionCartColors.warningAmber,
+    warningGlow = ChampionCartColors.warningAmberGlow,
+    error = ChampionCartColors.errorRed,
+    errorGlow = ChampionCartColors.errorRedGlow,
+    info = ChampionCartColors.infoBlue,
+    infoGlow = ChampionCartColors.infoBlueGlow,
+
+    bestPrice = ChampionCartColors.bestPrice,
+    bestPriceGlow = ChampionCartColors.bestPriceGlow,
+    midPrice = ChampionCartColors.midPrice,
+    highPrice = ChampionCartColors.highPrice,
+
+    glass = ChampionCartColors.glassLight,
+    glassBorder = ChampionCartColors.glassLightBorder,
+    glassFrosted = ChampionCartColors.glassFrosted,
+    glassFrostedBorder = ChampionCartColors.glassFrostedBorder,
+
+    shufersal = ChampionCartColors.shufersalBrand,
+    shufersalGlow = ChampionCartColors.shufersalGlow,
+    victory = ChampionCartColors.victoryBrand,
+    victoryGlow = ChampionCartColors.victoryGlow,
+
+    primaryGradient = ChampionCartGradients.primaryAction,
+    premiumGradient = ChampionCartGradients.premium,
+    dealsGradient = ChampionCartGradients.deals,
+    backgroundGradient = ChampionCartGradients.lightBackground
 )
 
-val darkExtendedColors = ExtendedColors(
-    savings = Color(0xFF69F0AE),
-    savingsLight = Color(0xFF69F0AE),
-    bestDeal = Color(0xFFFFD54F),
-    compare = Color(0xFF64B5F6),
-    priceHigh = Color(0xFFFF8A80),
-    priceLow = Color(0xFF69F0AE),
-    success = Color(0xFF69F0AE),
-    successContainer = Color(0xFF003A0F),
-    onSuccess = Color(0xFF003A0F),
-    onSuccessContainer = Color(0xFF69F0AE),
-    warning = Color(0xFFFFAB40),
-    warningContainer = Color(0xFF5A3100),
-    onWarning = Color(0xFF3E2000),
-    onWarningContainer = Color(0xFFFFD699),
-    info = Color(0xFF4FC3F7),
-    infoContainer = Color(0xFF004A77),
-    onInfo = Color(0xFF003355),
-    onInfoContainer = Color(0xFFC5E4FF),
-    shufersal = Color(0xFF4D94FF),
-    victory = Color(0xFFFF6B6B),
-    ramiLevy = Color(0xFFFF8C42),
-    mega = Color(0xFF66D966),
-    tertiary = ChampionCartColors.darkTertiary,
-    tertiaryContainer = ChampionCartColors.darkTertiaryContainer,
-    onTertiary = ChampionCartColors.darkOnTertiary,
-    onTertiaryContainer = ChampionCartColors.darkOnTertiaryContainer
+// Dark theme extended colors
+val darkExtendedColors = lightExtendedColors.copy(
+    glass = ChampionCartColors.glassDark,
+    glassBorder = ChampionCartColors.glassDarkBorder,
+    backgroundGradient = ChampionCartGradients.darkBackground
+)
+
+// High contrast extended colors
+val highContrastExtendedColors = lightExtendedColors.copy(
+    electricMint = Color.Black,
+    electricMintGlow = Color.Transparent,
+    cosmicPurple = Color.Black,
+    cosmicPurpleGlow = Color.Transparent,
+    neonCoral = Color.Black,
+    neonCoralGlow = Color.Transparent,
+    glass = Color.Transparent,
+    glassBorder = Color.Black,
+    glassFrosted = Color.White.copy(alpha = 0.9f),
+    glassFrostedBorder = Color.Black
 )
 
 val LocalExtendedColors = staticCompositionLocalOf {
     lightExtendedColors
 }
 
+// Motion preferences
+val LocalReduceMotion = staticCompositionLocalOf { false }
+val LocalHapticsEnabled = staticCompositionLocalOf { true }
+
 @Composable
 fun ChampionCartTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     dynamicColor: Boolean = false,
+    highContrast: Boolean = false,
+    reduceMotion: Boolean = false,
+    hapticsEnabled: Boolean = true,
     content: @Composable () -> Unit
 ) {
-    val extendedColors = if (darkTheme) darkExtendedColors else lightExtendedColors
+    // Get current time for dynamic theming
+    val currentHour = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        LocalTime.now().hour
+    } else {
+        12 // Default to afternoon theme
+    }
 
-    val colorScheme = when {
+    val timeBasedColors = getTimeBasedColors(currentHour)
+
+    // Determine if we should use dark theme based on time or system
+    val useDarkTheme = darkTheme || timeBasedColors.isDark
+
+    // Animate color transitions
+    val animatedColorScheme = when {
+        highContrast -> {
+            // High contrast mode - no gradients or transparency
+            lightColorScheme().copy(
+                primary = Color.Black,
+                secondary = Color.Black,
+                tertiary = Color.Black,
+                background = Color.White,
+                surface = Color.White,
+                error = Color.Black
+            )
+        }
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+            if (useDarkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
-        darkTheme -> darkColorScheme
-        else -> lightColorScheme
+        useDarkTheme -> darkColorScheme
+        else -> lightColorScheme(timeBasedColors)
     }
+
+    // Extended colors with animation
+    val targetExtendedColors = when {
+        highContrast -> highContrastExtendedColors
+        useDarkTheme -> darkExtendedColors
+        else -> lightExtendedColors
+    }
+
+    // Animate extended colors
+    val animatedExtendedColors = ExtendedColors(
+        electricMint = animateColorAsState(
+            targetValue = targetExtendedColors.electricMint,
+            animationSpec = tween(600),
+            label = "electricMint"
+        ).value,
+        electricMintGlow = targetExtendedColors.electricMintGlow,
+        cosmicPurple = animateColorAsState(
+            targetValue = targetExtendedColors.cosmicPurple,
+            animationSpec = tween(600),
+            label = "cosmicPurple"
+        ).value,
+        cosmicPurpleGlow = targetExtendedColors.cosmicPurpleGlow,
+        neonCoral = animateColorAsState(
+            targetValue = targetExtendedColors.neonCoral,
+            animationSpec = tween(600),
+            label = "neonCoral"
+        ).value,
+        neonCoralGlow = targetExtendedColors.neonCoralGlow,
+        success = targetExtendedColors.success,
+        successGlow = targetExtendedColors.successGlow,
+        warning = targetExtendedColors.warning,
+        warningGlow = targetExtendedColors.warningGlow,
+        error = targetExtendedColors.error,
+        errorGlow = targetExtendedColors.errorGlow,
+        info = targetExtendedColors.info,
+        infoGlow = targetExtendedColors.infoGlow,
+        bestPrice = targetExtendedColors.bestPrice,
+        bestPriceGlow = targetExtendedColors.bestPriceGlow,
+        midPrice = targetExtendedColors.midPrice,
+        highPrice = targetExtendedColors.highPrice,
+        glass = targetExtendedColors.glass,
+        glassBorder = targetExtendedColors.glassBorder,
+        glassFrosted = targetExtendedColors.glassFrosted,
+        glassFrostedBorder = targetExtendedColors.glassFrostedBorder,
+        shufersal = targetExtendedColors.shufersal,
+        shufersalGlow = targetExtendedColors.shufersalGlow,
+        victory = targetExtendedColors.victory,
+        victoryGlow = targetExtendedColors.victoryGlow,
+        primaryGradient = targetExtendedColors.primaryGradient,
+        premiumGradient = targetExtendedColors.premiumGradient,
+        dealsGradient = targetExtendedColors.dealsGradient,
+        backgroundGradient = targetExtendedColors.backgroundGradient
+    )
 
     // System UI Controller for edge-to-edge
     val systemUiController = rememberSystemUiController()
@@ -205,23 +313,43 @@ fun ChampionCartTheme(
 
     if (!view.isInEditMode) {
         SideEffect {
-            // Set system bars to be transparent for edge-to-edge
+            val window = (view.context as? Activity)?.window
+            window?.let {
+                // Enable edge-to-edge
+                WindowCompat.setDecorFitsSystemWindows(it, false)
+
+                // Set status bar color
+                it.statusBarColor = Color.Transparent.toArgb()
+
+                // Set navigation bar color with scrim for contrast
+                it.navigationBarColor = if (useDarkTheme) {
+                    Color.Black.copy(alpha = 0.3f).compositeOver(animatedColorScheme.background).toArgb()
+                } else {
+                    Color.Black.copy(alpha = 0.1f).compositeOver(animatedColorScheme.background).toArgb()
+                }
+            }
+
+            // Set system bar appearance
             systemUiController.setStatusBarColor(
                 color = Color.Transparent,
-                darkIcons = !darkTheme
+                darkIcons = !useDarkTheme
             )
 
             systemUiController.setNavigationBarColor(
                 color = Color.Transparent,
-                darkIcons = !darkTheme,
+                darkIcons = !useDarkTheme,
                 navigationBarContrastEnforced = false
             )
         }
     }
 
-    CompositionLocalProvider(LocalExtendedColors provides extendedColors) {
+    CompositionLocalProvider(
+        LocalExtendedColors provides animatedExtendedColors,
+        LocalReduceMotion provides reduceMotion,
+        LocalHapticsEnabled provides hapticsEnabled
+    ) {
         MaterialTheme(
-            colorScheme = colorScheme,
+            colorScheme = animatedColorScheme,
             typography = Typography,
             shapes = Shapes,
             content = content
@@ -233,3 +361,28 @@ fun ChampionCartTheme(
 val MaterialTheme.extendedColors: ExtendedColors
     @Composable
     get() = LocalExtendedColors.current
+
+// Extension property to check motion preferences
+val MaterialTheme.reduceMotion: Boolean
+    @Composable
+    get() = LocalReduceMotion.current
+
+// Extension property to check haptics preferences
+val MaterialTheme.hapticsEnabled: Boolean
+    @Composable
+    get() = LocalHapticsEnabled.current
+
+/**
+ * Preview helper for different theme variations
+ */
+@Composable
+fun PreviewTheme(
+    darkTheme: Boolean = false,
+    content: @Composable () -> Unit
+) {
+    ChampionCartTheme(
+        darkTheme = darkTheme,
+        dynamicColor = false,
+        content = content
+    )
+}

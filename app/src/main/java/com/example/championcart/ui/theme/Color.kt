@@ -2,104 +2,258 @@ package com.example.championcart.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Brand Colors - Updated to match new design specs
+/**
+ * Champion Cart - Electric Harmony Color System
+ * Modern, vibrant color palette with glow effects and gradients
+ */
 object ChampionCartColors {
-    // Primary - Trust & Savings (Green palette)
-    val primary = Color(0xFF2E7D32)        // Forest Green - trustworthy
-    val primaryLight = Color(0xFF4CAF50)
-    val primaryDark = Color(0xFF1B5E20)
-    val onPrimary = Color(0xFFFFFFFF)
+    // Primary Palette - Electric Mint (Primary Action)
+    val electricMint = Color(0xFF00D9A3)
+    val electricMintLight = Color(0xFF4DFFCE)
+    val electricMintDark = Color(0xFF00A67C)
+    val electricMintGlow = Color(0x5500D9A3) // 33% opacity for glow effects
 
-    // Secondary - Information & Trust (Blue palette)
-    val secondary = Color(0xFF1976D2)      // Trust Blue
-    val secondaryLight = Color(0xFF42A5F5) // Light Blue
-    val secondaryDark = Color(0xFF0D47A1)  // Dark Blue
-    val onSecondary = Color(0xFFFFFFFF)
+    // Secondary Palette - Cosmic Purple (Secondary/Premium)
+    val cosmicPurple = Color(0xFF7B3FF2)
+    val cosmicPurpleLight = Color(0xFF9D6FFF)
+    val cosmicPurpleDark = Color(0xFF5A2DB8)
+    val cosmicPurpleGlow = Color(0x557B3FF2)
 
-    // Tertiary - Deals & CTAs (Orange palette)
-    val tertiary = Color(0xFFFF6B35)       // Action Orange
-    val tertiaryLight = Color(0xFFFF8A65)  // Light Orange
-    val tertiaryDark = Color(0xFFE64A19)   // Dark Orange
-    val onTertiary = Color(0xFFFFFFFF)
+    // Accent Palette - Neon Coral (Deals/Urgent)
+    val neonCoral = Color(0xFFFF6B9D)
+    val neonCoralLight = Color(0xFFFF8FB3)
+    val neonCoralDark = Color(0xFFE44D7A)
+    val neonCoralGlow = Color(0x55FF6B9D)
 
-    // Background & Surface
-    val background = Color(0xFFFAFBF5)
-    val onBackground = Color(0xFF1A1C18)
-    val surface = Color(0xFFFFFFFF)
-    val onSurface = Color(0xFF1A1C18)
-    val surfaceVariant = Color(0xFFF3F4EC)
-    val onSurfaceVariant = Color(0xFF43483E)
+    // Semantic Colors - Clear Communication
+    val successGreen = Color(0xFF00E676)
+    val successGreenGlow = Color(0x5500E676)
+    val warningAmber = Color(0xFFFFB300)
+    val warningAmberGlow = Color(0x55FFB300)
+    val errorRed = Color(0xFFFF5252)
+    val errorRedGlow = Color(0x55FF5252)
+    val infoBlue = Color(0xFF448AFF)
+    val infoBlueGlow = Color(0x55448AFF)
 
-    // Semantic Colors - Updated to match spec
-    val error = Color(0xFFDC2626)
-    val errorContainer = Color(0xFFFFDAD6)
-    val onError = Color(0xFFFFFFFF)
-    val onErrorContainer = Color(0xFF410002)
+    // Price Indicators with Glow
+    val bestPrice = Color(0xFF00E676) // Success Green
+    val bestPriceGlow = Color(0x5500E676)
+    val midPrice = Color(0xFFFFB300)  // Warning Amber
+    val midPriceGlow = Color(0x55FFB300)
+    val highPrice = Color(0xFFFF5252) // Error Red
+    val highPriceGlow = Color(0x55FF5252)
 
-    val success = Color(0xFF10B981)
-    val successContainer = Color(0xFFB7F5C8)
-    val onSuccess = Color(0xFFFFFFFF)
-    val onSuccessContainer = Color(0xFF002106)
+    // Background Colors - Light Mode
+    val backgroundLight = Color(0xFFFFFFFF)
+    val backgroundLightGradientEnd = Color(0xFFF8F9FF) // Subtle blue tint
+    val surfaceLight = Color(0xFFFFFFFF)
+    val surfaceVariantLight = Color(0xFFF8F9FF)
 
-    val warning = Color(0xFFF59E0B)
-    val warningContainer = Color(0xFFFFE0B2)
-    val onWarning = Color(0xFFFFFFFF)
-    val onWarningContainer = Color(0xFF3E2000)
+    // Background Colors - Dark Mode
+    val backgroundDark = Color(0xFF0A0E27)
+    val backgroundDarkGradientEnd = Color(0xFF1A1F3A)
+    val surfaceDark = Color(0xFF1A1F3A)
+    val surfaceVariantDark = Color(0xFF252B4A)
 
-    val info = Color(0xFF3B82F6)
-    val infoContainer = Color(0xFFD1E4FF)
-    val onInfo = Color(0xFFFFFFFF)
-    val onInfoContainer = Color(0xFF001D36)
+    // Glass Morphism Colors
+    val glassLight = Color(0x14FFFFFF) // 8% white
+    val glassLightBorder = Color(0x2EFFFFFF) // 18% white
+    val glassDark = Color(0x0DFFFFFF) // 5% white
+    val glassDarkBorder = Color(0x1AFFFFFF) // 10% white
+    val glassFrosted = Color(0xB8F8F9FF) // 72% opacity
+    val glassFrostedBorder = Color(0x4DFFFFFF) // 30% white
 
-    // Special Purpose Colors - Updated to match spec
-    val savings = Color(0xFF00C853)        // Bright Green for savings
-    val savingsLight = Color(0xFF5EFC82)
-    val bestDeal = Color(0xFFFFD700)       // Gold for best deals
-    val compare = Color(0xFF2196F3)        // Blue for comparisons
-    val priceHigh = Color(0xFFDC2626)      // Red for high prices
-    val priceMid = Color(0xFFFF9800)       // Orange for mid prices
-    val priceLow = Color(0xFF2E7D32)       // Green for low prices
+    // Text Colors
+    val textPrimary = Color(0xFF0A0E27)
+    val textSecondary = Color(0xFF5A6178)
+    val textTertiary = Color(0xFF8B92A8)
+    val textOnPrimary = Color(0xFFFFFFFF)
+    val textOnSecondary = Color(0xFFFFFFFF)
+    val textOnAccent = Color(0xFFFFFFFF)
 
-    // Store Brand Colors - Updated to match spec
-    val shufersal = Color(0xFF0052CC)      // Official Shufersal Blue
-    val victory = Color(0xFFDC2626)        // Official Victory Red
-    val genericStore = Color(0xFF6B7280)   // Gray for generic stores
-    val ramiLevy = Color(0xFFEA580C)       // Keeping for future
-    val mega = Color(0xFF16A34A)           // Keeping for future
+    // Text Colors - Dark Mode
+    val textPrimaryDark = Color(0xFFFFFFFF)
+    val textSecondaryDark = Color(0xFFB8BED0)
+    val textTertiaryDark = Color(0xFF8B92A8)
 
-    // Neutral Colors
-    val outline = Color(0xFF73796E)
-    val outlineVariant = Color(0xFFC3C8BB)
-    val scrim = Color(0xFF000000)
+    // Shadow Colors
+    val shadowLight = Color(0x14000000) // 8% black
+    val shadowMedium = Color(0x29000000) // 16% black
+    val shadowDark = Color(0x3D000000) // 24% black
 
-    // Dark Theme Colors - Keeping for future implementation
-    val darkPrimary = Color(0xFF95D990)
-    val darkPrimaryContainer = Color(0xFF00531B)
-    val darkOnPrimary = Color(0xFF003910)
-    val darkOnPrimaryContainer = Color(0xFFB0F6AA)
+    // Store Brand Colors - Updated for vibrancy
+    val shufersalBrand = Color(0xFF0066FF) // Brighter blue
+    val shufersalGlow = Color(0x550066FF)
+    val victoryBrand = Color(0xFFFF3366) // Brighter red
+    val victoryGlow = Color(0x55FF3366)
+    val ramiLevyBrand = Color(0xFFFF6B35) // Orange
+    val ramiLevyGlow = Color(0x55FF6B35)
+    val megaBrand = Color(0xFF00D68F) // Green
+    val megaGlow = Color(0x5500D68F)
+    val genericStore = Color(0xFF8B92A8) // Neutral gray
 
-    val darkSecondary = Color(0xFF64B5F6)
-    val darkSecondaryContainer = Color(0xFF004A77)
-    val darkOnSecondary = Color(0xFF003355)
-    val darkOnSecondaryContainer = Color(0xFFC5E4FF)
+    // Dynamic Theme Colors (Time-based)
+    // Morning (6am-12pm)
+    val morningPrimary = Color(0xFFFFB74D) // Warm peach
+    val morningAccent = Color(0xFFFF8A65)
+    val morningGradientStart = Color(0xFFFFF3E0)
+    val morningGradientEnd = Color(0xFFFFE0B2)
 
-    val darkTertiary = Color(0xFFFFAB40)
-    val darkTertiaryContainer = Color(0xFF5A3100)
-    val darkOnTertiary = Color(0xFF3E2000)
-    val darkOnTertiaryContainer = Color(0xFFFFD699)
+    // Afternoon (12pm-6pm) - Uses default Electric Mint
 
-    val darkBackground = Color(0xFF121212)
-    val darkOnBackground = Color(0xFFE2E3DD)
-    val darkSurface = Color(0xFF1A1A1A)
-    val darkOnSurface = Color(0xFFE2E3DD)
-    val darkSurfaceVariant = Color(0xFF252525)
-    val darkOnSurfaceVariant = Color(0xFFC3C8BB)
+    // Evening (6pm-12am)
+    val eveningPrimary = Color(0xFF7B3FF2) // Cosmic Purple
+    val eveningAccent = Color(0xFF9D6FFF)
+    val eveningGradientStart = Color(0xFF1A1F3A)
+    val eveningGradientEnd = Color(0xFF2D3561)
 
-    val darkError = Color(0xFFFF8A80)
-    val darkErrorContainer = Color(0xFF93000A)
-    val darkOnError = Color(0xFF690005)
-    val darkOnErrorContainer = Color(0xFFFFDAD6)
+    // Night (12am-6am) - Dark mode activated
+    val nightPrimary = Color(0xFF448AFF) // Calming blue
+    val nightAccent = Color(0xFF82B1FF)
 
-    val darkOutline = Color(0xFF8D9387)
-    val darkOutlineVariant = Color(0xFF43483E)
+    // Special Effects Colors
+    val shimmerHighlight = Color(0x33FFFFFF)
+    val rippleColor = Color(0x1F000000)
+    val divider = Color(0x14000000)
+    val dividerDark = Color(0x14FFFFFF)
 }
+
+/**
+ * Gradient definitions for the Electric Harmony theme
+ */
+data class GradientColors(
+    val colors: List<Color>,
+    val start: androidx.compose.ui.geometry.Offset = androidx.compose.ui.geometry.Offset(0f, 0f),
+    val end: androidx.compose.ui.geometry.Offset = androidx.compose.ui.geometry.Offset(1f, 1f)
+)
+
+object ChampionCartGradients {
+    // Primary CTA Gradient
+    val primaryAction = GradientColors(
+        colors = listOf(
+            ChampionCartColors.electricMint,
+            ChampionCartColors.successGreen
+        )
+    )
+
+    // Premium/Secondary Gradient
+    val premium = GradientColors(
+        colors = listOf(
+            ChampionCartColors.cosmicPurple,
+            ChampionCartColors.cosmicPurpleLight
+        )
+    )
+
+    // Deals/Urgent Gradient
+    val deals = GradientColors(
+        colors = listOf(
+            ChampionCartColors.neonCoral,
+            ChampionCartColors.neonCoralLight
+        )
+    )
+
+    // Success State Gradient
+    val success = GradientColors(
+        colors = listOf(
+            ChampionCartColors.successGreen,
+            ChampionCartColors.electricMint
+        )
+    )
+
+    // Animated Border Gradient (for special effects)
+    val animatedBorder = GradientColors(
+        colors = listOf(
+            ChampionCartColors.electricMint,
+            ChampionCartColors.cosmicPurple,
+            ChampionCartColors.neonCoral,
+            ChampionCartColors.electricMint
+        )
+    )
+
+    // Background Gradients
+    val lightBackground = GradientColors(
+        colors = listOf(
+            ChampionCartColors.backgroundLight,
+            ChampionCartColors.backgroundLightGradientEnd
+        ),
+        start = androidx.compose.ui.geometry.Offset(0f, 0f),
+        end = androidx.compose.ui.geometry.Offset(0f, 1f)
+    )
+
+    val darkBackground = GradientColors(
+        colors = listOf(
+            ChampionCartColors.backgroundDark,
+            ChampionCartColors.backgroundDarkGradientEnd
+        ),
+        start = androidx.compose.ui.geometry.Offset(0f, 0f),
+        end = androidx.compose.ui.geometry.Offset(0f, 1f)
+    )
+
+    // Glass Effect Gradients
+    val glassOverlay = GradientColors(
+        colors = listOf(
+            Color(0x0DFFFFFF),
+            Color(0x05FFFFFF)
+        )
+    )
+
+    // Price Indicator Gradient (for progress bars)
+    val priceIndicator = GradientColors(
+        colors = listOf(
+            ChampionCartColors.bestPrice,
+            ChampionCartColors.midPrice,
+            ChampionCartColors.highPrice
+        )
+    )
+}
+
+/**
+ * Get the appropriate glow color for any given color
+ */
+fun Color.withGlow(): Color {
+    return this.copy(alpha = 0.33f)
+}
+
+/**
+ * Get time-based theme colors
+ */
+fun getTimeBasedColors(hour: Int): TimeBasedColors {
+    return when (hour) {
+        in 6..11 -> TimeBasedColors(
+            primary = ChampionCartColors.morningPrimary,
+            accent = ChampionCartColors.morningAccent,
+            gradientStart = ChampionCartColors.morningGradientStart,
+            gradientEnd = ChampionCartColors.morningGradientEnd,
+            isDark = false
+        )
+        in 12..17 -> TimeBasedColors(
+            primary = ChampionCartColors.electricMint,
+            accent = ChampionCartColors.neonCoral,
+            gradientStart = ChampionCartColors.backgroundLight,
+            gradientEnd = ChampionCartColors.backgroundLightGradientEnd,
+            isDark = false
+        )
+        in 18..23 -> TimeBasedColors(
+            primary = ChampionCartColors.eveningPrimary,
+            accent = ChampionCartColors.eveningAccent,
+            gradientStart = ChampionCartColors.eveningGradientStart,
+            gradientEnd = ChampionCartColors.eveningGradientEnd,
+            isDark = true
+        )
+        else -> TimeBasedColors(
+            primary = ChampionCartColors.nightPrimary,
+            accent = ChampionCartColors.nightAccent,
+            gradientStart = ChampionCartColors.backgroundDark,
+            gradientEnd = ChampionCartColors.backgroundDarkGradientEnd,
+            isDark = true
+        )
+    }
+}
+
+data class TimeBasedColors(
+    val primary: Color,
+    val accent: Color,
+    val gradientStart: Color,
+    val gradientEnd: Color,
+    val isDark: Boolean
+)
