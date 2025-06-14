@@ -17,17 +17,17 @@ import com.google.accompanist.systemuicontroller.rememberSystemUiController
 
 // Light Color Scheme
 private val lightColorScheme = lightColorScheme(
-    primary = ChampionCartColors.primary,
+    primary = ChampionCartColors.primary,           // Forest Green
     onPrimary = ChampionCartColors.onPrimary,
     primaryContainer = ChampionCartColors.primaryLight,
     onPrimaryContainer = ChampionCartColors.primaryDark,
 
-    secondary = ChampionCartColors.secondary,
+    secondary = ChampionCartColors.secondary,        // Trust Blue
     onSecondary = ChampionCartColors.onSecondary,
     secondaryContainer = ChampionCartColors.secondaryLight,
     onSecondaryContainer = ChampionCartColors.secondaryDark,
 
-    tertiary = ChampionCartColors.tertiary,
+    tertiary = ChampionCartColors.tertiary,          // Action Orange
     onTertiary = ChampionCartColors.onTertiary,
     tertiaryContainer = ChampionCartColors.tertiaryLight,
     onTertiaryContainer = ChampionCartColors.tertiaryDark,
