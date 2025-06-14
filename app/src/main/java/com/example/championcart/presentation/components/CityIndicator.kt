@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.championcart.ui.theme.*
 
 @Composable
 fun CityIndicator(
@@ -20,18 +21,21 @@ fun CityIndicator(
 ) {
     Surface(
         modifier = modifier.clickable { onClick() },
-        shape = MaterialTheme.shapes.small,
+        shape = ComponentShapes.Chip,
         color = MaterialTheme.colorScheme.secondaryContainer
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            modifier = Modifier.padding(
+                horizontal = Dimensions.paddingMedium,
+                vertical = Dimensions.paddingSmall
+            ),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
+            horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingExtraSmall)
         ) {
             Icon(
                 imageVector = Icons.Default.LocationOn,
                 contentDescription = null,
-                modifier = Modifier.size(16.dp),
+                modifier = Modifier.size(Dimensions.iconSizeSmall),
                 tint = MaterialTheme.colorScheme.onSecondaryContainer
             )
             Text(
@@ -43,7 +47,7 @@ fun CityIndicator(
             Icon(
                 imageVector = Icons.Default.ArrowDropDown,
                 contentDescription = "Change city",
-                modifier = Modifier.size(16.dp),
+                modifier = Modifier.size(Dimensions.iconSizeSmall),
                 tint = MaterialTheme.colorScheme.onSecondaryContainer
             )
         }

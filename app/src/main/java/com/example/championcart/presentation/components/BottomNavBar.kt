@@ -19,6 +19,7 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.championcart.data.local.CartManager
 import com.example.championcart.presentation.navigation.Screen
+import com.example.championcart.ui.theme.*
 
 sealed class BottomNavItem(
     val route: String,
@@ -46,7 +47,9 @@ fun BottomNavBar(navController: NavController) {
 
     NavigationBar(
         // Add padding for navigation bar insets
-        modifier = Modifier.windowInsetsPadding(WindowInsets.navigationBars)
+        modifier = Modifier.windowInsetsPadding(WindowInsets.navigationBars),
+        containerColor = MaterialTheme.colorScheme.surface,
+        tonalElevation = Dimensions.elevationSmall
     ) {
         val navBackStackEntry by navController.currentBackStackEntryAsState()
         val currentRoute = navBackStackEntry?.destination?.route
@@ -67,8 +70,13 @@ fun BottomNavBar(navController: NavController) {
                     if (item == BottomNavItem.Cart && cartCount > 0) {
                         BadgedBox(
                             badge = {
-                                Badge {
-                                    Text(text = cartCount.toString())
+                                Badge(
+                                    containerColor = MaterialTheme.extendedColors.tertiary
+                                ) {
+                                    Text(
+                                        text = cartCount.toString(),
+                                        style = AppTextStyles.badgeText
+                                    )
                                 }
                             }
                         ) {
@@ -85,8 +93,18 @@ fun BottomNavBar(navController: NavController) {
                     }
                 },
                 label = {
-                    Text(text = item.label)
-                }
+                    Text(
+                        text = item.label,
+                        style = MaterialTheme.typography.labelMedium
+                    )
+                },
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = MaterialTheme.colorScheme.primary,
+                    selectedTextColor = MaterialTheme.colorScheme.primary,
+                    indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             )
         }
     }

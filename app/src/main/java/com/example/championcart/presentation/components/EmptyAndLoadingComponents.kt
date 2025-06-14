@@ -11,18 +11,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.example.championcart.presentation.theme.*
-import com.example.championcart.ui.theme.ComponentShapes
-import com.example.championcart.ui.theme.Padding
-import com.example.championcart.ui.theme.Size
-import com.example.championcart.ui.theme.Spacing
-import com.example.championcart.ui.theme.extendedColors
+import com.example.championcart.ui.theme.*
 
 /**
  * Empty state component with icon, title, description and optional action
@@ -51,18 +47,18 @@ fun EmptyState(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(Padding.huge),
+                .padding(Dimensions.paddingExtraLarge),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(Spacing.medium)
+            verticalArrangement = Arrangement.spacedBy(Dimensions.spacingMedium)
         ) {
             // Animated icon
             AnimatedIcon(
                 icon = icon,
                 tint = iconTint,
-                modifier = Modifier.size(IconSize.empty)
+                modifier = Modifier.size(Dimensions.iconSizeExtraLarge * 2) // 96.dp
             )
 
-            Spacer(modifier = Modifier.height(Spacing.medium))
+            Spacer(modifier = Modifier.height(Dimensions.spacingMedium))
 
             // Title
             Text(
@@ -81,11 +77,11 @@ fun EmptyState(
 
             // Action button
             if (action != null && actionLabel != null) {
-                Spacer(modifier = Modifier.height(Spacing.large))
+                Spacer(modifier = Modifier.height(Dimensions.spacingLarge))
                 Button(
                     onClick = action,
                     modifier = Modifier.fillMaxWidth(0.6f),
-                    shape = ComponentShapes.ButtonRounded
+                    shape = ComponentShapes.Button
                 ) {
                     Text(actionLabel)
                 }
@@ -108,7 +104,7 @@ private fun AnimatedIcon(
         initialValue = 1f,
         targetValue = 1.05f,
         animationSpec = infiniteRepeatable(
-            animation = tween(2000, easing = EaseInOutCubic),
+            animation = tween(2000, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "scale"
@@ -236,7 +232,7 @@ fun ProductCardSkeleton(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(Padding.card)
+                .padding(Dimensions.cardPadding)
         ) {
             // Title skeleton
             Box(
@@ -247,7 +243,7 @@ fun ProductCardSkeleton(
                     .shimmerEffect()
             )
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(Dimensions.spacingMedium))
 
             // Price skeleton
             Row(
@@ -266,13 +262,13 @@ fun ProductCardSkeleton(
                 Box(
                     modifier = Modifier
                         .width(60.dp)
-                        .height(32.dp)
+                        .height(Dimensions.buttonHeight)
                         .clip(ComponentShapes.Button)
                         .shimmerEffect()
                 )
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(Dimensions.spacingMedium))
 
             // Store rows skeleton
             repeat(2) {
@@ -280,11 +276,11 @@ fun ProductCardSkeleton(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(48.dp)
-                        .clip(ComponentShapes.ListItem)
+                        .clip(ComponentShapes.Card)
                         .shimmerEffect()
                 )
                 if (it < 1) {
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(Dimensions.spacingSmall))
                 }
             }
         }
@@ -301,7 +297,7 @@ fun LoadingList(
 ) {
     Column(
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(Spacing.medium)
+        verticalArrangement = Arrangement.spacedBy(Dimensions.spacingMedium)
     ) {
         repeat(itemCount) {
             ProductCardSkeleton()
@@ -320,10 +316,10 @@ fun LoadingIndicator(
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(Spacing.medium)
+        verticalArrangement = Arrangement.spacedBy(Dimensions.spacingMedium)
     ) {
         CircularProgressIndicator(
-            modifier = Modifier.size(Size.progressIndicator),
+            modifier = Modifier.size(48.dp),
             color = MaterialTheme.colorScheme.primary,
             strokeWidth = 3.dp
         )
@@ -368,21 +364,21 @@ fun RefreshingIndicator(
         Surface(
             modifier = Modifier.fillMaxWidth(),
             color = MaterialTheme.colorScheme.primary,
-            shadowElevation = Elevation.Level2
+            shadowElevation = Dimensions.elevationSmall
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(Padding.medium),
+                    .padding(Dimensions.paddingMedium),
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 CircularProgressIndicator(
-                    modifier = Modifier.size(16.dp),
+                    modifier = Modifier.size(Dimensions.iconSizeSmall),
                     color = MaterialTheme.colorScheme.onPrimary,
                     strokeWidth = 2.dp
                 )
-                Spacer(modifier = Modifier.width(Spacing.small))
+                Spacer(modifier = Modifier.width(Dimensions.spacingSmall))
                 Text(
                     text = "Updating prices...",
                     style = MaterialTheme.typography.bodyMedium,

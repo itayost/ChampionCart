@@ -21,6 +21,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.championcart.data.api.PriceApi
 import com.example.championcart.data.local.preferences.TokenManager
 import com.example.championcart.di.NetworkModule
+import com.example.championcart.ui.theme.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -125,12 +126,12 @@ fun CitySelectionDialog(
             modifier = Modifier
                 .fillMaxWidth()
                 .fillMaxHeight(0.8f),
-            shape = MaterialTheme.shapes.large
+            shape = ComponentShapes.Dialog
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(16.dp)
+                    .padding(Dimensions.paddingMedium)
             ) {
                 // Header
                 Row(
@@ -140,9 +141,10 @@ fun CitySelectionDialog(
                     Icon(
                         imageVector = Icons.Default.LocationOn,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(Dimensions.iconSizeMedium)
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(Dimensions.spacingSmall))
                     Text(
                         text = "Select City",
                         style = MaterialTheme.typography.headlineSmall,
@@ -150,7 +152,7 @@ fun CitySelectionDialog(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(Dimensions.spacingMedium))
 
                 // Search field
                 OutlinedTextField(
@@ -161,10 +163,11 @@ fun CitySelectionDialog(
                     leadingIcon = {
                         Icon(Icons.Default.Search, contentDescription = null)
                     },
-                    singleLine = true
+                    singleLine = true,
+                    shape = ComponentShapes.TextField
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(Dimensions.spacingMedium))
 
                 // Error message
                 uiState.error?.let { error ->
@@ -172,15 +175,16 @@ fun CitySelectionDialog(
                         modifier = Modifier.fillMaxWidth(),
                         colors = CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.errorContainer
-                        )
+                        ),
+                        shape = ComponentShapes.Card
                     ) {
                         Text(
                             text = error,
-                            modifier = Modifier.padding(12.dp),
+                            modifier = Modifier.padding(Dimensions.paddingMedium),
                             color = MaterialTheme.colorScheme.onErrorContainer
                         )
                     }
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(Dimensions.spacingSmall))
                 }
 
                 // Cities list
@@ -198,7 +202,7 @@ fun CitySelectionDialog(
                         modifier = Modifier
                             .fillMaxWidth()
                             .weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                        verticalArrangement = Arrangement.spacedBy(Dimensions.spacingExtraSmall)
                     ) {
                         items(uiState.filteredCities) { city ->
                             CityItem(
@@ -218,7 +222,7 @@ fun CitySelectionDialog(
                                     text = "No cities found",
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(16.dp),
+                                        .padding(Dimensions.paddingMedium),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -231,7 +235,7 @@ fun CitySelectionDialog(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 16.dp),
+                        .padding(top = Dimensions.paddingMedium),
                     horizontalArrangement = Arrangement.End
                 ) {
                     TextButton(onClick = onDismiss) {
@@ -258,12 +262,15 @@ private fun CityItem(
         } else {
             MaterialTheme.colorScheme.surface
         },
-        shape = MaterialTheme.shapes.small
+        shape = ComponentShapes.Small
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .padding(
+                    horizontal = Dimensions.paddingMedium,
+                    vertical = Dimensions.paddingSmall
+                ),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -278,7 +285,7 @@ private fun CityItem(
                     imageVector = Icons.Default.Check,
                     contentDescription = "Selected",
                     tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(Dimensions.iconSizeMedium)
                 )
             }
         }

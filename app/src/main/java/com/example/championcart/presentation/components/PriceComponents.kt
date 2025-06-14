@@ -12,15 +12,40 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.championcart.presentation.theme.*
-import com.example.championcart.ui.theme.AppTextStyles
-import com.example.championcart.ui.theme.ComponentShapes
-import com.example.championcart.ui.theme.Padding
-import com.example.championcart.ui.theme.extendedColors
+import com.example.championcart.ui.theme.*
+
+/**
+ * Helper function to get store brand color
+ */
+@Composable
+private fun getStoreChainColor(storeName: String): Color {
+    val colors = MaterialTheme.extendedColors
+    return when (storeName.lowercase()) {
+        "shufersal" -> colors.shufersal
+        "victory" -> colors.victory
+        "rami levy" -> colors.ramiLevy
+        "mega" -> colors.mega
+        else -> MaterialTheme.colorScheme.primary
+    }
+}
+
+/**
+ * Helper function to get store display name
+ */
+private fun getStoreDisplayName(storeName: String): String {
+    return when (storeName.lowercase()) {
+        "shufersal" -> "Shufersal"
+        "victory" -> "Victory"
+        "rami levy" -> "Rami Levy"
+        "mega" -> "Mega"
+        else -> storeName
+    }
+}
 
 /**
  * Main price comparison card showing best/worst prices with savings
@@ -44,12 +69,12 @@ fun PriceComparisonCard(
         colors = CardDefaults.cardColors(
             containerColor = colors.savings.copy(alpha = 0.08f)
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = Elevation.Card)
+        elevation = CardDefaults.cardElevation(defaultElevation = Dimensions.elevationMedium)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(Padding.card)
+                .padding(Dimensions.cardPadding)
         ) {
             // Header
             Row(
@@ -64,14 +89,14 @@ fun PriceComparisonCard(
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(Dimensions.spacingExtraSmall))
                     Text(
                         text = "₪${String.format("%.2f", bestPrice)}",
                         style = AppTextStyles.priceDisplayLarge,
                         color = colors.priceLow,
                         fontSize = 32.sp
                     )
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(Dimensions.spacingExtraSmall))
                     Surface(
                         onClick = { onBestStoreClick?.invoke() },
                         enabled = onBestStoreClick != null,
@@ -82,7 +107,7 @@ fun PriceComparisonCard(
                             text = getStoreDisplayName(bestStore),
                             style = AppTextStyles.storeName,
                             color = getStoreChainColor(bestStore),
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                            modifier = Modifier.padding(horizontal = Dimensions.paddingMedium, vertical = Dimensions.paddingExtraSmall)
                         )
                     }
                 }
@@ -98,9 +123,9 @@ fun PriceComparisonCard(
 
             // Comparison with worst price
             if (worstStore != null && savings > 0) {
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(Dimensions.spacingMedium))
                 HorizontalDivider(
-                    modifier = Modifier.padding(vertical = 8.dp),
+                    modifier = Modifier.padding(vertical = Dimensions.spacingSmall),
                     color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
                 )
 
@@ -148,12 +173,12 @@ fun SavingsBadge(
 
     Surface(
         modifier = modifier.scale(scale),
-        shape = ComponentShapes.DealBadge,
+        shape = ComponentShapes.Badge,
         color = MaterialTheme.extendedColors.bestDeal,
-        shadowElevation = Elevation.Level3
+        shadowElevation = Dimensions.elevationLarge
     ) {
         Column(
-            modifier = Modifier.padding(12.dp),
+            modifier = Modifier.padding(Dimensions.paddingMedium),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
@@ -200,7 +225,7 @@ fun StorePriceRow(
         onClick = { onClick?.invoke() },
         enabled = onClick != null,
         modifier = modifier.fillMaxWidth(),
-        shape = ComponentShapes.ListItem,
+        shape = ComponentShapes.Card,
         color = if (isLowest) {
             MaterialTheme.extendedColors.savings.copy(alpha = 0.08f)
         } else {
@@ -210,14 +235,14 @@ fun StorePriceRow(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .padding(horizontal = Dimensions.paddingMedium, vertical = Dimensions.paddingSmall),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Store info
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingMedium)
             ) {
                 // Store color indicator
                 Box(
@@ -230,7 +255,7 @@ fun StorePriceRow(
                 Column {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingSmall)
                     ) {
                         Text(
                             text = getStoreDisplayName(storeName).uppercase(),
@@ -247,7 +272,7 @@ fun StorePriceRow(
                                 Text(
                                     text = "BEST",
                                     style = AppTextStyles.badgeText,
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                    modifier = Modifier.padding(horizontal = Dimensions.paddingSmall, vertical = 2.dp),
                                     color = MaterialTheme.colorScheme.onPrimary
                                 )
                             }
@@ -283,7 +308,7 @@ fun PriceTag(
 
     Row(
         modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingSmall),
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Current price
@@ -316,7 +341,7 @@ fun PriceTag(
                 Text(
                     text = "-$discountPercent%",
                     style = AppTextStyles.badgeText,
-                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                    modifier = Modifier.padding(horizontal = Dimensions.paddingSmall, vertical = 2.dp),
                     fontWeight = FontWeight.Bold
                 )
             }
@@ -337,7 +362,7 @@ fun PriceIndicator(
 
     Row(
         modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingExtraSmall),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
