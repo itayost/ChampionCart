@@ -1,274 +1,283 @@
 package com.example.championcart.presentation.screens.cart
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.championcart.data.local.CartManager
 import com.example.championcart.data.local.preferences.TokenManager
-import com.example.championcart.data.repository.PriceRepositoryImpl
-import com.example.championcart.domain.models.CheapestCartResult
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
+import com.example.championcart.domain.models.*
+import com.example.championcart.domain.repository.CartRepository
+import com.example.championcart.domain.repository.PriceRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-data class CartUiState(
-    val cartItems: List<com.example.championcart.data.local.CartItem> = emptyList(),
-    val totalItems: Int = 0,
-    val estimatedTotal: Double = 0.0,
-    val isLoading: Boolean = false,
-    val isAnalyzing: Boolean = false,
+data class CartState(
+    val cartItems: List<CartItem> = emptyList(),
+    val totalPrice: Double = 0.0,
+    val selectedStore: Store? = null,
     val cheapestCartResult: CheapestCartResult? = null,
+    val isLoading: Boolean = false,
     val error: String? = null,
-    val selectedCity: String = "Tel Aviv",
-    val isSaveEnabled: Boolean = false,
-    val analyzeProgress: Float = 0f // For progress animation
+    val showSavingsAnimation: Boolean = false,
+    val selectedCity: String = "Tel Aviv"
 )
 
-class CartViewModel(
-    private val cartManager: CartManager,
-    private val tokenManager: TokenManager? = null,
-    private val priceRepository: PriceRepositoryImpl? = null
+@HiltViewModel
+class CartViewModel @Inject constructor(
+    private val cartRepository: CartRepository,
+    private val priceRepository: PriceRepository,
+    private val tokenManager: TokenManager
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(CartUiState())
-    val uiState: StateFlow<CartUiState> = _uiState.asStateFlow()
+    private val _state = MutableStateFlow(CartState())
+    val state: StateFlow<CartState> = _state.asStateFlow()
 
     init {
-        // Load selected city
-        val city = tokenManager?.getSelectedCity() ?: "Tel Aviv"
-        _uiState.value = _uiState.value.copy(selectedCity = city)
+        loadCart()
+        observeCartChanges()
+    }
 
-        // Check if user is logged in for save functionality
-        val isLoggedIn = tokenManager?.getToken() != null
-        _uiState.value = _uiState.value.copy(isSaveEnabled = isLoggedIn)
-
-        // Observe cart items
+    private fun loadCart() {
         viewModelScope.launch {
-            cartManager.cartItems.collect { items ->
-                val total = items.sumOf { item ->
-                    (item.selectedPrice ?: 0.0) * item.quantity
-                }
+            // Load cart items from local storage
+            val items = getMockCartItems() // In real app, load from repository
+            updateCartState(items)
+        }
+    }
 
-                _uiState.update { currentState ->
-                    currentState.copy(
-                        cartItems = items,
-                        totalItems = items.sumOf { it.quantity },
-                        estimatedTotal = total,
-                        cheapestCartResult = null, // Reset when cart changes
-                        error = null
-                    )
+    private fun observeCartChanges() {
+        // In real app, observe cart repository for changes
+        viewModelScope.launch {
+            state.map { it.cartItems }
+                .distinctUntilChanged()
+                .collect { items ->
+                    calculateTotalPrice(items)
+                }
+        }
+    }
+
+    private fun updateCartState(items: List<CartItem>) {
+        _state.update { currentState ->
+            currentState.copy(
+                cartItems = items,
+                totalPrice = items.sumOf { it.price * it.quantity }
+            )
+        }
+    }
+
+    private fun calculateTotalPrice(items: List<CartItem>) {
+        val total = items.sumOf { it.price * it.quantity }
+        _state.update { it.copy(totalPrice = total) }
+    }
+
+    fun updateQuantity(itemId: String, newQuantity: Int) {
+        viewModelScope.launch {
+            val updatedItems = _state.value.cartItems.map { item ->
+                if (item.id == itemId) {
+                    item.copy(quantity = newQuantity)
+                } else {
+                    item
                 }
             }
+            updateCartState(updatedItems)
         }
     }
 
-    fun updateQuantity(itemCode: String, quantity: Int) {
-        Log.d("CartViewModel", "Updating quantity for $itemCode to $quantity")
+    fun removeItem(itemId: String) {
+        viewModelScope.launch {
+            val updatedItems = _state.value.cartItems.filter { it.id != itemId }
+            updateCartState(updatedItems)
 
-        if (quantity <= 0) {
-            removeFromCart(itemCode)
-        } else {
-            cartManager.updateQuantity(itemCode, quantity)
+            // Reset cheapest result if cart changed
+            _state.update { it.copy(cheapestCartResult = null, selectedStore = null) }
         }
-    }
-
-    fun removeFromCart(itemCode: String) {
-        Log.d("CartViewModel", "Removing item $itemCode from cart")
-        cartManager.removeFromCart(itemCode)
-
-        // Clear error when item is removed
-        _uiState.update { it.copy(error = null) }
     }
 
     fun clearCart() {
-        Log.d("CartViewModel", "Clearing entire cart")
-        cartManager.clearCart()
-
-        _uiState.update { currentState ->
-            currentState.copy(
-                error = null,
-                cheapestCartResult = null,
-                analyzeProgress = 0f
-            )
+        viewModelScope.launch {
+            updateCartState(emptyList())
+            _state.update {
+                it.copy(
+                    cheapestCartResult = null,
+                    selectedStore = null,
+                    showSavingsAnimation = false
+                )
+            }
         }
     }
 
     fun findCheapestStore() {
-        if (_uiState.value.cartItems.isEmpty()) {
-            _uiState.update { currentState ->
-                currentState.copy(
-                    error = "Your cart is empty. Add some items first!"
-                )
-            }
-            return
-        }
-
-        if (_uiState.value.isAnalyzing) {
-            Log.d("CartViewModel", "Already analyzing, skipping...")
-            return
-        }
-
         viewModelScope.launch {
-            _uiState.update { currentState ->
-                currentState.copy(
-                    isAnalyzing = true,
-                    error = null,
-                    analyzeProgress = 0f
-                )
-            }
-
-            // Simulate progress for better UX
-            launch {
-                var progress = 0f
-                while (progress < 0.9f && _uiState.value.isAnalyzing) {
-                    delay(100)
-                    progress += 0.1f
-                    _uiState.update { it.copy(analyzeProgress = progress) }
-                }
-            }
+            _state.update { it.copy(isLoading = true, error = null) }
 
             try {
-                val cartProducts = _uiState.value.cartItems.map { cartItem ->
-                    com.example.championcart.domain.models.CartProduct(
-                        itemName = cartItem.itemName,
-                        quantity = cartItem.quantity
-                    )
-                }
+                // Simulate API call
+                delay(1500)
 
-                Log.d("CartViewModel", "Finding cheapest store for ${cartProducts.size} items in ${_uiState.value.selectedCity}")
-
-                val result = priceRepository?.findCheapestCart(
-                    city = _uiState.value.selectedCity,
-                    items = cartProducts
-                )
-
-                result?.fold(
-                    onSuccess = { cheapestResult ->
-                        Log.d("CartViewModel", "Found cheapest store: ${cheapestResult.bestStore.chainName}")
-
-                        // Update cart items with best prices
-                        updateCartWithBestPrices(cheapestResult)
-
-                        _uiState.update { currentState ->
-                            currentState.copy(
-                                isAnalyzing = false,
-                                cheapestCartResult = cheapestResult,
-                                error = null,
-                                analyzeProgress = 1f
-                            )
-                        }
-                    },
-                    onFailure = { exception ->
-                        Log.e("CartViewModel", "Failed to find cheapest store", exception)
-                        val errorMessage = getErrorMessage(exception)
-
-                        _uiState.update { currentState ->
-                            currentState.copy(
-                                isAnalyzing = false,
-                                error = errorMessage,
-                                analyzeProgress = 0f
-                            )
-                        }
-                    }
-                ) ?: run {
-                    _uiState.update { currentState ->
-                        currentState.copy(
-                            isAnalyzing = false,
-                            error = "Service not available. Please try again later.",
-                            analyzeProgress = 0f
+                val cartItems = _state.value.cartItems
+                if (cartItems.isEmpty()) {
+                    _state.update {
+                        it.copy(
+                            isLoading = false,
+                            error = "Cart is empty"
                         )
                     }
+                    return@launch
                 }
+
+                // Create mock result
+                val result = createMockCheapestResult(cartItems)
+
+                _state.update {
+                    it.copy(
+                        isLoading = false,
+                        cheapestCartResult = result,
+                        selectedStore = result.bestStore,
+                        showSavingsAnimation = true
+                    )
+                }
+
+                // Hide animation after delay
+                delay(3000)
+                _state.update { it.copy(showSavingsAnimation = false) }
+
             } catch (e: Exception) {
-                Log.e("CartViewModel", "Error in findCheapestStore", e)
-                _uiState.update { currentState ->
-                    currentState.copy(
-                        isAnalyzing = false,
-                        error = "Unexpected error: ${e.message}",
-                        analyzeProgress = 0f
+                _state.update {
+                    it.copy(
+                        isLoading = false,
+                        error = "Failed to find cheapest store: ${e.message}"
                     )
                 }
             }
         }
     }
 
-    private fun updateCartWithBestPrices(result: CheapestCartResult) {
-        // Update cart items with the best store and prices
-        result.itemsBreakdown.forEach { breakdown ->
-            val cartItem = _uiState.value.cartItems.find {
-                it.itemName == breakdown.itemName
-            }
-            cartItem?.let {
-                // This is a simplified update - in reality, you'd update the cart manager
-                Log.d("CartViewModel", "Best price for ${breakdown.itemName}: ₪${breakdown.price} at ${result.bestStore.chainName}")
-            }
-        }
+    fun selectStore(store: Store) {
+        _state.update { it.copy(selectedStore = store) }
     }
 
-    private fun getErrorMessage(exception: Throwable): String {
-        return when {
-            exception.message?.contains("No stores found") == true ->
-                "No stores found with all the items in your cart. Try removing some items or searching in a different city."
-            exception.message?.contains("Network") == true ->
-                "Network error. Please check your connection and try again."
-            exception.message?.contains("404") == true ->
-                "Some items in your cart were not found. Please update your cart."
-            exception.message?.contains("timeout") == true ->
-                "Request timed out. Please try again."
-            else ->
-                exception.message ?: "Failed to find cheapest store. Please try again."
-        }
+    // Mock data functions
+    private fun getMockCartItems(): List<CartItem> {
+        return listOf(
+            CartItem(
+                id = "1",
+                productId = "7290000042435",
+                productName = "חלב תנובה 3% 1 ליטר",
+                price = 6.90,
+                quantity = 2,
+                imageUrl = null
+            ),
+            CartItem(
+                id = "2",
+                productId = "7290000156378",
+                productName = "לחם אחיד פרוס",
+                price = 7.50,
+                quantity = 1,
+                imageUrl = null
+            ),
+            CartItem(
+                id = "3",
+                productId = "7290000234567",
+                productName = "ביצים L 12 יחידות",
+                price = 12.90,
+                quantity = 1,
+                imageUrl = null
+            ),
+            CartItem(
+                id = "4",
+                productId = "7290000345678",
+                productName = "במבה אוסם 80 גרם",
+                price = 4.50,
+                quantity = 3,
+                imageUrl = null
+            )
+        )
     }
 
-    fun onCityChange(city: String) {
-        Log.d("CartViewModel", "City changed to: $city")
+    private fun createMockCheapestResult(items: List<CartItem>): CheapestCartResult {
+        val bestStore = Store(
+            id = "shufersal-001",
+            chain = "Shufersal",
+            name = "Shufersal Deal",
+            address = "Dizengoff 123, Tel Aviv"
+        )
 
-        tokenManager?.saveSelectedCity(city)
-        _uiState.update { currentState ->
-            currentState.copy(
-                selectedCity = city,
-                cheapestCartResult = null, // Reset result when city changes
-                error = null,
-                analyzeProgress = 0f
+        val itemsBreakdown = items.map { item ->
+            CartItemBreakdown(
+                itemName = item.productName,
+                quantity = item.quantity,
+                price = item.price * 0.85, // 15% cheaper at best store
+                totalPrice = item.price * item.quantity * 0.85
             )
         }
-    }
 
-    fun dismissResult() {
-        Log.d("CartViewModel", "Dismissing cheapest cart result")
+        val totalPrice = itemsBreakdown.sumOf { it.totalPrice }
+        val originalTotal = items.sumOf { it.price * it.quantity }
+        val savings = originalTotal - totalPrice
+        val savingsPercentage = savings / originalTotal
 
-        _uiState.update { currentState ->
-            currentState.copy(
-                cheapestCartResult = null,
-                analyzeProgress = 0f
+        return CheapestCartResult(
+            bestStore = bestStore,
+            totalPrice = totalPrice,
+            savingsAmount = savings,
+            savingsPercentage = savingsPercentage,
+            itemsBreakdown = itemsBreakdown,
+            allStores = listOf(
+                bestStore,
+                Store(
+                    id = "victory-052",
+                    chain = "Victory",
+                    name = "Victory Supermarket",
+                    address = "Ibn Gabirol 89, Tel Aviv"
+                ),
+                Store(
+                    id = "shufersal-007",
+                    chain = "Shufersal",
+                    name = "Shufersal Express",
+                    address = "Rothschild 45, Tel Aviv"
+                )
             )
-        }
+        )
     }
 
-    fun dismissError() {
-        _uiState.update { currentState ->
-            currentState.copy(error = null)
-        }
+    fun clearError() {
+        _state.update { it.copy(error = null) }
     }
+}
 
-    // Helper function to check if cart can be saved
-    fun canSaveCart(): Boolean {
-        return _uiState.value.isSaveEnabled && _uiState.value.cartItems.isNotEmpty()
-    }
+// Cart item model
+data class CartItem(
+    val id: String,
+    val productId: String,
+    val productName: String,
+    val price: Double,
+    val quantity: Int,
+    val imageUrl: String? = null
+)
 
-    // Helper function to get cart summary for display
-    fun getCartSummary(): String {
-        val itemCount = _uiState.value.totalItems
-        val uniqueItems = _uiState.value.cartItems.size
+// Extension to domain model if needed
+fun CartItemBreakdown.toCartItem(): CartItem {
+    return CartItem(
+        id = "", // Generate ID
+        productId = "", // Would need product ID
+        productName = itemName,
+        price = price,
+        quantity = quantity
+    )
+}
 
-        return when {
-            itemCount == 0 -> "Empty cart"
-            itemCount == 1 -> "1 item"
-            uniqueItems == itemCount -> "$itemCount items"
-            else -> "$itemCount items ($uniqueItems unique)"
+// Alternative ViewModel without Hilt for testing
+class CartViewModelFactory(
+    private val cartRepository: CartRepository,
+    private val priceRepository: PriceRepository,
+    private val tokenManager: TokenManager
+) : androidx.lifecycle.ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(CartViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return CartViewModel(cartRepository, priceRepository, tokenManager) as T
         }
+        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }

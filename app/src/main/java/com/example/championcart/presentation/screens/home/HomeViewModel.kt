@@ -2,180 +2,238 @@ package com.example.championcart.presentation.screens.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.championcart.data.local.CartManager
 import com.example.championcart.data.local.preferences.TokenManager
-import com.example.championcart.data.repository.PriceRepositoryImpl
-import com.example.championcart.di.NetworkModule
-import com.example.championcart.domain.models.Product
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import com.example.championcart.domain.repository.PriceRepository
+import com.example.championcart.domain.repository.CartRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
+import javax.inject.Inject
 
-data class QuickStats(
-    val totalSaved: Double = 0.0,
-    val itemsTracked: Int = 0,
-    val cheapestStore: String = "Loading...",
-    val savingsPercentage: Double = 0.0
-)
-
-data class FeaturedDeal(
-    val productName: String,
-    val originalPrice: Double,
-    val discountedPrice: Double,
-    val storeName: String,
-    val savingsPercentage: Double,
-    val imageUrl: String? = null
-)
-
-data class RecentComparison(
-    val productName: String,
-    val lowestPrice: Double,
-    val highestPrice: Double,
-    val bestStore: String,
-    val comparedAt: String
-)
-
-data class HomeUiState(
-    val userName: String = "Guest",
-    val selectedCity: String = "Tel Aviv",
-    val quickStats: QuickStats = QuickStats(),
-    val featuredDeals: List<FeaturedDeal> = emptyList(),
-    val recentComparisons: List<RecentComparison> = emptyList(),
+data class HomeState(
+    val userName: String = "Champion",
+    val selectedCity: City? = null,
+    val availableCities: List<City> = emptyList(),
+    val recentSearches: List<String> = emptyList(),
+    val trendingItems: List<String> = emptyList(),
+    val totalSavings: Double = 0.0,
+    val savingsThisMonth: Double = 0.0,
+    val comparisonsCount: Int = 0,
+    val cartItemCount: Int = 0,
     val isLoading: Boolean = false,
-    val error: String? = null,
-    val itemsInCart: Int = 0,
-    val greeting: String = "Welcome back"
+    val error: String? = null
 )
 
-class HomeViewModel(
-    private val tokenManager: TokenManager,
-    private val cartManager: CartManager,
-    private val priceRepository: PriceRepositoryImpl = PriceRepositoryImpl(NetworkModule.priceApi)
+@HiltViewModel
+class HomeViewModel @Inject constructor(
+    private val priceRepository: PriceRepository,
+    private val cartRepository: CartRepository,
+    private val tokenManager: TokenManager
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(HomeUiState())
-    val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
+    private val _state = MutableStateFlow(HomeState())
+    val state: StateFlow<HomeState> = _state.asStateFlow()
 
     init {
         loadUserData()
-        observeCart()
-        loadDashboardData()
+        loadCities()
+        loadRecentActivity()
+        observeCartCount()
     }
 
     private fun loadUserData() {
-        val email = tokenManager.getUserEmail()
-        val city = tokenManager.getSelectedCity()
+        viewModelScope.launch {
+            // Get user email and create display name
+            val email = tokenManager.getUserEmail()
+            val userName = if (email != null) {
+                // Extract name from email or use first part
+                val namePart = email.substringBefore("@")
+                namePart.split(".", "_", "-")
+                    .firstOrNull()
+                    ?.replaceFirstChar { it.uppercase() }
+                    ?: "Champion"
+            } else {
+                "Guest"
+            }
 
-        val greeting = getGreeting()
-        val userName = email?.substringBefore("@") ?: "Guest"
+            _state.update { it.copy(userName = userName) }
 
-        _uiState.value = _uiState.value.copy(
-            userName = userName,
-            selectedCity = city,
-            greeting = greeting
+            // Load saved statistics from local storage
+            loadSavingsData()
+        }
+    }
+
+    private fun loadCities() {
+        viewModelScope.launch {
+            _state.update { it.copy(isLoading = true) }
+
+            try {
+                val result = priceRepository.getCitiesWithStores()
+
+                result.fold(
+                    onSuccess = { cityStrings ->
+                        // Parse the city strings to extract counts
+                        val cities = parseCities(cityStrings)
+
+                        _state.update {
+                            it.copy(
+                                availableCities = cities,
+                                isLoading = false,
+                                error = null
+                            )
+                        }
+
+                        // Auto-select Tel Aviv if available
+                        cities.find { it.name == "Tel Aviv" }?.let { telAviv ->
+                            selectCity(telAviv)
+                        }
+                    },
+                    onFailure = { error ->
+                        // Fallback to hardcoded cities if API fails
+                        val fallbackCities = getDefaultCities()
+                        _state.update {
+                            it.copy(
+                                availableCities = fallbackCities,
+                                isLoading = false,
+                                error = "Could not load cities. Using defaults."
+                            )
+                        }
+                    }
+                )
+            } catch (e: Exception) {
+                val fallbackCities = getDefaultCities()
+                _state.update {
+                    it.copy(
+                        availableCities = fallbackCities,
+                        isLoading = false
+                    )
+                }
+            }
+        }
+    }
+
+    private fun parseCities(cityStrings: List<String>): List<City> {
+        return cityStrings.mapNotNull { cityString ->
+            // Parse format: "Tel Aviv: 45 shufersal, 12 victory"
+            val parts = cityString.split(":")
+            if (parts.size == 2) {
+                val cityName = parts[0].trim()
+                val stores = parts[1].trim()
+
+                val shufersalCount = Regex("(\\d+)\\s*shufersal").find(stores)?.groupValues?.get(1)?.toIntOrNull() ?: 0
+                val victoryCount = Regex("(\\d+)\\s*victory").find(stores)?.groupValues?.get(1)?.toIntOrNull() ?: 0
+
+                City(
+                    name = cityName,
+                    emoji = getCityEmoji(cityName),
+                    storeCount = shufersalCount + victoryCount,
+                    shufersalCount = shufersalCount,
+                    victoryCount = victoryCount
+                )
+            } else {
+                null
+            }
+        }.sortedByDescending { it.storeCount }
+    }
+
+    private fun getCityEmoji(cityName: String): String {
+        return when (cityName.lowercase()) {
+            "tel aviv" -> "🏙️"
+            "jerusalem" -> "🕌"
+            "haifa" -> "⚓"
+            "beer sheva", "beer sheba" -> "🏜️"
+            "eilat" -> "🏖️"
+            "netanya" -> "🌊"
+            "rishon lezion" -> "🍊"
+            "petah tikva" -> "🌻"
+            "ashdod" -> "🚢"
+            "bnei brak" -> "📚"
+            "ramat gan" -> "💎"
+            "rehovot" -> "🔬"
+            else -> "📍"
+        }
+    }
+
+    private fun getDefaultCities(): List<City> {
+        return listOf(
+            City("Tel Aviv", "🏙️", 57, 45, 12),
+            City("Jerusalem", "🕌", 40, 32, 8),
+            City("Haifa", "⚓", 34, 28, 6),
+            City("Beer Sheva", "🏜️", 19, 15, 4),
+            City("Netanya", "🌊", 23, 18, 5),
+            City("Rishon LeZion", "🍊", 21, 16, 5),
+            City("Petah Tikva", "🌻", 18, 14, 4),
+            City("Ashdod", "🚢", 17, 13, 4)
         )
     }
 
-    private fun getGreeting(): String {
-        val hour = LocalDateTime.now().hour
-        return when (hour) {
-            in 5..11 -> "Good morning"
-            in 12..16 -> "Good afternoon"
-            in 17..21 -> "Good evening"
-            else -> "Good night"
-        }
-    }
-
-    private fun observeCart() {
+    private fun loadRecentActivity() {
         viewModelScope.launch {
-            cartManager.cartCount.collect { count ->
-                _uiState.value = _uiState.value.copy(itemsInCart = count)
-            }
-        }
-    }
+            // Load from local storage or preferences
+            val recentSearches = listOf("חלב", "לחם", "ביצים", "במבה", "קפה")
+            val trendingItems = listOf("חלב 3%", "במבה", "שמן זית")
 
-    private fun loadDashboardData() {
-        viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true)
-
-            try {
-                // Load quick stats (mock data for now)
-                val quickStats = QuickStats(
-                    totalSaved = 234.50,
-                    itemsTracked = 47,
-                    cheapestStore = "Rami Levy",
-                    savingsPercentage = 18.5
-                )
-
-                // Load featured deals (mock data)
-                val featuredDeals = listOf(
-                    FeaturedDeal(
-                        productName = "Tnuva Milk 3%",
-                        originalPrice = 7.90,
-                        discountedPrice = 5.90,
-                        storeName = "Shufersal",
-                        savingsPercentage = 25.3
-                    ),
-                    FeaturedDeal(
-                        productName = "Osem Bamba 80g",
-                        originalPrice = 5.90,
-                        discountedPrice = 3.90,
-                        storeName = "Victory",
-                        savingsPercentage = 33.9
-                    ),
-                    FeaturedDeal(
-                        productName = "Coca Cola 1.5L",
-                        originalPrice = 8.90,
-                        discountedPrice = 6.90,
-                        storeName = "Rami Levy",
-                        savingsPercentage = 22.5
-                    )
-                )
-
-                // Load recent comparisons (mock data)
-                val recentComparisons = listOf(
-                    RecentComparison(
-                        productName = "White Bread",
-                        lowestPrice = 5.90,
-                        highestPrice = 8.90,
-                        bestStore = "Rami Levy",
-                        comparedAt = "2 hours ago"
-                    ),
-                    RecentComparison(
-                        productName = "Eggs 12 pack",
-                        lowestPrice = 12.90,
-                        highestPrice = 15.90,
-                        bestStore = "Victory",
-                        comparedAt = "Yesterday"
-                    )
-                )
-
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    quickStats = quickStats,
-                    featuredDeals = featuredDeals,
-                    recentComparisons = recentComparisons
-                )
-
-            } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    error = e.message
+            _state.update {
+                it.copy(
+                    recentSearches = recentSearches,
+                    trendingItems = trendingItems
                 )
             }
         }
     }
 
-    fun onCityChange(city: String) {
-        tokenManager.saveSelectedCity(city)
-        _uiState.value = _uiState.value.copy(selectedCity = city)
-        loadDashboardData() // Reload data for new city
+    private fun loadSavingsData() {
+        viewModelScope.launch {
+            // In a real app, this would come from local database or API
+            // For now, using mock data
+            _state.update {
+                it.copy(
+                    totalSavings = 256.78,
+                    savingsThisMonth = 45.32,
+                    comparisonsCount = 23
+                )
+            }
+        }
     }
 
-    fun refresh() {
-        loadDashboardData()
+    private fun observeCartCount() {
+        viewModelScope.launch {
+            // In real app, observe cart repository
+            // For now, mock data
+            _state.update { it.copy(cartItemCount = 5) }
+        }
+    }
+
+    fun selectCity(city: City) {
+        _state.update {
+            it.copy(
+                selectedCity = city,
+                error = null
+            )
+        }
+
+        // Save selected city to preferences
+        viewModelScope.launch {
+            // tokenManager.saveSelectedCity(city.name)
+        }
+    }
+
+    fun clearError() {
+        _state.update { it.copy(error = null) }
+    }
+}
+
+// Alternative ViewModel without Hilt for testing
+class HomeViewModelFactory(
+    private val priceRepository: PriceRepository,
+    private val cartRepository: CartRepository,
+    private val tokenManager: TokenManager
+) : androidx.lifecycle.ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(HomeViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return HomeViewModel(priceRepository, cartRepository, tokenManager) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }
