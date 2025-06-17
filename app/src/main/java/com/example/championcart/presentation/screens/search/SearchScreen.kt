@@ -60,7 +60,12 @@ fun SearchScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(
-                brush = MaterialTheme.extendedColors.backgroundGradient
+                brush = Brush.verticalGradient(
+                    colors = listOf(
+                        MaterialTheme.extendedColors.electricMint.copy(alpha = 0.02f),
+                        MaterialTheme.colorScheme.surface
+                    )
+                )
             )
     ) {
         // Search header with input and filters
@@ -86,9 +91,9 @@ fun SearchScreen(
                 LoadingContent()
             }
 
-            state.error != null -> {
+            !state.error.isNullOrEmpty() -> {
                 ErrorState(
-                    message = state.error,
+                    message = state.error!!,
                     onRetry = viewModel::retry,
                     modifier = Modifier
                         .fillMaxSize()
@@ -154,7 +159,7 @@ fun SearchHeader(
             placeholder = {
                 Text(
                     "Search for products...",
-                    style = AppTextStyles.searchPlaceholder
+                    style = AppTextStyles.inputHint
                 )
             },
             leadingIcon = {
@@ -184,97 +189,38 @@ fun SearchHeader(
                 unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
             ),
             singleLine = true,
-            textStyle = AppTextStyles.searchInput
+            textStyle = AppTextStyles.inputText
         )
 
         Spacer(modifier = Modifier.height(Dimensions.spacingMedium))
 
-        // Filter row
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingMedium),
-            verticalAlignment = Alignment.CenterVertically
+        // Filter chips
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingSmall)
         ) {
-            // City selector chip
-            FilterChip(
-                onClick = { /* TODO: Implement city selection dialog */ },
-                label = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.LocationOn,
-                            contentDescription = null,
-                            modifier = Modifier.size(Dimensions.iconSizeSmall)
-                        )
-                        Spacer(modifier = Modifier.width(Dimensions.spacingExtraSmall))
-                        Text(
-                            selectedCity,
-                            style = AppTextStyles.chipText
-                        )
-                    }
-                },
-                selected = false,
-                shape = ComponentShapes.Chip,
-                colors = FilterChipDefaults.filterChipColors(
-                    containerColor = MaterialTheme.extendedColors.glass,
-                    labelColor = MaterialTheme.colorScheme.onSurface
-                ),
-                border = FilterChipDefaults.filterChipBorder(
-                    borderColor = MaterialTheme.extendedColors.glassBorder
+            item {
+                FilterChip(
+                    onClick = onToggleIdenticalOnly,
+                    label = { Text("Identical Products", style = AppTextStyles.chip) },
+                    selected = showIdenticalOnly,
+                    enabled = true
                 )
-            )
+            }
 
-            // Identical products only toggle
-            FilterChip(
-                onClick = onToggleIdenticalOnly,
-                label = {
-                    Text(
-                        "Cross-chain only",
-                        style = AppTextStyles.chipText
-                    )
-                },
-                selected = showIdenticalOnly,
-                shape = ComponentShapes.Chip,
-                colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = MaterialTheme.extendedColors.electricMint,
-                    selectedLabelColor = Color.White,
-                    containerColor = MaterialTheme.extendedColors.glass,
-                    labelColor = MaterialTheme.colorScheme.onSurface
-                ),
-                leadingIcon = if (showIdenticalOnly) {
-                    {
+            item {
+                FilterChip(
+                    onClick = { /* City selection */ },
+                    label = { Text(selectedCity, style = AppTextStyles.chip) },
+                    selected = false,
+                    enabled = true,
+                    leadingIcon = {
                         Icon(
-                            imageVector = Icons.Default.Check,
+                            Icons.Default.LocationOn,
                             contentDescription = null,
-                            modifier = Modifier.size(Dimensions.iconSizeSmall)
+                            modifier = Modifier.size(16.dp)
                         )
                     }
-                } else null
-            )
-
-            Spacer(modifier = Modifier.weight(1f))
-
-            // Search button
-            Button(
-                onClick = onSearch,
-                enabled = searchQuery.isNotEmpty() && !isLoading,
-                modifier = Modifier.height(Dimensions.buttonHeightSmall),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.extendedColors.electricMint
-                ),
-                shape = ComponentShapes.ButtonSmall
-            ) {
-                if (isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(Dimensions.iconSizeSmall),
-                        strokeWidth = Dimensions.borderThin,
-                        color = Color.White
-                    )
-                } else {
-                    Text(
-                        "Search",
-                        style = AppTextStyles.buttonTextSmall
-                    )
-                }
+                )
             }
         }
     }
@@ -287,16 +233,18 @@ fun SearchSuggestions(
     onSearchSuggestion: (String) -> Unit
 ) {
     LazyColumn(
-        modifier = Modifier.padding(horizontal = Dimensions.paddingMedium),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(Dimensions.paddingMedium),
         verticalArrangement = Arrangement.spacedBy(Dimensions.spacingLarge)
     ) {
         if (recentSearches.isNotEmpty()) {
             item {
                 SuggestionSection(
                     title = "Recent Searches",
+                    icon = Icons.Default.History,
                     suggestions = recentSearches,
-                    onSuggestionClick = onSearchSuggestion,
-                    icon = Icons.Default.History
+                    onSuggestionClick = onSearchSuggestion
                 )
             }
         }
@@ -305,9 +253,9 @@ fun SearchSuggestions(
             item {
                 SuggestionSection(
                     title = "Popular Searches",
+                    icon = Icons.Default.TrendingUp,
                     suggestions = popularSearches,
-                    onSuggestionClick = onSearchSuggestion,
-                    icon = Icons.Default.TrendingUp
+                    onSuggestionClick = onSearchSuggestion
                 )
             }
         }
@@ -317,9 +265,9 @@ fun SearchSuggestions(
 @Composable
 fun SuggestionSection(
     title: String,
+    icon: ImageVector,
     suggestions: List<String>,
-    onSuggestionClick: (String) -> Unit,
-    icon: ImageVector
+    onSuggestionClick: (String) -> Unit
 ) {
     Column {
         Row(
@@ -335,7 +283,7 @@ fun SuggestionSection(
             Spacer(modifier = Modifier.width(Dimensions.spacingSmall))
             Text(
                 text = title,
-                style = AppTextStyles.sectionHeader
+                style = AppTextStyles.storeNameLarge
             )
         }
 
@@ -362,10 +310,11 @@ fun SuggestionChip(
         label = {
             Text(
                 text,
-                style = AppTextStyles.chipText
+                style = AppTextStyles.chip
             )
         },
         selected = false,
+        enabled = true,
         shape = ComponentShapes.Chip,
         colors = FilterChipDefaults.filterChipColors(
             containerColor = MaterialTheme.extendedColors.glass,
@@ -427,31 +376,24 @@ fun ResultsHeader(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = "$resultCount products found",
-            style = AppTextStyles.resultCount
+            text = "$resultCount results",
+            style = AppTextStyles.caption,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
         Box {
             FilterChip(
                 onClick = { showSortMenu = true },
-                label = {
-                    Text(
-                        "Sort: ${sortOption.displayName}",
-                        style = AppTextStyles.chipText
-                    )
-                },
+                label = { Text(sortOption.displayName, style = AppTextStyles.chip) },
                 selected = false,
+                enabled = true,
                 trailingIcon = {
                     Icon(
-                        imageVector = Icons.Default.KeyboardArrowDown,
+                        Icons.Default.ExpandMore,
                         contentDescription = null,
-                        modifier = Modifier.size(Dimensions.iconSizeSmall)
+                        modifier = Modifier.size(16.dp)
                     )
-                },
-                colors = FilterChipDefaults.filterChipColors(
-                    containerColor = MaterialTheme.extendedColors.glass,
-                    labelColor = MaterialTheme.colorScheme.onSurface
-                )
+                }
             )
 
             DropdownMenu(
@@ -463,22 +405,13 @@ fun ResultsHeader(
                         text = {
                             Text(
                                 option.displayName,
-                                style = AppTextStyles.dropdownItem
+                                style = AppTextStyles.hebrewBody
                             )
                         },
                         onClick = {
                             onSortChange(option)
                             showSortMenu = false
-                        },
-                        leadingIcon = if (option == sortOption) {
-                            {
-                                Icon(
-                                    imageVector = Icons.Default.Check,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(Dimensions.iconSizeSmall)
-                                )
-                            }
-                        } else null
+                        }
                     )
                 }
             }
@@ -492,151 +425,132 @@ fun ProductCard(
     onAddToCart: () -> Unit
 ) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .glassEffect(),
+        modifier = Modifier.fillMaxWidth(),
         shape = ComponentShapes.Card,
         colors = CardDefaults.cardColors(
-            containerColor = Color.Transparent // glassEffect handles background
+            containerColor = MaterialTheme.extendedColors.glassFrosted
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = Dimensions.elevationMedium)
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = Dimensions.elevationMedium
+        )
     ) {
         Column(
-            modifier = Modifier.padding(Dimensions.paddingMedium)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(Dimensions.paddingMedium)
         ) {
-            // Product header
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = product.itemName,
-                        style = AppTextStyles.productTitle,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
+            // Product name
+            Text(
+                text = product.itemName,
+                style = AppTextStyles.productName,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
 
-                    if (product.weight != null && product.unit != null) {
-                        Text(
-                            text = "${product.weight} ${product.unit}",
-                            style = AppTextStyles.productDetails
-                        )
-                    }
-                }
+            Spacer(modifier = Modifier.height(Dimensions.spacingSmall))
 
-                Button(
-                    onClick = onAddToCart,
-                    modifier = Modifier.height(Dimensions.buttonHeightSmall),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.extendedColors.electricMint
-                    ),
-                    shape = ComponentShapes.ButtonSmall
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = "Add to cart",
-                        modifier = Modifier.size(Dimensions.iconSizeSmall)
-                    )
-                    Spacer(modifier = Modifier.width(Dimensions.spacingExtraSmall))
-                    Text(
-                        "Add",
-                        style = AppTextStyles.buttonTextSmall
-                    )
-                }
+            // Product details
+            if (product.unit != null || product.weight != null) {
+                Text(
+                    text = buildString {
+                        product.unit?.let { append(it) }
+                        if (product.unit != null && product.weight != null) append(" • ")
+                        product.weight?.let { append("${it}g") }
+                    },
+                    style = AppTextStyles.caption,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(Dimensions.spacingMedium))
             }
 
-            Spacer(modifier = Modifier.height(Dimensions.spacingMedium))
-
             // Price comparison
-            PriceComparison(
-                storePrices = product.prices,
-                savings = product.savings
-            )
+            if (product.prices.isNotEmpty()) {
+                PriceComparison(
+                    prices = product.prices,
+                    savings = product.savings,
+                    onAddToCart = onAddToCart
+                )
+            }
         }
     }
 }
 
 @Composable
 fun PriceComparison(
-    storePrices: List<StorePrice>,
-    savings: Double
+    prices: List<StorePrice>,
+    savings: Double,
+    onAddToCart: () -> Unit
 ) {
+    val bestPrice = prices.minByOrNull { it.price }
+    val worstPrice = prices.maxByOrNull { it.price }
+
     Column {
-        // Savings badge if applicable
-        if (savings > 0) {
+        // Best price row
+        bestPrice?.let { price ->
             Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(bottom = Dimensions.spacingSmall)
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Surface(
-                    color = MaterialTheme.extendedColors.successGreen,
-                    shape = ComponentShapes.Badge
-                ) {
+                Column {
                     Text(
-                        text = "Save ₪${String.format("%.2f", savings)}",
-                        style = AppTextStyles.savingsBadge,
-                        color = Color.White,
-                        modifier = Modifier.padding(
-                            horizontal = Dimensions.paddingSmall,
-                            vertical = Dimensions.paddingExtraSmall
-                        )
+                        text = price.chain,
+                        style = AppTextStyles.buttonSmall,
+                        color = MaterialTheme.extendedColors.electricMint,
+                        fontWeight = FontWeight.Bold
                     )
+                    if (savings > 0) {
+                        Surface(
+                            shape = ComponentShapes.Badge,
+                            color = MaterialTheme.extendedColors.success
+                        ) {
+                            Text(
+                                text = "Save ₪${String.format("%.2f", savings)}",
+                                style = AppTextStyles.badge,
+                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+                                color = MaterialTheme.colorScheme.onPrimary
+                            )
+                        }
+                    }
                 }
-            }
-        }
 
-        // Store prices
-        storePrices.sortedBy { it.price }.forEachIndexed { index, storePrice ->
-            StorePriceRow(
-                storePrice = storePrice,
-                isBestPrice = index == 0,
-                modifier = Modifier.padding(vertical = Dimensions.spacingExtraSmall)
-            )
-        }
-    }
-}
-
-@Composable
-fun StorePriceRow(
-    storePrice: StorePrice,
-    isBestPrice: Boolean,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = storePrice.chain.replaceFirstChar { it.uppercase() },
-                style = if (isBestPrice) AppTextStyles.bestPriceStore else AppTextStyles.priceStore
-            )
-
-            if (isBestPrice) {
-                Spacer(modifier = Modifier.width(Dimensions.spacingSmall))
-                Surface(
-                    color = MaterialTheme.extendedColors.bestPrice,
-                    shape = CircleShape
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingMedium)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Star,
-                        contentDescription = "Best price",
-                        tint = Color.White,
-                        modifier = Modifier
-                            .size(Dimensions.iconSizeSmall)
-                            .padding(Dimensions.spacingExtraSmall)
-                    )
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text(
+                            text = "₪${String.format("%.2f", price.price)}",
+                            style = AppTextStyles.priceLarge,
+                            color = MaterialTheme.extendedColors.bestPrice,
+                            fontWeight = FontWeight.Bold
+                        )
+                        if (worstPrice != null && worstPrice.price > price.price) {
+                            Text(
+                                text = "₪${String.format("%.2f", worstPrice.price)}",
+                                style = AppTextStyles.priceSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                            )
+                        }
+                    }
+
+                    Button(
+                        onClick = onAddToCart,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.extendedColors.electricMint
+                        ),
+                        shape = ComponentShapes.Button
+                    ) {
+                        Icon(
+                            Icons.Default.Add,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
                 }
             }
         }
-
-        Text(
-            text = "₪${String.format("%.2f", storePrice.price)}",
-            style = if (isBestPrice) AppTextStyles.bestPrice else AppTextStyles.regularPrice
-        )
     }
 }
 
@@ -646,10 +560,10 @@ fun EmptySearchResults(
     onClearSearch: () -> Unit
 ) {
     EmptyState(
-        icon = Icons.Outlined.SearchOff,
         title = "No products found",
-        description = "We couldn't find any products matching \"$searchQuery\".\nTry different keywords or check spelling.",
-        actionText = "Clear Search",
+        subtitle = "We couldn't find any products matching \"$searchQuery\"",
+        icon = Icons.Default.SearchOff,
+        actionLabel = "Clear Search",
         onAction = onClearSearch,
         modifier = Modifier
             .fillMaxSize()
@@ -689,7 +603,7 @@ fun SearchResultSkeleton() {
             Box(
                 modifier = Modifier
                     .fillMaxWidth(0.7f)
-                    .height(Dimensions.buttonHeightSmall)
+                    .height(24.dp)
                     .background(
                         MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
                         ComponentShapes.ButtonSmall
@@ -700,7 +614,7 @@ fun SearchResultSkeleton() {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(Dimensions.spacingMedium)
+                        .height(16.dp)
                         .background(
                             MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f),
                             ComponentShapes.ButtonSmall
@@ -710,14 +624,3 @@ fun SearchResultSkeleton() {
         }
     }
 }
-
-// Extension for SortOption display names
-private val SortOption.displayName: String
-    get() = when (this) {
-        SortOption.RELEVANCE -> "Relevance"
-        SortOption.PRICE_LOW_TO_HIGH -> "Price: Low to High"
-        SortOption.PRICE_HIGH_TO_LOW -> "Price: High to Low"
-        SortOption.NAME_A_TO_Z -> "Name: A to Z"
-        SortOption.NAME_Z_TO_A -> "Name: Z to A"
-        SortOption.SAVINGS_HIGH_TO_LOW -> "Highest Savings"
-    }

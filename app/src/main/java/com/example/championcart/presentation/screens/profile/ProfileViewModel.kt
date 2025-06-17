@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.championcart.data.local.preferences.TokenManager
 import com.example.championcart.domain.repository.AuthRepository
-import com.example.championcart.domain.repository.UserRepository
 import com.example.championcart.domain.models.*
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
@@ -19,11 +18,11 @@ data class ProfileState(
     val savedCarts: List<SavedCart> = emptyList(),
     val userPreferences: UserPreferences = UserPreferences(),
     val selectedCity: String = "Tel Aviv",
-    val availableCities: List<String> = emptyList(),
+    val availableCities: List<String> = listOf(
+        "Tel Aviv", "Jerusalem", "Haifa", "Rishon LeZion",
+        "Petah Tikva", "Ashdod", "Netanya", "Beer Sheva"
+    ),
     val isLoading: Boolean = false,
-    val isLoadingStats: Boolean = false,
-    val isLoadingSavedCarts: Boolean = false,
-    val isSavingPreferences: Boolean = false,
     val error: String? = null,
     val showLogoutDialog: Boolean = false,
     val showCitySelector: Boolean = false,
@@ -34,7 +33,6 @@ data class ProfileState(
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
     private val authRepository: AuthRepository,
-    private val userRepository: UserRepository,
     private val tokenManager: TokenManager
 ) : ViewModel() {
 
@@ -43,18 +41,15 @@ class ProfileViewModel @Inject constructor(
 
     init {
         loadUserProfile()
-        loadUserStats()
-        loadSavedCarts()
-        loadUserPreferences()
+        loadLocalPreferences()
     }
 
     private fun loadUserProfile() {
         viewModelScope.launch {
             try {
-                val currentUser = authRepository.getCurrentUser()
                 val userEmail = tokenManager.getUserEmail()
 
-                if (currentUser != null && userEmail != null) {
+                if (userEmail != null) {
                     // Extract user name from email
                     val userName = userEmail
                         .substringBefore("@")
@@ -68,6 +63,15 @@ class ProfileViewModel @Inject constructor(
                             userName = userName,
                             userEmail = userEmail,
                             isGuest = false,
+                            // Local-only mock stats for logged in users
+                            userStats = UserStats(
+                                totalSavings = 156.50,
+                                itemsTracked = 24,
+                                cartsCreated = 8,
+                                averageSavings = 19.56,
+                                favoriteStore = "Shufersal",
+                                thisMonthSavings = 45.20
+                            ),
                             error = null
                         )
                     }
@@ -78,6 +82,7 @@ class ProfileViewModel @Inject constructor(
                             userName = "Guest",
                             userEmail = "",
                             isGuest = true,
+                            userStats = UserStats(), // Empty stats for guests
                             error = null
                         )
                     }
@@ -90,116 +95,26 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
-    private fun loadUserStats() {
-        if (_state.value.isGuest) return
-
+    private fun loadLocalPreferences() {
         viewModelScope.launch {
-            _state.update { it.copy(isLoadingStats = true) }
-
             try {
-                val userEmail = tokenManager.getUserEmail() ?: return@launch
-                val result = userRepository.getUserStats(userEmail)
-
-                result.fold(
-                    onSuccess = { stats ->
-                        _state.update {
-                            it.copy(
-                                userStats = stats,
-                                isLoadingStats = false,
-                                error = null
-                            )
-                        }
-                    },
-                    onFailure = { exception ->
-                        _state.update {
-                            it.copy(
-                                userStats = UserStats(), // Default empty stats
-                                isLoadingStats = false,
-                                error = "Failed to load stats: ${exception.message}"
-                            )
-                        }
-                    }
+                // Load from TokenManager/SharedPreferences
+                val savedCity = tokenManager.getSelectedCity()
+                val preferences = UserPreferences(
+                    defaultCity = savedCity,
+                    language = Language.ENGLISH, // Could add to TokenManager later
+                    theme = ThemePreference.SYSTEM // Could add to TokenManager later
                 )
-            } catch (e: Exception) {
+
                 _state.update {
                     it.copy(
-                        userStats = UserStats(),
-                        isLoadingStats = false,
-                        error = "Error loading stats: ${e.message}"
+                        userPreferences = preferences,
+                        selectedCity = savedCity,
+                        error = null
                     )
                 }
-            }
-        }
-    }
-
-    private fun loadSavedCarts() {
-        if (_state.value.isGuest) return
-
-        viewModelScope.launch {
-            _state.update { it.copy(isLoadingSavedCarts = true) }
-
-            try {
-                val result = authRepository.getUserSavedCarts()
-
-                result.fold(
-                    onSuccess = { savedCarts ->
-                        _state.update {
-                            it.copy(
-                                savedCarts = savedCarts,
-                                isLoadingSavedCarts = false,
-                                error = null
-                            )
-                        }
-                    },
-                    onFailure = { exception ->
-                        _state.update {
-                            it.copy(
-                                savedCarts = emptyList(),
-                                isLoadingSavedCarts = false,
-                                error = "Failed to load saved carts: ${exception.message}"
-                            )
-                        }
-                    }
-                )
             } catch (e: Exception) {
-                _state.update {
-                    it.copy(
-                        savedCarts = emptyList(),
-                        isLoadingSavedCarts = false,
-                        error = "Error loading saved carts: ${e.message}"
-                    )
-                }
-            }
-        }
-    }
-
-    private fun loadUserPreferences() {
-        viewModelScope.launch {
-            try {
-                val result = userRepository.getUserPreferences()
-
-                result.fold(
-                    onSuccess = { preferences ->
-                        _state.update {
-                            it.copy(
-                                userPreferences = preferences,
-                                selectedCity = preferences.defaultCity,
-                                error = null
-                            )
-                        }
-                    },
-                    onFailure = {
-                        // Use default preferences if loading fails
-                        _state.update {
-                            it.copy(
-                                userPreferences = UserPreferences(),
-                                selectedCity = "Tel Aviv"
-                            )
-                        }
-                    }
-                )
-            } catch (e: Exception) {
-                // Continue with default preferences
+                // Use defaults if loading fails
                 _state.update {
                     it.copy(
                         userPreferences = UserPreferences(),
@@ -216,6 +131,30 @@ class ProfileViewModel @Inject constructor(
 
     fun hideLogoutDialog() {
         _state.update { it.copy(showLogoutDialog = false) }
+    }
+
+    fun showCitySelector() {
+        _state.update { it.copy(showCitySelector = true) }
+    }
+
+    fun hideCitySelector() {
+        _state.update { it.copy(showCitySelector = false) }
+    }
+
+    fun showLanguageSelector() {
+        _state.update { it.copy(showLanguageSelector = true) }
+    }
+
+    fun hideLanguageSelector() {
+        _state.update { it.copy(showLanguageSelector = false) }
+    }
+
+    fun showThemeSelector() {
+        _state.update { it.copy(showThemeSelector = true) }
+    }
+
+    fun hideThemeSelector() {
+        _state.update { it.copy(showThemeSelector = false) }
     }
 
     fun logout() {
@@ -245,45 +184,25 @@ class ProfileViewModel @Inject constructor(
 
     fun updateDefaultCity(city: String) {
         viewModelScope.launch {
-            _state.update { it.copy(isSavingPreferences = true) }
-
             try {
+                // Save locally only
+                tokenManager.saveSelectedCity(city)
+
                 val updatedPreferences = _state.value.userPreferences.copy(
                     defaultCity = city
                 )
 
-                val result = userRepository.updateUserPreferences(updatedPreferences)
-
-                result.fold(
-                    onSuccess = {
-                        _state.update {
-                            it.copy(
-                                userPreferences = updatedPreferences,
-                                selectedCity = city,
-                                isSavingPreferences = false,
-                                showCitySelector = false,
-                                error = null
-                            )
-                        }
-
-                        // Save to token manager as well
-                        // tokenManager.saveSelectedCity(city)
-                    },
-                    onFailure = { exception ->
-                        _state.update {
-                            it.copy(
-                                isSavingPreferences = false,
-                                error = "Failed to save city preference: ${exception.message}"
-                            )
-                        }
-                    }
-                )
-            } catch (e: Exception) {
                 _state.update {
                     it.copy(
-                        isSavingPreferences = false,
-                        error = "Error saving preferences: ${e.message}"
+                        userPreferences = updatedPreferences,
+                        selectedCity = city,
+                        showCitySelector = false,
+                        error = null
                     )
+                }
+            } catch (e: Exception) {
+                _state.update {
+                    it.copy(error = "Error saving city preference: ${e.message}")
                 }
             }
         }
@@ -291,41 +210,23 @@ class ProfileViewModel @Inject constructor(
 
     fun updateLanguage(language: Language) {
         viewModelScope.launch {
-            _state.update { it.copy(isSavingPreferences = true) }
-
             try {
+                // For now just update local state
+                // Could add tokenManager.saveLanguage(language.code) later
                 val updatedPreferences = _state.value.userPreferences.copy(
                     language = language
                 )
 
-                val result = userRepository.updateUserPreferences(updatedPreferences)
-
-                result.fold(
-                    onSuccess = {
-                        _state.update {
-                            it.copy(
-                                userPreferences = updatedPreferences,
-                                isSavingPreferences = false,
-                                showLanguageSelector = false,
-                                error = null
-                            )
-                        }
-                    },
-                    onFailure = { exception ->
-                        _state.update {
-                            it.copy(
-                                isSavingPreferences = false,
-                                error = "Failed to save language preference: ${exception.message}"
-                            )
-                        }
-                    }
-                )
-            } catch (e: Exception) {
                 _state.update {
                     it.copy(
-                        isSavingPreferences = false,
-                        error = "Error saving language: ${e.message}"
+                        userPreferences = updatedPreferences,
+                        showLanguageSelector = false,
+                        error = null
                     )
+                }
+            } catch (e: Exception) {
+                _state.update {
+                    it.copy(error = "Error saving language preference: ${e.message}")
                 }
             }
         }
@@ -333,41 +234,23 @@ class ProfileViewModel @Inject constructor(
 
     fun updateTheme(theme: ThemePreference) {
         viewModelScope.launch {
-            _state.update { it.copy(isSavingPreferences = true) }
-
             try {
+                // For now just update local state
+                // Could add tokenManager.saveTheme(theme) later
                 val updatedPreferences = _state.value.userPreferences.copy(
                     theme = theme
                 )
 
-                val result = userRepository.updateUserPreferences(updatedPreferences)
-
-                result.fold(
-                    onSuccess = {
-                        _state.update {
-                            it.copy(
-                                userPreferences = updatedPreferences,
-                                isSavingPreferences = false,
-                                showThemeSelector = false,
-                                error = null
-                            )
-                        }
-                    },
-                    onFailure = { exception ->
-                        _state.update {
-                            it.copy(
-                                isSavingPreferences = false,
-                                error = "Failed to save theme preference: ${exception.message}"
-                            )
-                        }
-                    }
-                )
-            } catch (e: Exception) {
                 _state.update {
                     it.copy(
-                        isSavingPreferences = false,
-                        error = "Error saving theme: ${e.message}"
+                        userPreferences = updatedPreferences,
+                        showThemeSelector = false,
+                        error = null
                     )
+                }
+            } catch (e: Exception) {
+                _state.update {
+                    it.copy(error = "Error saving theme preference: ${e.message}")
                 }
             }
         }
@@ -375,73 +258,44 @@ class ProfileViewModel @Inject constructor(
 
     fun toggleNotifications(enabled: Boolean) {
         viewModelScope.launch {
-            _state.update { it.copy(isSavingPreferences = true) }
-
             try {
                 val updatedPreferences = _state.value.userPreferences.copy(
                     notificationsEnabled = enabled
                 )
 
-                val result = userRepository.updateUserPreferences(updatedPreferences)
-
-                result.fold(
-                    onSuccess = {
-                        _state.update {
-                            it.copy(
-                                userPreferences = updatedPreferences,
-                                isSavingPreferences = false,
-                                error = null
-                            )
-                        }
-                    },
-                    onFailure = { exception ->
-                        _state.update {
-                            it.copy(
-                                isSavingPreferences = false,
-                                error = "Failed to save notification preference: ${exception.message}"
-                            )
-                        }
-                    }
-                )
-            } catch (e: Exception) {
                 _state.update {
                     it.copy(
-                        isSavingPreferences = false,
-                        error = "Error saving notifications: ${e.message}"
+                        userPreferences = updatedPreferences,
+                        error = null
                     )
+                }
+            } catch (e: Exception) {
+                _state.update {
+                    it.copy(error = "Error saving notification preference: ${e.message}")
                 }
             }
         }
     }
 
-    fun showCitySelector() {
-        _state.update { it.copy(showCitySelector = true) }
-    }
+    fun togglePriceAlerts(enabled: Boolean) {
+        viewModelScope.launch {
+            try {
+                val updatedPreferences = _state.value.userPreferences.copy(
+                    priceAlertsEnabled = enabled
+                )
 
-    fun hideCitySelector() {
-        _state.update { it.copy(showCitySelector = false) }
-    }
-
-    fun showLanguageSelector() {
-        _state.update { it.copy(showLanguageSelector = true) }
-    }
-
-    fun hideLanguageSelector() {
-        _state.update { it.copy(showLanguageSelector = false) }
-    }
-
-    fun showThemeSelector() {
-        _state.update { it.copy(showThemeSelector = true) }
-    }
-
-    fun hideThemeSelector() {
-        _state.update { it.copy(showThemeSelector = false) }
-    }
-
-    fun refreshData() {
-        loadUserStats()
-        loadSavedCarts()
-        clearError()
+                _state.update {
+                    it.copy(
+                        userPreferences = updatedPreferences,
+                        error = null
+                    )
+                }
+            } catch (e: Exception) {
+                _state.update {
+                    it.copy(error = "Error saving price alerts preference: ${e.message}")
+                }
+            }
+        }
     }
 
     fun clearError() {

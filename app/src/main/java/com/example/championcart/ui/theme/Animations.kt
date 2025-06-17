@@ -30,7 +30,58 @@ import kotlinx.coroutines.launch
 /**
  * Champion Cart - Modern Animation System
  * Smooth, delightful animations with motion preferences support
+ * Following 2025 design trends with springy, alive animations
  */
+
+/**
+ * Spring animation specifications for organic, bouncy feel
+ * Based on Google's Material Design 3 Expressive spring animations
+ */
+object SpringSpecs {
+    // Damping ratios - Control bounce behavior
+    const val dampingRatioNoBounce = Spring.DampingRatioNoBouncy        // 1.0f - No bounce
+    const val dampingRatioLowBounce = Spring.DampingRatioLowBouncy      // 0.75f - Subtle bounce
+    const val dampingRatioMediumBounce = Spring.DampingRatioMediumBouncy // 0.5f - Noticeable bounce
+    const val dampingRatioHighBounce = 0.3f                             // High bounce for playful elements
+
+    // Stiffness values - Control animation speed
+    const val stiffnessVeryLow = Spring.StiffnessVeryLow      // 50f - Very slow, gentle
+    const val stiffnessLow = Spring.StiffnessLow              // 200f - Slow, smooth
+    const val stiffnessMedium = Spring.StiffnessMedium        // 400f - Balanced
+    const val stiffnessMediumHigh = 600f                      // Responsive feel
+    const val stiffnessHigh = Spring.StiffnessHigh           // 800f - Quick response
+    const val stiffnessVeryHigh = 1500f                      // Snappy, immediate
+}
+
+/**
+ * Animation duration constants in milliseconds
+ * Optimized for modern, responsive feel while maintaining smoothness
+ */
+object AnimationDurations {
+    // Basic durations following 2025 responsive design patterns
+    const val fast = 150           // Quick micro-interactions
+    const val medium = 300         // Standard UI transitions
+    const val slow = 500           // Prominent state changes
+    const val extraSlow = 800      // Hero animations
+
+    // Specific interaction durations
+    const val fadeIn = 200         // Content appearing
+    const val fadeOut = 150        // Content disappearing
+    const val slideIn = 400        // Screen transitions entering
+    const val slideOut = 250       // Screen transitions exiting
+
+    // Special effect durations
+    const val rotation = 600       // Loading spinners, icon rotations
+    const val priceCount = 800     // Number counter animations
+    const val colorTransition = 300 // Theme/color changes
+    const val ripple = 400         // Touch feedback ripples
+
+    // Complex animation durations
+    const val stagger = 50         // Delay between list items
+    const val bounce = 1200        // Attention-grabbing bounce
+    const val shake = 400          // Error indication shake
+    const val pulse = 2000         // Notification pulse cycle
+}
 
 /**
  * Standard animation specs for consistency
@@ -137,7 +188,7 @@ fun AnimatedVisibilityWithMotion(
     exit: ExitTransition = TransitionSpecs.fadeOutScale,
     content: @Composable AnimatedVisibilityScope.() -> Unit
 ) {
-    val reduceMotion = MaterialTheme.reduceMotion
+    val reduceMotion = LocalReduceMotion.current
 
     AnimatedVisibility(
         visible = visible,
@@ -155,7 +206,7 @@ fun Modifier.pressAnimation(
     enabled: Boolean = true,
     pressScale: Float = 0.96f
 ) = composed {
-    val reduceMotion = MaterialTheme.reduceMotion
+    val reduceMotion = LocalReduceMotion.current
     var isPressed by remember { mutableStateOf(false) }
 
     val scale by animateFloatAsState(
@@ -199,7 +250,7 @@ fun Modifier.hoverAnimation(
 
     val elevation by animateDpAsState(
         targetValue = if (isHovered) hoverElevation else Dimensions.elevationMedium,
-        animationSpec = tween(AnimationDurations.fast), // Fixed: Use tween with proper type
+        animationSpec = tween(AnimationDurations.fast),
         label = "hover_elevation"
     )
 
@@ -224,7 +275,7 @@ fun Modifier.hoverAnimation(
  */
 fun Modifier.bounceAnimation(
     targetScale: Float = 1.1f,
-    duration: Int = 600
+    duration: Int = AnimationDurations.bounce
 ) = composed {
     val infiniteTransition = rememberInfiniteTransition(label = "bounce")
     val scale by infiniteTransition.animateFloat(
@@ -256,7 +307,7 @@ fun Modifier.shakeAnimation(
             repeatable(
                 iterations = 4,
                 animation = keyframes {
-                    durationMillis = 100
+                    durationMillis = AnimationDurations.shake
                     0 at 0
                     -shakeOffsetPx at 20
                     shakeOffsetPx at 40
@@ -293,7 +344,7 @@ fun Modifier.parallaxEffect(
 fun <T> StaggeredAnimatedList(
     items: List<T>,
     modifier: Modifier = Modifier,
-    delayBetweenItems: Int = 50,
+    delayBetweenItems: Int = AnimationDurations.stagger,
     content: @Composable (index: Int, item: T) -> Unit
 ) {
     items.forEachIndexed { index, item ->
@@ -410,7 +461,7 @@ fun Modifier.pulseAnimation(
         initialValue = minScale,
         targetValue = maxScale,
         animationSpec = infiniteRepeatable(
-            animation = tween(1000, easing = FastOutSlowInEasing),
+            animation = tween(AnimationDurations.pulse, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "pulse_scale"

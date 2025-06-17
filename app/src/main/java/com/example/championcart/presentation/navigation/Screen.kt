@@ -2,6 +2,7 @@ package com.example.championcart.presentation.navigation
 
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
+import com.example.championcart.ui.theme.ChampionCartIcons
 
 /**
  * Sealed class representing all navigation destinations in the app
@@ -52,7 +53,7 @@ sealed class Screen(
 }
 
 /**
- * Bottom navigation items configuration
+ * Bottom navigation items configuration with custom ChampionCart icons
  */
 enum class BottomNavItem(
     val screen: Screen,
@@ -63,36 +64,29 @@ enum class BottomNavItem(
 ) {
     HOME(
         screen = Screen.Home,
-        selectedIcon = androidx.compose.material.icons.Icons.Filled.Home,
-        unselectedIcon = androidx.compose.material.icons.Icons.Outlined.Home,
+        selectedIcon = ChampionCartIcons.Home,
+        unselectedIcon = ChampionCartIcons.Home,
         label = "Home",
         contentDescription = "Home screen"
     ),
     SEARCH(
         screen = Screen.Search,
-        selectedIcon = androidx.compose.material.icons.Icons.Filled.Search,
-        unselectedIcon = androidx.compose.material.icons.Icons.Outlined.Search,
+        selectedIcon = ChampionCartIcons.Search,
+        unselectedIcon = ChampionCartIcons.Search,
         label = "Search",
         contentDescription = "Search products"
     ),
     CART(
         screen = Screen.Cart,
-        selectedIcon = androidx.compose.material.icons.Icons.Filled.ShoppingCart,
-        unselectedIcon = androidx.compose.material.icons.Icons.Outlined.ShoppingCart,
+        selectedIcon = ChampionCartIcons.Cart,
+        unselectedIcon = ChampionCartIcons.Cart,
         label = "Cart",
         contentDescription = "Shopping cart"
     ),
-    STORES(
-        screen = Screen.Stores,
-        selectedIcon = androidx.compose.material.icons.Icons.Filled.Store,
-        unselectedIcon = androidx.compose.material.icons.Icons.Outlined.Store,
-        label = "Stores",
-        contentDescription = "Store locations"
-    ),
     PROFILE(
         screen = Screen.Profile,
-        selectedIcon = androidx.compose.material.icons.Icons.Filled.Person,
-        unselectedIcon = androidx.compose.material.icons.Icons.Outlined.Person,
+        selectedIcon = ChampionCartIcons.Profile,
+        unselectedIcon = ChampionCartIcons.Profile,
         label = "Profile",
         contentDescription = "User profile"
     )

@@ -20,7 +20,7 @@ import androidx.compose.ui.unit.sp
 import com.example.championcart.ui.theme.*
 
 /**
- * Helper function to get store brand color
+ * Helper function to get store brand color - Updated for Shufersal and Victory only
  */
 @Composable
 private fun getStoreChainColor(storeName: String): Color {
@@ -28,21 +28,17 @@ private fun getStoreChainColor(storeName: String): Color {
     return when (storeName.lowercase()) {
         "shufersal" -> colors.shufersal
         "victory" -> colors.victory
-        "rami levy" -> colors.ramiLevy
-        "mega" -> colors.mega
         else -> MaterialTheme.colorScheme.primary
     }
 }
 
 /**
- * Helper function to get store display name
+ * Helper function to get store display name - Updated for Shufersal and Victory only
  */
 private fun getStoreDisplayName(storeName: String): String {
     return when (storeName.lowercase()) {
         "shufersal" -> "Shufersal"
         "victory" -> "Victory"
-        "rami levy" -> "Rami Levy"
-        "mega" -> "Mega"
         else -> storeName
     }
 }
@@ -57,189 +53,116 @@ fun PriceComparisonCard(
     bestStore: String,
     worstStore: String? = null,
     modifier: Modifier = Modifier,
-    onBestStoreClick: (() -> Unit)? = null
+    onBestStoreClick: (() -> Unit)? = null,
+    onWorstStoreClick: (() -> Unit)? = null
 ) {
     val savings = worstPrice - bestPrice
-    val savingsPercent = if (worstPrice > 0) ((savings / worstPrice) * 100) else 0.0
-    val colors = MaterialTheme.extendedColors
+    val savingsPercent = ((savings / worstPrice) * 100).toInt()
 
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = ComponentShapes.Card,
         colors = CardDefaults.cardColors(
-            containerColor = colors.savings.copy(alpha = 0.08f)
+            containerColor = MaterialTheme.extendedColors.glassFrosted
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = Dimensions.elevationMedium)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(Dimensions.cardPadding)
-        ) {
-            // Header
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
-            ) {
-                // Best Price
-                Column {
-                    Text(
-                        text = "Best Price",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.height(Dimensions.spacingExtraSmall))
-                    Text(
-                        text = "₪${String.format("%.2f", bestPrice)}",
-                        style = AppTextStyles.priceDisplayLarge,
-                        color = colors.priceLow,
-                        fontSize = 32.sp
-                    )
-                    Spacer(modifier = Modifier.height(Dimensions.spacingExtraSmall))
-                    Surface(
-                        onClick = { onBestStoreClick?.invoke() },
-                        enabled = onBestStoreClick != null,
-                        shape = ComponentShapes.Chip,
-                        color = getStoreChainColor(bestStore).copy(alpha = 0.1f)
-                    ) {
-                        Text(
-                            text = getStoreDisplayName(bestStore),
-                            style = AppTextStyles.storeName,
-                            color = getStoreChainColor(bestStore),
-                            modifier = Modifier.padding(horizontal = Dimensions.paddingMedium, vertical = Dimensions.paddingExtraSmall)
-                        )
-                    }
-                }
-
-                // Savings Badge
-                if (savings > 0) {
-                    SavingsBadge(
-                        savings = savings,
-                        savingsPercent = savingsPercent
-                    )
-                }
-            }
-
-            // Comparison with worst price
-            if (worstStore != null && savings > 0) {
-                Spacer(modifier = Modifier.height(Dimensions.spacingMedium))
-                HorizontalDivider(
-                    modifier = Modifier.padding(vertical = Dimensions.spacingSmall),
-                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                )
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Compared to ${getStoreDisplayName(worstStore)}:",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = "₪${String.format("%.2f", worstPrice)}",
-                        style = AppTextStyles.priceDisplay,
-                        textDecoration = TextDecoration.LineThrough,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                    )
-                }
-            }
-        }
-    }
-}
-
-/**
- * Animated savings badge showing amount and percentage saved
- */
-@Composable
-fun SavingsBadge(
-    savings: Double,
-    savingsPercent: Double,
-    modifier: Modifier = Modifier
-) {
-    var isAnimated by remember { mutableStateOf(false) }
-    val scale by animateFloatAsState(
-        targetValue = if (isAnimated) 1f else 0.8f,
-        animationSpec = tween(500),
-        label = "scale"
-    )
-
-    LaunchedEffect(Unit) {
-        isAnimated = true
-    }
-
-    Surface(
-        modifier = modifier.scale(scale),
-        shape = ComponentShapes.Badge,
-        color = MaterialTheme.extendedColors.bestDeal,
-        shadowElevation = Dimensions.elevationLarge
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = Dimensions.elevationMedium
+        )
     ) {
         Column(
             modifier = Modifier.padding(Dimensions.paddingMedium),
-            horizontalAlignment = Alignment.CenterHorizontally
+            verticalArrangement = Arrangement.spacedBy(Dimensions.spacingMedium)
         ) {
+            // Header
             Text(
-                text = "SAVE",
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 1.sp
-            )
-            Text(
-                text = "₪${String.format("%.2f", savings)}",
-                style = AppTextStyles.priceDisplay,
-                fontSize = 20.sp,
+                text = "Price Comparison",
+                style = AppTextStyles.priceDisplayLarge,
                 fontWeight = FontWeight.Bold
             )
-            Text(
-                text = "${savingsPercent.toInt()}%",
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Bold
+
+            // Best price
+            PriceRow(
+                storeName = bestStore,
+                price = bestPrice,
+                isLowest = true,
+                onClick = onBestStoreClick
             )
+
+            // Worst price (if provided)
+            worstStore?.let {
+                PriceRow(
+                    storeName = it,
+                    price = worstPrice,
+                    isLowest = false,
+                    onClick = onWorstStoreClick
+                )
+            }
+
+            // Savings summary
+            if (savings > 0) {
+                Surface(
+                    shape = ComponentShapes.Card,
+                    color = MaterialTheme.extendedColors.savings.copy(alpha = 0.1f)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(Dimensions.paddingMedium),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "You save:",
+                            style = AppTextStyles.priceDisplay,
+                            color = MaterialTheme.extendedColors.savings
+                        )
+                        Text(
+                            text = "₪${String.format("%.2f", savings)} ($savingsPercent%)",
+                            style = AppTextStyles.priceDisplay,
+                            color = MaterialTheme.extendedColors.savings,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
         }
     }
 }
 
 /**
- * Individual store price row with color coding
+ * Individual store price row
  */
 @Composable
-fun StorePriceRow(
+private fun PriceRow(
     storeName: String,
     price: Double,
-    isLowest: Boolean = false,
-    isHighest: Boolean = false,
-    modifier: Modifier = Modifier,
+    isLowest: Boolean,
     onClick: (() -> Unit)? = null
 ) {
     val storeColor = getStoreChainColor(storeName)
-    val priceColor = when {
-        isLowest -> MaterialTheme.extendedColors.priceLow
-        isHighest -> MaterialTheme.extendedColors.priceHigh
-        else -> MaterialTheme.colorScheme.onSurface
+    val priceColor = if (isLowest) {
+        MaterialTheme.extendedColors.bestPrice
+    } else {
+        MaterialTheme.colorScheme.onSurface
     }
 
     Surface(
         onClick = { onClick?.invoke() },
         enabled = onClick != null,
-        modifier = modifier.fillMaxWidth(),
-        shape = ComponentShapes.Card,
+        shape = ComponentShapes.CardSmall,
         color = if (isLowest) {
-            MaterialTheme.extendedColors.savings.copy(alpha = 0.08f)
+            MaterialTheme.extendedColors.bestPrice.copy(alpha = 0.05f)
         } else {
-            MaterialTheme.colorScheme.surface
+            Color.Transparent
         }
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = Dimensions.paddingMedium, vertical = Dimensions.paddingSmall),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+                .padding(Dimensions.paddingMedium),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            // Store info
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingMedium)
