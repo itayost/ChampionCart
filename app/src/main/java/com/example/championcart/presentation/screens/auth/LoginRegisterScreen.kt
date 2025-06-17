@@ -3,30 +3,30 @@ package com.example.championcart.presentation.screens.auth
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -35,22 +35,121 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.championcart.presentation.components.FloatingOrbsBackground
 import com.example.championcart.presentation.components.LoadingDialog
 import com.example.championcart.ui.theme.*
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import java.time.LocalTime
 
 /**
- * LoginRegisterScreen - USING OUR EXISTING UI SYSTEM
- * ✨ Now properly uses:
- * - FloatingOrbs from GlowEffects.kt
- * - modernPressAnimation, organicEntrance from EnhancedAnimations.kt
- * - electricGlow, successGlow from GlowEffects.kt
- * - enhancedGlass from GlassEffects.kt
- * - All ExtendedColors from ExtendedTheme.kt
- * - Proper ComponentShapes and Dimensions
+ * LoginRegisterScreen - Using Champion Cart's Premium UI System
  */
+
+// Add these modifier extensions
+fun Modifier.gradientBackground(
+    colors: List<Color> = listOf(Color.Transparent)
+) = composed {
+    this.background(
+        brush = Brush.linearGradient(
+            colors = colors,
+            start = Offset(0f, 0f),
+            end = Offset(1000f, 1000f)
+        )
+    )
+}
+
+fun Modifier.modernPressAnimation(
+    enabled: Boolean = true
+) = composed {
+    if (!enabled) return@composed this
+
+    var isPressed by remember { mutableStateOf(false) }
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.95f else 1f,
+        animationSpec = SpringSpecs.Bouncy,
+        label = "press_scale"
+    )
+
+    this
+        .scale(scale)
+        .pointerInput(Unit) {
+            detectTapGestures(
+                onPress = {
+                    isPressed = true
+                    tryAwaitRelease()
+                    isPressed = false
+                }
+            )
+        }
+}
+
+fun Modifier.organicEntrance(
+    delay: Int = 0
+) = composed {
+    var isVisible by remember { mutableStateOf(false) }
+    val alpha by animateFloatAsState(
+        targetValue = if (isVisible) 1f else 0f,
+        animationSpec = tween(
+            durationMillis = 600,
+            delayMillis = delay,
+            easing = FastOutSlowInEasing
+        ),
+        label = "entrance_alpha"
+    )
+    val offsetY by animateFloatAsState(
+        targetValue = if (isVisible) 0f else 20f,
+        animationSpec = tween(
+            durationMillis = 600,
+            delayMillis = delay,
+            easing = FastOutSlowInEasing
+        ),
+        label = "entrance_offset"
+    )
+
+    LaunchedEffect(Unit) {
+        isVisible = true
+    }
+
+    this
+        .graphicsLayer {
+            this.alpha = alpha
+            translationY = offsetY
+        }
+}
+
+fun Modifier.electricGlow(
+    glowColor: Color,
+    intensity: Float = 1f
+) = composed {
+    this.drawWithCache {
+        onDrawBehind {
+            // Simple glow effect using shadow
+            drawCircle(
+                color = glowColor.copy(alpha = 0.3f * intensity),
+                radius = size.minDimension / 2 + 20f
+            )
+        }
+    }
+}
+
+private fun Modifier.composed(factory: @Composable() (Modifier.() -> Unit)): Modifier {
+    TODO("Not yet implemented")
+}
+
+fun Modifier.attentionBounce() = composed {
+    val infiniteTransition = rememberInfiniteTransition(label = "bounce")
+    val offset by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = -8f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(300),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "bounce_offset"
+    )
+
+    this.offset(y = offset.dp)
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -63,8 +162,9 @@ fun LoginRegisterScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val haptics = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
+    val colors = LocalExtendedColors.current
 
-    // Time-based greeting using our existing system
+    // Time-based greeting
     val greeting = remember {
         val hour = LocalTime.now().hour
         when (hour) {
@@ -100,33 +200,33 @@ fun LoginRegisterScreen(
         }
     }
 
-    // Loading dialog using our existing component
+    // Loading dialog
     if (state.isLoading) {
         LoadingDialog(
+            isLoading = true,
             message = if (state.isLoginMode) "נכנס..." else "יוצר חשבון..."
         )
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // ✨ USING OUR gradientBackground from Enhanced Colors
+        // Gradient background
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .gradientBackground(
-                    startColor = MaterialTheme.extendedColors.morningGradientStart,
-                    endColor = MaterialTheme.extendedColors.morningGradientEnd
+                    colors = listOf(
+                        colors.gradientStart.copy(alpha = 0.8f),
+                        colors.gradientMiddle.copy(alpha = 0.6f),
+                        colors.gradientEnd.copy(alpha = 0.8f)
+                    )
                 )
         )
 
-        // ✨ USING OUR FloatingOrbs from GlowEffects.kt
-        FloatingOrbs(
+        // Using existing FloatingOrbsBackground
+        FloatingOrbsBackground(
             modifier = Modifier.fillMaxSize(),
             orbCount = 3,
-            colors = listOf(
-                MaterialTheme.extendedColors.electricMintGlow,
-                MaterialTheme.extendedColors.cosmicPurpleGlow,
-                MaterialTheme.extendedColors.neonCoralGlow
-            )
+            alpha = 0.6f
         )
 
         Scaffold(
@@ -137,31 +237,31 @@ fun LoginRegisterScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
-                    .padding(horizontal = Dimensions.screenPadding)
+                    .padding(horizontal = 16.dp)
                     .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Spacer(modifier = Modifier.height(Dimensions.spacingExtraLarge * 2))
+                Spacer(modifier = Modifier.height(48.dp))
 
-                // ✨ USING OUR organicEntrance animation
+                // Auth Header
                 AuthHeader(
                     greeting = greeting,
                     subtitle = subtitle,
                     modifier = Modifier.organicEntrance(delay = 0)
                 )
 
-                Spacer(modifier = Modifier.height(Dimensions.spacingExtraLarge))
+                Spacer(modifier = Modifier.height(32.dp))
 
-                // ✨ USING OUR organicEntrance animation
+                // Auth Form Card
                 AuthFormCard(
                     state = state,
                     viewModel = viewModel,
                     modifier = Modifier.organicEntrance(delay = 200)
                 )
 
-                Spacer(modifier = Modifier.height(Dimensions.spacingLarge))
+                Spacer(modifier = Modifier.height(16.dp))
 
-                // ✨ USING OUR organicEntrance animation
+                // Guest Mode Button
                 GuestModeButton(
                     onClick = {
                         haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
@@ -170,7 +270,7 @@ fun LoginRegisterScreen(
                     modifier = Modifier.organicEntrance(delay = 400)
                 )
 
-                Spacer(modifier = Modifier.height(Dimensions.spacingExtraLarge))
+                Spacer(modifier = Modifier.height(32.dp))
             }
         }
     }
@@ -182,65 +282,49 @@ private fun AuthHeader(
     subtitle: String,
     modifier: Modifier = Modifier
 ) {
+    val colors = LocalExtendedColors.current
+
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(Dimensions.spacingMedium)
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // ✨ USING OUR modernPressAnimation + electricGlow
+        // Logo
         Card(
             modifier = Modifier
-                .size(Dimensions.iconSizeHuge + 16.dp)
-                .modernPressAnimation()
-                .electricGlow(
-                    glowColor = MaterialTheme.extendedColors.electricMintGlow,
-                    intensity = 1f
-                ),
+                .size(96.dp)
+                .modernPressAnimation(),
             shape = CircleShape,
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.extendedColors.electricMint
+                containerColor = colors.electricMint
             ),
-            elevation = CardDefaults.cardElevation(
-                defaultElevation = Dimensions.elevationLarge
-            )
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
         ) {
             Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        brush = Brush.radialGradient(
-                            colors = listOf(
-                                MaterialTheme.extendedColors.electricMint,
-                                MaterialTheme.extendedColors.cosmicPurple
-                            )
-                        )
-                    ),
+                modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = Icons.Default.ShoppingCart,
-                    contentDescription = "Champion Cart",
-                    modifier = Modifier.size(Dimensions.iconSizeLarge),
+                    Icons.Default.ShoppingCart,
+                    contentDescription = null,
+                    modifier = Modifier.size(48.dp),
                     tint = Color.White
                 )
             }
         }
 
-        // Dynamic greeting with our typography
         Text(
             text = greeting,
-            style = MaterialTheme.typography.displayMedium,
-            color = MaterialTheme.extendedColors.electricMint,
+            style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center
         )
 
-        // Subtitle
         Text(
             text = subtitle,
-            style = MaterialTheme.typography.headlineSmall,
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f),
-            textAlign = TextAlign.Center
+            style = MaterialTheme.typography.bodyLarge,
+            textAlign = TextAlign.Center,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
         )
     }
 }
@@ -252,42 +336,42 @@ private fun AuthFormCard(
     modifier: Modifier = Modifier
 ) {
     val focusManager = LocalFocusManager.current
-    val keyboardController = LocalSoftwareKeyboardController.current
+    val colors = LocalExtendedColors.current
 
-    // ✨ USING OUR enhancedGlass effect
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .enhancedGlass(
-                backgroundColor = MaterialTheme.extendedColors.glassFrosted,
-                borderColor = MaterialTheme.extendedColors.glassFrostedBorder
+            .glassmorphic(
+                intensity = GlassIntensity.Medium,
+                shape = GlassmorphicShapes.GlassCardLarge
             ),
-        shape = ComponentShapes.CardLarge,
+        shape = GlassmorphicShapes.GlassCardLarge,
         colors = CardDefaults.cardColors(
-            containerColor = Color.Transparent
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = Dimensions.elevationLarge
+            containerColor = colors.glassLight
         )
     ) {
         Column(
-            modifier = Modifier.padding(Dimensions.paddingLarge),
-            horizontalAlignment = Alignment.CenterHorizontally
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Mode toggle using our glass effects
+            // Mode toggle
             AuthModeToggle(
                 isLoginMode = state.isLoginMode,
                 onToggle = viewModel::toggleMode
             )
 
-            Spacer(modifier = Modifier.height(Dimensions.spacingLarge))
-
-            // ✨ USING OUR staggeredListAnimation
-            EnhancedTextField(
+            // Email field
+            OutlinedTextField(
                 value = state.email,
                 onValueChange = viewModel::updateEmail,
-                label = "אימייל",
-                leadingIcon = Icons.Default.Email,
+                label = { Text("אימייל") },
+                leadingIcon = {
+                    Icon(
+                        Icons.Default.Email,
+                        contentDescription = null,
+                        tint = colors.electricMint
+                    )
+                },
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Email,
                     imeAction = ImeAction.Next
@@ -296,28 +380,36 @@ private fun AuthFormCard(
                     onNext = { focusManager.moveFocus(FocusDirection.Down) }
                 ),
                 isError = state.emailError != null,
-                errorMessage = state.emailError,
-                modifier = Modifier.staggeredListAnimation(index = 0)
+                modifier = Modifier.fillMaxWidth(),
+                shape = GlassmorphicShapes.TextField,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = colors.electricMint,
+                    unfocusedBorderColor = colors.borderDefault,
+                    errorBorderColor = colors.highPrice
+                )
             )
 
-            Spacer(modifier = Modifier.height(Dimensions.spacingMedium))
-
-            // ✨ USING OUR staggeredListAnimation
-            EnhancedTextField(
+            // Password field
+            OutlinedTextField(
                 value = state.password,
                 onValueChange = viewModel::updatePassword,
-                label = "סיסמה",
-                leadingIcon = Icons.Default.Lock,
+                label = { Text("סיסמה") },
+                leadingIcon = {
+                    Icon(
+                        Icons.Default.Lock,
+                        contentDescription = null,
+                        tint = colors.electricMint
+                    )
+                },
                 trailingIcon = {
                     IconButton(
-                        onClick = viewModel::togglePasswordVisibility,
-                        modifier = Modifier.modernPressAnimation()
+                        onClick = viewModel::togglePasswordVisibility
                     ) {
                         Icon(
                             imageVector = if (state.showPassword) Icons.Default.VisibilityOff
                             else Icons.Default.Visibility,
                             contentDescription = null,
-                            tint = MaterialTheme.extendedColors.electricMint
+                            tint = colors.electricMint
                         )
                     }
                 },
@@ -328,118 +420,111 @@ private fun AuthFormCard(
                     imeAction = if (state.isLoginMode) ImeAction.Done else ImeAction.Next
                 ),
                 keyboardActions = KeyboardActions(
-                    onDone = if (state.isLoginMode) {
-                        {
-                            keyboardController?.hide()
-                            if (viewModel.isFormValid()) viewModel.login()
+                    onDone = {
+                        if (state.isLoginMode) {
+                            viewModel.login()
                         }
-                    } else {
-                        { focusManager.moveFocus(FocusDirection.Down) }
                     }
                 ),
                 isError = state.passwordError != null,
-                errorMessage = state.passwordError,
-                modifier = Modifier.staggeredListAnimation(index = 1)
+                modifier = Modifier.fillMaxWidth(),
+                shape = GlassmorphicShapes.TextField
             )
 
-            // Password strength indicator using our success colors
-            if (!state.isLoginMode && state.password.isNotBlank()) {
-                Spacer(modifier = Modifier.height(Dimensions.spacingSmall))
-                PasswordStrengthIndicator(
-                    strength = viewModel.getPasswordStrength(),
-                    modifier = Modifier.staggeredListAnimation(index = 2)
+            // Confirm password for registration
+            AnimatedVisibility(
+                visible = !state.isLoginMode,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically()
+            ) {
+                OutlinedTextField(
+                    value = state.confirmPassword,
+                    onValueChange = viewModel::updateConfirmPassword,
+                    label = { Text("אשר סיסמה") },
+                    leadingIcon = {
+                        Icon(
+                            Icons.Default.Lock,
+                            contentDescription = null,
+                            tint = colors.electricMint
+                        )
+                    },
+                    visualTransformation = if (state.showPassword) VisualTransformation.None
+                    else PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Password,
+                        imeAction = ImeAction.Done
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onDone = { viewModel.register() }
+                    ),
+                    isError = state.confirmPasswordError != null,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = GlassmorphicShapes.TextField
                 )
             }
 
-            // Confirm password field (register mode only)
+            // Remember me checkbox (login only)
             AnimatedVisibility(
-                visible = !state.isLoginMode,
-                enter = expandVertically() + fadeIn(),
-                exit = shrinkVertically() + fadeOut()
+                visible = state.isLoginMode,
+                enter = fadeIn(),
+                exit = fadeOut()
             ) {
-                Column {
-                    Spacer(modifier = Modifier.height(Dimensions.spacingMedium))
-                    EnhancedTextField(
-                        value = state.confirmPassword,
-                        onValueChange = viewModel::updateConfirmPassword,
-                        label = "אימות סיסמה",
-                        leadingIcon = Icons.Default.Lock,
-                        trailingIcon = {
-                            IconButton(
-                                onClick = viewModel::toggleConfirmPasswordVisibility,
-                                modifier = Modifier.modernPressAnimation()
-                            ) {
-                                Icon(
-                                    imageVector = if (state.showConfirmPassword) Icons.Default.VisibilityOff
-                                    else Icons.Default.Visibility,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.extendedColors.electricMint
-                                )
-                            }
-                        },
-                        visualTransformation = if (state.showConfirmPassword) VisualTransformation.None
-                        else PasswordVisualTransformation(),
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Password,
-                            imeAction = ImeAction.Done
-                        ),
-                        keyboardActions = KeyboardActions(
-                            onDone = {
-                                keyboardController?.hide()
-                                if (viewModel.isFormValid()) viewModel.register()
-                            }
-                        ),
-                        isError = state.confirmPasswordError != null,
-                        errorMessage = state.confirmPasswordError
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Checkbox(
+                        checked = state.rememberMe,
+                        onCheckedChange = { viewModel.toggleRememberMe() },
+                        colors = CheckboxDefaults.colors(
+                            checkedColor = colors.electricMint
+                        )
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "זכור אותי",
+                        style = MaterialTheme.typography.bodyMedium
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(Dimensions.spacingLarge))
-
-            // Terms checkbox for register mode
-            if (!state.isLoginMode) {
-                TermsCheckbox(
-                    checked = state.agreedToTerms,
-                    onCheckedChange = { viewModel.toggleTermsAgreement() }
-                )
-                Spacer(modifier = Modifier.height(Dimensions.spacingMedium))
-            }
-
-            // ✨ USING OUR enhanced button with gradient
+            // Primary action button
             PrimaryActionButton(
-                text = if (state.isLoginMode) "כניסה" else "הרשמה",
-                onClick = if (state.isLoginMode) viewModel::login else viewModel::register,
-                enabled = viewModel.isFormValid() && !state.isLoading,
-                isLoading = state.isLoading
+                text = if (state.isLoginMode) "התחבר" else "הירשם",
+                onClick = {
+                    if (state.isLoginMode) {
+                        viewModel.login()
+                    } else {
+                        viewModel.register()
+                    }
+                },
+                enabled = state.isAuthenticated,
+                isLoading = state.isLoading,
+                modifier = Modifier.fillMaxWidth()
             )
-
-            // Remember me toggle (login mode only)
-            if (state.isLoginMode) {
-                Spacer(modifier = Modifier.height(Dimensions.spacingMedium))
-                RememberMeToggle(
-                    checked = state.rememberMe,
-                    onCheckedChange = { viewModel.toggleRememberMe() }
-                )
-            }
         }
     }
 }
 
-// ✨ USING OUR glass effects and animations
 @Composable
 private fun AuthModeToggle(
     isLoginMode: Boolean,
     onToggle: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val colors = LocalExtendedColors.current
+
     Row(
         modifier = modifier
-            .enhancedGlass(
-                backgroundColor = MaterialTheme.extendedColors.glass,
-                borderColor = MaterialTheme.extendedColors.glassBorder
+            .fillMaxWidth()
+            .clip(GlassmorphicShapes.Chip)
+            .background(colors.glassLight)
+            .border(
+                width = 1.dp,
+                color = colors.borderGlass,
+                shape = GlassmorphicShapes.Chip
             )
-            .padding(Dimensions.spacingExtraSmall)
+            .padding(4.dp)
     ) {
         ToggleButton(
             text = "כניסה",
@@ -457,7 +542,6 @@ private fun AuthModeToggle(
     }
 }
 
-// ✨ USING OUR modernPressAnimation
 @Composable
 private fun ToggleButton(
     text: String,
@@ -465,235 +549,28 @@ private fun ToggleButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val colors = LocalExtendedColors.current
+
     Box(
         modifier = modifier
-            .clip(ComponentShapes.Button)
+            .clip(GlassmorphicShapes.Button)
             .background(
-                color = if (isSelected) MaterialTheme.extendedColors.electricMint
-                else Color.Transparent
+                color = if (isSelected) colors.electricMint else Color.Transparent
             )
             .modernPressAnimation()
             .clickable { onClick() }
-            .padding(
-                horizontal = Dimensions.paddingMedium,
-                vertical = Dimensions.paddingSmall
-            ),
+            .padding(horizontal = 16.dp, vertical = 8.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = text,
             style = MaterialTheme.typography.labelLarge,
-            color = if (isSelected) Color.White
-            else MaterialTheme.colorScheme.onSurface,
+            color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface,
             fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal
         )
     }
 }
 
-// ✨ USING OUR enhanced glass effects
-@Composable
-private fun EnhancedTextField(
-    value: String,
-    onValueChange: (String) -> Unit,
-    label: String,
-    leadingIcon: ImageVector,
-    modifier: Modifier = Modifier,
-    trailingIcon: @Composable (() -> Unit)? = null,
-    visualTransformation: VisualTransformation = VisualTransformation.None,
-    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
-    keyboardActions: KeyboardActions = KeyboardActions.Default,
-    isError: Boolean = false,
-    errorMessage: String? = null
-) {
-    Column(modifier = modifier) {
-        OutlinedTextField(
-            value = value,
-            onValueChange = onValueChange,
-            label = { Text(text = label) },
-            leadingIcon = {
-                Icon(
-                    imageVector = leadingIcon,
-                    contentDescription = null,
-                    modifier = Modifier
-                        .size(Dimensions.iconSizeMedium)
-                        .electricGlow(
-                            glowColor = if (isError) MaterialTheme.extendedColors.errorGlow
-                            else MaterialTheme.extendedColors.electricMintGlow,
-                            intensity = 0.5f
-                        ),
-                    tint = if (isError) MaterialTheme.extendedColors.errorRed
-                    else MaterialTheme.extendedColors.electricMint
-                )
-            },
-            trailingIcon = trailingIcon,
-            visualTransformation = visualTransformation,
-            keyboardOptions = keyboardOptions,
-            keyboardActions = keyboardActions,
-            isError = isError,
-            modifier = Modifier
-                .fillMaxWidth()
-                .enhancedGlass(
-                    backgroundColor = MaterialTheme.extendedColors.glass,
-                    borderColor = MaterialTheme.extendedColors.glassBorder
-                ),
-            shape = ComponentShapes.TextField,
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = MaterialTheme.extendedColors.electricMint,
-                unfocusedBorderColor = MaterialTheme.extendedColors.glassBorder,
-                errorBorderColor = MaterialTheme.extendedColors.errorRed,
-                focusedLabelColor = MaterialTheme.extendedColors.electricMint,
-                cursorColor = MaterialTheme.extendedColors.electricMint,
-                focusedContainerColor = Color.Transparent,
-                unfocusedContainerColor = Color.Transparent
-            )
-        )
-
-        // ✨ USING OUR attentionBounce for errors
-        AnimatedVisibility(
-            visible = isError && errorMessage != null,
-            enter = slideInVertically() + fadeIn(),
-            exit = slideOutVertically() + fadeOut()
-        ) {
-            errorMessage?.let {
-                Text(
-                    text = it,
-                    color = MaterialTheme.extendedColors.errorRed,
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier
-                        .padding(
-                            start = Dimensions.paddingMedium,
-                            top = Dimensions.spacingExtraSmall
-                        )
-                        .attentionBounce(trigger = isError)
-                )
-            }
-        }
-    }
-}
-
-// ✨ USING OUR success/warning/error colors and animations
-@Composable
-private fun PasswordStrengthIndicator(
-    strength: PasswordStrength,
-    modifier: Modifier = Modifier
-) {
-    val (strengthText, strengthColor, progress) = when (strength) {
-        PasswordStrength.WEAK -> Triple(
-            "חלשה",
-            MaterialTheme.extendedColors.errorRed,
-            0.33f
-        )
-        PasswordStrength.MEDIUM -> Triple(
-            "בינונית",
-            MaterialTheme.extendedColors.warning,
-            0.66f
-        )
-        PasswordStrength.STRONG -> Triple(
-            "חזקה",
-            MaterialTheme.extendedColors.success,
-            1f
-        )
-    }
-
-    Column(modifier = modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "חוזק הסיסמה:",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-            )
-            Text(
-                text = strengthText,
-                style = MaterialTheme.typography.bodySmall,
-                color = strengthColor,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier.successGlow(intensity = if (strength == PasswordStrength.STRONG) 1f else 0f)
-            )
-        }
-
-        Spacer(modifier = Modifier.height(Dimensions.spacingExtraSmall))
-
-        LinearProgressIndicator(
-            progress = { progress },
-            modifier = Modifier.fillMaxWidth(),
-            color = strengthColor,
-            trackColor = strengthColor.copy(alpha = 0.2f)
-        )
-    }
-}
-
-@Composable
-private fun TermsCheckbox(
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .modernPressAnimation()
-            .clickable { onCheckedChange(!checked) },
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Checkbox(
-            checked = checked,
-            onCheckedChange = onCheckedChange,
-            colors = CheckboxDefaults.colors(
-                checkedColor = MaterialTheme.extendedColors.electricMint,
-                uncheckedColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                checkmarkColor = Color.White
-            )
-        )
-
-        Spacer(modifier = Modifier.width(Dimensions.spacingSmall))
-
-        Text(
-            text = "אני מסכים לתנאים והתקנות",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurface
-        )
-    }
-}
-
-@Composable
-private fun RememberMeToggle(
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .modernPressAnimation()
-            .clickable { onCheckedChange(!checked) },
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center
-    ) {
-        Checkbox(
-            checked = checked,
-            onCheckedChange = onCheckedChange,
-            colors = CheckboxDefaults.colors(
-                checkedColor = MaterialTheme.extendedColors.electricMint,
-                uncheckedColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                checkmarkColor = Color.White
-            )
-        )
-
-        Spacer(modifier = Modifier.width(Dimensions.spacingSmall))
-
-        Text(
-            text = "זכור אותי",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurface
-        )
-    }
-}
-
-// ✨ USING OUR gradient system and modernPressAnimation
 @Composable
 private fun PrimaryActionButton(
     text: String,
@@ -702,85 +579,55 @@ private fun PrimaryActionButton(
     isLoading: Boolean = false,
     modifier: Modifier = Modifier
 ) {
+    val colors = LocalExtendedColors.current
+
     Button(
         onClick = onClick,
         enabled = enabled && !isLoading,
         modifier = modifier
-            .fillMaxWidth()
-            .height(Dimensions.buttonHeight)
+            .height(56.dp)
             .modernPressAnimation(enabled = enabled),
-        shape = ComponentShapes.Button,
+        shape = GlassmorphicShapes.Button,
         colors = ButtonDefaults.buttonColors(
-            containerColor = Color.Transparent,
+            containerColor = colors.electricMint,
             contentColor = Color.White,
-            disabledContainerColor = Color.Transparent,
+            disabledContainerColor = colors.electricMint.copy(alpha = 0.5f),
             disabledContentColor = Color.White.copy(alpha = 0.5f)
         )
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    brush = if (enabled) {
-                        Brush.linearGradient(
-                            colors = listOf(
-                                MaterialTheme.extendedColors.electricMint,
-                                MaterialTheme.extendedColors.cosmicPurple
-                            )
-                        )
-                    } else {
-                        Brush.linearGradient(
-                            colors = listOf(
-                                MaterialTheme.extendedColors.electricMint.copy(alpha = 0.5f),
-                                MaterialTheme.extendedColors.cosmicPurple.copy(alpha = 0.5f)
-                            )
-                        )
-                    },
-                    shape = ComponentShapes.Button
-                )
-                .electricGlow(
-                    glowColor = MaterialTheme.extendedColors.electricMintGlow,
-                    intensity = if (enabled) 1f else 0.3f
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            if (isLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(Dimensions.iconSizeSmall),
-                    color = Color.White,
-                    strokeWidth = 2.dp
-                )
-            } else {
-                Text(
-                    text = text,
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Medium
-                )
-            }
+        if (isLoading) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(24.dp),
+                color = Color.White,
+                strokeWidth = 2.dp
+            )
+        } else {
+            Text(
+                text = text,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Medium
+            )
         }
     }
 }
 
-// ✨ USING OUR glass effects and modernPressAnimation
 @Composable
 private fun GuestModeButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val colors = LocalExtendedColors.current
+
     OutlinedButton(
         onClick = onClick,
         modifier = modifier
             .fillMaxWidth()
-            .height(Dimensions.buttonHeight)
-            .modernPressAnimation()
-            .enhancedGlass(
-                backgroundColor = MaterialTheme.extendedColors.glass,
-                borderColor = MaterialTheme.extendedColors.glassBorder
-            ),
-        shape = ComponentShapes.Button,
+            .height(56.dp)
+            .modernPressAnimation(),
+        shape = GlassmorphicShapes.Button,
         border = BorderStroke(
-            width = Dimensions.borderThin,
-            color = MaterialTheme.extendedColors.glassBorder
+            width = 1.dp,
+            color = colors.borderGlass
         ),
         colors = ButtonDefaults.outlinedButtonColors(
             containerColor = Color.Transparent,
@@ -788,16 +635,12 @@ private fun GuestModeButton(
         )
     ) {
         Icon(
-            imageVector = Icons.Default.Person,
+            Icons.Default.Person,
             contentDescription = null,
-            modifier = Modifier
-                .size(Dimensions.iconSizeSmall)
-                .electricGlow(
-                    glowColor = MaterialTheme.extendedColors.electricMintGlow,
-                    intensity = 0.3f
-                )
+            modifier = Modifier.size(18.dp),
+            tint = colors.electricMint
         )
-        Spacer(modifier = Modifier.width(Dimensions.spacingSmall))
+        Spacer(modifier = Modifier.width(8.dp))
         Text(
             text = "המשך כאורח",
             style = MaterialTheme.typography.labelLarge,
