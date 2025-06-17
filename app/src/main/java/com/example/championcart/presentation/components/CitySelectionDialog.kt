@@ -17,6 +17,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -73,44 +74,34 @@ class CitySelectionViewModel(
                     _uiState.value = _uiState.value.copy(
                         cities = cities,
                         filteredCities = cities,
-                        isLoading = false,
-                        error = null
+                        isLoading = false
                     )
                 } else {
                     _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        error = "Failed to load cities"
+                        error = "Failed to load cities",
+                        isLoading = false
                     )
                 }
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    error = "Network error: ${e.message}",
-                    // Fallback cities
-                    cities = listOf(
-                        "Tel Aviv", "Jerusalem", "Haifa", "Rishon LeZion",
-                        "Petah Tikva", "Ashdod", "Netanya", "Beer Sheva",
-                        "Bnei Brak", "Ramat Gan", "Ashkelon", "Rehovot"
-                    ).also { fallback ->
-                        _uiState.value = _uiState.value.copy(filteredCities = fallback)
-                    }
+                    error = e.message ?: "Unknown error",
+                    isLoading = false
                 )
             }
         }
     }
 
-    fun onSearchQueryChange(query: String) {
-        _uiState.value = _uiState.value.copy(searchQuery = query)
-
-        val filtered = if (query.isEmpty()) {
-            _uiState.value.cities
-        } else {
-            _uiState.value.cities.filter { city ->
-                city.contains(query, ignoreCase = true)
+    fun onSearchQueryChanged(query: String) {
+        _uiState.value = _uiState.value.copy(
+            searchQuery = query,
+            filteredCities = if (query.isEmpty()) {
+                _uiState.value.cities
+            } else {
+                _uiState.value.cities.filter {
+                    it.contains(query, ignoreCase = true)
+                }
             }
-        }
-
-        _uiState.value = _uiState.value.copy(filteredCities = filtered)
+        )
     }
 
     fun selectCity(city: String) {
@@ -119,7 +110,6 @@ class CitySelectionViewModel(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CitySelectionBottomSheet(
     currentCity: String,
@@ -127,163 +117,80 @@ fun CitySelectionBottomSheet(
     onDismiss: () -> Unit,
     tokenManager: TokenManager
 ) {
-    val viewModel = remember {
-        CitySelectionViewModel(NetworkModule.api, tokenManager)
+    val viewModel = viewModel<CitySelectionViewModel> {
+        CitySelectionViewModel(
+            api = NetworkModule.api,
+            tokenManager = tokenManager
+        )
     }
+
     val uiState by viewModel.uiState.collectAsState()
     val haptics = LocalHapticFeedback.current
     val keyboardController = LocalSoftwareKeyboardController.current
 
-    val sheetState = rememberModalBottomSheetState(
-        skipPartiallyExpanded = true
-    )
-
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = sheetState,
+    Surface(
+        modifier = Modifier.fillMaxSize(),
         shape = ComponentShapes.BottomSheet,
-        containerColor = MaterialTheme.extendedColors.glassFrosted,
-        dragHandle = {
-            // Custom drag handle with glass effect
-            Surface(
-                modifier = Modifier
-                    .padding(top = Dimensions.paddingMedium)
-                    .size(40.dp, 4.dp)
-                    .clip(ComponentShapes.Button),
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
-            ) {}
-        },
-        windowInsets = WindowInsets(0)
+        color = MaterialTheme.extendedColors.glassFrosted
     ) {
         Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = Dimensions.paddingLarge)
-                .padding(bottom = Dimensions.paddingLarge)
+                .fillMaxSize()
+                .padding(Dimensions.paddingLarge)
         ) {
-            // Header with gradient background
-            Surface(
+            // Header with animated icon
+            Column(
                 modifier = Modifier.fillMaxWidth(),
-                shape = ComponentShapes.CardSmall,
-                color = Color.Transparent
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(
-                            brush = Brush.horizontalGradient(
-                                colors = listOf(
-                                    MaterialTheme.extendedColors.electricMint.copy(alpha = 0.1f),
-                                    MaterialTheme.extendedColors.cosmicPurple.copy(alpha = 0.1f)
-                                )
-                            )
-                        )
-                        .padding(Dimensions.paddingLarge)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingMedium)
-                    ) {
-                        // Animated location icon
-                        val infiniteTransition = rememberInfiniteTransition(label = "location")
-                        val iconScale by infiniteTransition.animateFloat(
-                            initialValue = 1f,
-                            targetValue = 1.1f,
-                            animationSpec = infiniteRepeatable(
-                                animation = tween(2000, easing = FastOutSlowInEasing),
-                                repeatMode = RepeatMode.Reverse
-                            ),
-                            label = "scale"
+                    // Animated location icon
+                    AnimatedLocationIcon()
+
+                    Column {
+                        Text(
+                            text = "Select Your City",
+                            style = AppTextStyles.hebrewHeadline,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
                         )
-
-                        Box(
-                            modifier = Modifier
-                                .size(48.dp)
-                                .clip(CircleShape)
-                                .background(
-                                    brush = Brush.radialGradient(
-                                        colors = listOf(
-                                            MaterialTheme.extendedColors.electricMint.copy(alpha = 0.2f),
-                                            MaterialTheme.extendedColors.electricMint.copy(alpha = 0.05f)
-                                        )
-                                    )
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.LocationOn,
-                                contentDescription = null,
-                                tint = MaterialTheme.extendedColors.electricMint,
-                                modifier = Modifier
-                                    .size(Dimensions.iconSizeMedium)
-                                    .scale(iconScale)
-                            )
-                        }
-
-                        Column {
-                            Text(
-                                text = "Select Your City",
-                                style = AppTextStyles.hebrewHeadline,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Text(
-                                text = "Choose your location for accurate prices",
-                                style = AppTextStyles.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+                        Text(
+                            text = "Choose your location for accurate prices",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
             }
 
             Spacer(modifier = Modifier.height(Dimensions.spacingLarge))
 
-            // Search field with glass effect
+            // Search field
             OutlinedTextField(
                 value = uiState.searchQuery,
-                onValueChange = viewModel::onSearchQueryChange,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .glassEffect(),
+                onValueChange = viewModel::onSearchQueryChanged,
+                modifier = Modifier.fillMaxWidth(),
                 placeholder = {
                     Text(
-                        "Search cities...",
-                        style = AppTextStyles.inputHint,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        text = "Search cities...",
+                        style = MaterialTheme.typography.bodyLarge
                     )
                 },
-                textStyle = AppTextStyles.bodyLarge,
                 leadingIcon = {
                     Icon(
                         Icons.Default.Search,
-                        contentDescription = null,
+                        contentDescription = "Search",
                         tint = MaterialTheme.extendedColors.electricMint
                     )
                 },
-                trailingIcon = {
-                    if (uiState.searchQuery.isNotEmpty()) {
-                        IconButton(
-                            onClick = {
-                                viewModel.onSearchQueryChange("")
-                                keyboardController?.hide()
-                            }
-                        ) {
-                            Icon(
-                                Icons.Default.Close,
-                                contentDescription = "Clear search",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                },
-                singleLine = true,
                 shape = ComponentShapes.TextField,
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MaterialTheme.extendedColors.electricMint,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
-                    focusedContainerColor = MaterialTheme.extendedColors.glass,
-                    unfocusedContainerColor = MaterialTheme.extendedColors.glass
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
                 ),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                 keyboardActions = KeyboardActions(
@@ -298,7 +205,7 @@ fun CitySelectionBottomSheet(
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     shape = ComponentShapes.Card,
-                    color = MaterialTheme.extendedColors.errorRed.copy(alpha = 0.1f)
+                    color = MaterialTheme.extendedColors.error.copy(alpha = 0.1f)
                 ) {
                     Row(
                         modifier = Modifier.padding(Dimensions.paddingMedium),
@@ -308,13 +215,13 @@ fun CitySelectionBottomSheet(
                         Icon(
                             Icons.Default.Warning,
                             contentDescription = null,
-                            tint = MaterialTheme.extendedColors.errorRed,
+                            tint = MaterialTheme.extendedColors.error,
                             modifier = Modifier.size(Dimensions.iconSizeSmall)
                         )
                         Text(
                             text = error,
-                            style = AppTextStyles.bodyLarge,
-                            color = MaterialTheme.extendedColors.errorRed
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.extendedColors.error
                         )
                     }
                 }
@@ -338,50 +245,41 @@ fun CitySelectionBottomSheet(
                         ) {
                             CircularProgressIndicator(
                                 color = MaterialTheme.extendedColors.electricMint,
-                                strokeWidth = 3.dp
+                                strokeWidth = 3.dp,
+                                modifier = Modifier.size(48.dp)
                             )
                             Text(
                                 text = "Loading cities...",
-                                style = AppTextStyles.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center
                             )
                         }
                     }
-
-                    uiState.filteredCities.isEmpty() -> {
+                    uiState.filteredCities.isEmpty() && !uiState.isLoading -> {
                         // Empty state
                         Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(Dimensions.paddingXLarge),
+                            modifier = Modifier.fillMaxWidth(),
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.spacedBy(Dimensions.spacingMedium)
                         ) {
                             Icon(
-                                Icons.Default.SearchOff,
+                                Icons.Default.LocationOff,
                                 contentDescription = null,
                                 modifier = Modifier.size(48.dp),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                             )
                             Text(
                                 text = "No cities found",
-                                style = AppTextStyles.hebrewHeadline,
+                                style = MaterialTheme.typography.bodyLarge,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                textAlign = TextAlign.Center
-                            )
-                            Text(
-                                text = "Try adjusting your search",
-                                style = AppTextStyles.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                                 textAlign = TextAlign.Center
                             )
                         }
                     }
-
                     else -> {
                         // Cities list
                         LazyColumn(
-                            modifier = Modifier.fillMaxWidth(),
                             verticalArrangement = Arrangement.spacedBy(Dimensions.spacingExtraSmall),
                             contentPadding = PaddingValues(vertical = Dimensions.spacingSmall)
                         ) {
@@ -418,12 +316,51 @@ fun CitySelectionBottomSheet(
                     ) {
                         Text(
                             "Cancel",
-                            style = AppTextStyles.buttonText
+                            style = AppTextStyles.buttonMedium
                         )
                     }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun AnimatedLocationIcon() {
+    val infiniteTransition = rememberInfiniteTransition(label = "location_animation")
+
+    val iconScale by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "scale"
+    )
+
+    Box(
+        modifier = Modifier
+            .size(48.dp)
+            .clip(CircleShape)
+            .background(
+                brush = Brush.radialGradient(
+                    colors = listOf(
+                        MaterialTheme.extendedColors.electricMint.copy(alpha = 0.2f),
+                        MaterialTheme.extendedColors.electricMint.copy(alpha = 0.05f)
+                    )
+                )
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = Icons.Default.LocationOn,
+            contentDescription = null,
+            tint = MaterialTheme.extendedColors.electricMint,
+            modifier = Modifier
+                .size(Dimensions.iconSizeMedium)
+                .scale(iconScale)
+        )
     }
 }
 
@@ -476,9 +413,9 @@ private fun CityItem(
             Text(
                 text = city,
                 style = if (city.any { Character.UnicodeBlock.of(it) == Character.UnicodeBlock.HEBREW }) {
-                    AppTextStyles.hebrewText
+                    AppTextStyles.hebrewBody
                 } else {
-                    AppTextStyles.bodyLarge
+                    MaterialTheme.typography.bodyLarge
                 },
                 fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
                 color = if (isSelected) {

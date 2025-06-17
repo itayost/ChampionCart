@@ -6,9 +6,7 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
@@ -21,14 +19,14 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.example.championcart.data.local.preferences.TokenManager
 import com.example.championcart.presentation.components.CitySelectionDialog
 import com.example.championcart.presentation.navigation.Screen
 import com.example.championcart.ui.theme.*
@@ -37,21 +35,23 @@ import com.example.championcart.ui.theme.*
 @Composable
 fun HomeScreen(
     navController: NavController,
-    viewModel: HomeViewModel = viewModel()
+    viewModel: HomeViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
+    val tokenManager = TokenManager(context)
     val state by viewModel.state.collectAsState()
     val haptics = LocalHapticFeedback.current
 
     // City selection dialog
     if (state.showCitySelector) {
         CitySelectionDialog(
-            cities = state.availableCities,
-            selectedCity = state.selectedCity,
+            currentCity = state.selectedCity,
             onCitySelected = { city ->
                 viewModel.selectCity(city)
                 haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
             },
-            onDismiss = { viewModel.hideCitySelector() }
+            onDismiss = { viewModel.hideCitySelector() },
+            tokenManager = tokenManager
         )
     }
 
@@ -67,12 +67,12 @@ fun HomeScreen(
                     )
                 )
             ),
-        verticalArrangement = Arrangement.spacedBy(20.dp),
-        contentPadding = PaddingValues(vertical = 20.dp)
+        verticalArrangement = Arrangement.spacedBy(Dimensions.spacingLarge),
+        contentPadding = PaddingValues(vertical = Dimensions.spacingLarge)
     ) {
         item {
-            // Header with greeting and city selector
-            HomeHeader(
+            // Welcome header with city selector
+            WelcomeHeader(
                 userName = state.userName,
                 selectedCity = state.selectedCity,
                 onCityClick = { viewModel.showCitySelector() }
@@ -80,21 +80,21 @@ fun HomeScreen(
         }
 
         item {
-            // Cart status card (if has items)
+            // Cart status card (only if has items)
             if (state.cartItemCount > 0) {
                 CartStatusCard(
                     itemCount = state.cartItemCount,
                     onViewCartClick = {
                         navController.navigate(Screen.Cart.route)
                     },
-                    modifier = Modifier.padding(horizontal = 20.dp)
+                    modifier = Modifier.padding(horizontal = Dimensions.paddingMedium)
                 )
             }
         }
 
         item {
-            // Quick actions
-            QuickActionsSection(
+            // Quick actions grid
+            QuickActionsGrid(
                 onSearchClick = {
                     navController.navigate(Screen.Search.route)
                 },
@@ -104,57 +104,47 @@ fun HomeScreen(
                 onProfileClick = {
                     navController.navigate(Screen.Profile.route)
                 },
-                modifier = Modifier.padding(horizontal = 20.dp)
+                onSavedCartsClick = {
+                    navController.navigate(Screen.SavedCarts.route)
+                },
+                modifier = Modifier.padding(horizontal = Dimensions.paddingMedium)
             )
         }
 
         item {
-            // User stats (if logged in)
-            if (state.userEmail.isNotEmpty()) {
-                UserStatsCard(
-                    totalSavings = state.totalSavings,
-                    savingsThisMonth = state.savingsThisMonth,
-                    comparisonsCount = state.comparisonsCount,
-                    modifier = Modifier.padding(horizontal = 20.dp)
-                )
-            }
-        }
-
-        item {
-            // Recent searches
+            // Recent searches section (only if has searches)
             if (state.recentSearches.isNotEmpty()) {
                 RecentSearchesSection(
                     recentSearches = state.recentSearches,
-                    onSearchClick = { searchTerm ->
-                        viewModel.onRecentSearchClicked(searchTerm)
-                        navController.navigate("${Screen.Search.route}?query=$searchTerm")
+                    onSearchClick = { query ->
+                        viewModel.onSearchQuerySelected(query)
+                        navController.navigate("${Screen.Search.route}?query=$query")
                     },
-                    modifier = Modifier.padding(horizontal = 20.dp)
+                    onRemoveSearch = { query ->
+                        viewModel.removeRecentSearch(query)
+                    },
+                    onClearAll = {
+                        viewModel.clearRecentSearches()
+                    },
+                    modifier = Modifier.padding(horizontal = Dimensions.paddingMedium)
                 )
             }
         }
 
         item {
-            // Error handling
-            state.error?.let { error ->
-                ErrorCard(
-                    message = error,
-                    onRetry = { viewModel.refreshData() },
-                    onDismiss = { viewModel.clearError() },
-                    modifier = Modifier.padding(horizontal = 20.dp)
-                )
-            }
-        }
-
-        // Bottom spacing for navigation bar
-        item {
-            Spacer(modifier = Modifier.height(80.dp))
+            // Getting started guide for new users
+            GettingStartedCard(
+                onSearchClick = {
+                    navController.navigate(Screen.Search.route)
+                },
+                modifier = Modifier.padding(horizontal = Dimensions.paddingMedium)
+            )
         }
     }
 }
 
 @Composable
-fun HomeHeader(
+fun WelcomeHeader(
     userName: String,
     selectedCity: String,
     onCityClick: () -> Unit
@@ -162,55 +152,58 @@ fun HomeHeader(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp)
+            .padding(horizontal = Dimensions.paddingLarge)
     ) {
-        // Greeting
+        // Welcome message with emoji
         Text(
-            text = "Welcome back,",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-
-        Text(
-            text = userName,
-            style = MaterialTheme.typography.headlineMedium,
+            text = "Hello, $userName! 👋",
+            style = AppTextStyles.hebrewHeadline,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface
         )
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(Dimensions.spacingSmall))
 
-        // City selector
-        Card(
+        Text(
+            text = "Find the best prices for your groceries",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        Spacer(modifier = Modifier.height(Dimensions.spacingMedium))
+
+        // City selector chip
+        Surface(
             modifier = Modifier.clickable { onCityClick() },
             shape = ComponentShapes.Chip,
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.extendedColors.glass
-            ),
-            border = BorderStroke(1.dp, MaterialTheme.extendedColors.glassBorder)
+            color = MaterialTheme.extendedColors.electricMint.copy(alpha = 0.1f),
+            border = BorderStroke(1.dp, MaterialTheme.extendedColors.electricMint.copy(alpha = 0.3f))
         ) {
             Row(
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically
+                modifier = Modifier.padding(
+                    horizontal = Dimensions.paddingMedium,
+                    vertical = Dimensions.paddingSmall
+                ),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingExtraSmall)
             ) {
                 Icon(
                     imageVector = Icons.Default.LocationOn,
                     contentDescription = null,
-                    tint = MaterialTheme.extendedColors.electricMint,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(Dimensions.iconSizeSmall),
+                    tint = MaterialTheme.extendedColors.electricMint
                 )
-                Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = selectedCity,
-                    style = MaterialTheme.typography.titleSmall,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.extendedColors.electricMint,
                     fontWeight = FontWeight.Medium
                 )
-                Spacer(modifier = Modifier.width(4.dp))
                 Icon(
-                    imageVector = Icons.Default.KeyboardArrowDown,
+                    imageVector = Icons.Default.ArrowDropDown,
                     contentDescription = "Change city",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(Dimensions.iconSizeSmall),
+                    tint = MaterialTheme.extendedColors.electricMint
                 )
             }
         }
@@ -231,110 +224,120 @@ fun CartStatusCard(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.extendedColors.glassFrosted
         ),
-        border = BorderStroke(1.dp, MaterialTheme.extendedColors.glassBorder),
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+        border = BorderStroke(1.dp, MaterialTheme.extendedColors.glassBorder)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(20.dp),
+                .padding(Dimensions.paddingLarge),
+            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Cart icon
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .background(
-                        brush = Brush.radialGradient(
-                            colors = listOf(
-                                MaterialTheme.extendedColors.electricMint,
-                                MaterialTheme.extendedColors.cosmicPurple
-                            )
-                        ),
-                        shape = CircleShape
-                    ),
-                contentAlignment = Alignment.Center
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingMedium)
             ) {
-                Icon(
-                    imageVector = Icons.Default.ShoppingCart,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(24.dp)
-                )
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.extendedColors.electricMint.copy(alpha = 0.2f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Default.ShoppingCart,
+                        contentDescription = null,
+                        tint = MaterialTheme.extendedColors.electricMint,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+
+                Column {
+                    Text(
+                        text = "Your Cart",
+                        style = AppTextStyles.productNameLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "$itemCount items waiting",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
 
-            Spacer(modifier = Modifier.width(16.dp))
-
-            // Cart info
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "Your Active Cart",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Text(
-                    text = "$itemCount items • Ready to find best prices",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            // Arrow
             Icon(
-                imageVector = Icons.Default.ArrowForward,
+                Icons.Default.ArrowForward,
                 contentDescription = "View cart",
-                tint = MaterialTheme.extendedColors.electricMint,
-                modifier = Modifier.size(24.dp)
+                tint = MaterialTheme.extendedColors.electricMint
             )
         }
     }
 }
 
 @Composable
-fun QuickActionsSection(
+fun QuickActionsGrid(
     onSearchClick: () -> Unit,
     onCartClick: () -> Unit,
     onProfileClick: () -> Unit,
+    onSavedCartsClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Column(modifier = modifier) {
+    Column(
+        modifier = modifier.fillMaxWidth()
+    ) {
         Text(
             text = "Quick Actions",
-            style = MaterialTheme.typography.titleLarge,
+            style = AppTextStyles.hebrewHeadline,
             fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(bottom = 16.dp)
+            modifier = Modifier.padding(bottom = Dimensions.spacingMedium)
         )
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        // 2x2 grid of action cards
+        Column(
+            verticalArrangement = Arrangement.spacedBy(Dimensions.spacingMedium)
         ) {
-            // Search products
-            QuickActionCard(
-                title = "Search",
-                subtitle = "Find products",
-                icon = Icons.Default.Search,
-                onClick = onSearchClick,
-                modifier = Modifier.weight(1f)
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingMedium)
+            ) {
+                QuickActionCard(
+                    title = "Search Products",
+                    subtitle = "Find best prices",
+                    icon = Icons.Default.Search,
+                    onClick = onSearchClick,
+                    modifier = Modifier.weight(1f)
+                )
 
-            // View cart
-            QuickActionCard(
-                title = "Cart",
-                subtitle = "View items",
-                icon = Icons.Default.ShoppingCart,
-                onClick = onCartClick,
-                modifier = Modifier.weight(1f)
-            )
+                QuickActionCard(
+                    title = "My Cart",
+                    subtitle = "View items",
+                    icon = Icons.Default.ShoppingCart,
+                    onClick = onCartClick,
+                    modifier = Modifier.weight(1f)
+                )
+            }
 
-            // Profile
-            QuickActionCard(
-                title = "Profile",
-                subtitle = "Your stats",
-                icon = Icons.Default.Person,
-                onClick = onProfileClick,
-                modifier = Modifier.weight(1f)
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingMedium)
+            ) {
+                QuickActionCard(
+                    title = "Saved Carts",
+                    subtitle = "Your lists",
+                    icon = Icons.Default.Bookmark,
+                    onClick = onSavedCartsClick,
+                    modifier = Modifier.weight(1f)
+                )
+
+                QuickActionCard(
+                    title = "Profile",
+                    subtitle = "Settings",
+                    icon = Icons.Default.Person,
+                    onClick = onProfileClick,
+                    modifier = Modifier.weight(1f)
+                )
+            }
         }
     }
 }
@@ -360,7 +363,7 @@ fun QuickActionCard(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp),
+                .padding(Dimensions.paddingMedium),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
@@ -370,7 +373,7 @@ fun QuickActionCard(
                 tint = MaterialTheme.extendedColors.electricMint,
                 modifier = Modifier.size(32.dp)
             )
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(Dimensions.spacingSmall))
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleSmall,
@@ -388,10 +391,117 @@ fun QuickActionCard(
 }
 
 @Composable
-fun UserStatsCard(
-    totalSavings: Double,
-    savingsThisMonth: Double,
-    comparisonsCount: Int,
+fun RecentSearchesSection(
+    recentSearches: List<String>,
+    onSearchClick: (String) -> Unit,
+    onRemoveSearch: (String) -> Unit,
+    onClearAll: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.fillMaxWidth()
+    ) {
+        // Header with clear all button
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Recent Searches",
+                style = AppTextStyles.hebrewHeadline,
+                fontWeight = FontWeight.Bold
+            )
+
+            TextButton(
+                onClick = onClearAll,
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = MaterialTheme.extendedColors.electricMint
+                )
+            ) {
+                Text(
+                    text = "Clear All",
+                    style = MaterialTheme.typography.labelLarge
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(Dimensions.spacingMedium))
+
+        // Recent searches chips
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingSmall),
+            contentPadding = PaddingValues(horizontal = Dimensions.spacingSmall)
+        ) {
+            items(recentSearches.size) { index ->
+                val search = recentSearches[index]
+                RecentSearchChip(
+                    text = search,
+                    onSearchClick = { onSearchClick(search) },
+                    onRemoveClick = { onRemoveSearch(search) }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun RecentSearchChip(
+    text: String,
+    onSearchClick: () -> Unit,
+    onRemoveClick: () -> Unit
+) {
+    FilterChip(
+        onClick = onSearchClick,
+        label = {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Icon(
+                    Icons.Default.History,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                    tint = MaterialTheme.extendedColors.electricMint
+                )
+                Text(
+                    text = text,
+                    style = MaterialTheme.typography.labelMedium,
+                    maxLines = 1
+                )
+
+                // Remove button
+                IconButton(
+                    onClick = onRemoveClick,
+                    modifier = Modifier.size(20.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Close,
+                        contentDescription = "Remove search",
+                        modifier = Modifier.size(12.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        },
+        selected = false,
+        enabled = true,
+        shape = ComponentShapes.Chip,
+        colors = FilterChipDefaults.filterChipColors(
+            containerColor = MaterialTheme.extendedColors.glass,
+            labelColor = MaterialTheme.colorScheme.onSurface
+        ),
+        border = FilterChipDefaults.filterChipBorder(
+            enabled = true,
+            selected = false,
+            borderColor = MaterialTheme.extendedColors.glassBorder
+        )
+    )
+}
+
+@Composable
+fun GettingStartedCard(
+    onSearchClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -403,181 +513,66 @@ fun UserStatsCard(
         border = BorderStroke(1.dp, MaterialTheme.extendedColors.glassBorder)
     ) {
         Column(
-            modifier = Modifier.padding(20.dp)
+            modifier = Modifier.padding(Dimensions.paddingLarge),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                text = "Your Savings",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+            // Icon
+            Box(
+                modifier = Modifier
+                    .size(64.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.extendedColors.electricMint.copy(alpha = 0.1f)),
+                contentAlignment = Alignment.Center
             ) {
-                StatItem(
-                    label = "Total Saved",
-                    value = "₪${String.format("%.2f", totalSavings)}",
-                    icon = Icons.Default.Savings
-                )
-                StatItem(
-                    label = "This Month",
-                    value = "₪${String.format("%.2f", savingsThisMonth)}",
-                    icon = Icons.Default.CalendarMonth
-                )
-                StatItem(
-                    label = "Comparisons",
-                    value = comparisonsCount.toString(),
-                    icon = Icons.Default.Compare
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun StatItem(
-    label: String,
-    value: String,
-    icon: ImageVector
-) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = MaterialTheme.extendedColors.successGreen,
-            modifier = Modifier.size(24.dp)
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = value,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.extendedColors.successGreen
-        )
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
-        )
-    }
-}
-
-@Composable
-fun RecentSearchesSection(
-    recentSearches: List<String>,
-    onSearchClick: (String) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Column(modifier = modifier) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "Recent Searches",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = "Clear All",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.extendedColors.electricMint,
-                modifier = Modifier.clickable { /* TODO: Clear searches */ }
-            )
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 4.dp)
-        ) {
-            items(recentSearches) { searchTerm ->
-                RecentSearchChip(
-                    searchTerm = searchTerm,
-                    onClick = { onSearchClick(searchTerm) }
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun RecentSearchChip(
-    searchTerm: String,
-    onClick: () -> Unit
-) {
-    FilterChip(
-        onClick = onClick,
-        label = {
-            Text(
-                text = searchTerm,
-                style = MaterialTheme.typography.bodyMedium
-            )
-        },
-        selected = false,
-        shape = ComponentShapes.Chip,
-        colors = FilterChipDefaults.filterChipColors(
-            containerColor = MaterialTheme.extendedColors.glass,
-            labelColor = MaterialTheme.colorScheme.onSurface
-        ),
-        border = FilterChipDefaults.filterChipBorder(
-            borderColor = MaterialTheme.extendedColors.glassBorder
-        )
-    )
-}
-
-@Composable
-fun ErrorCard(
-    message: String,
-    onRetry: () -> Unit,
-    onDismiss: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = ComponentShapes.Card,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.1f)
-        ),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.3f))
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = Icons.Default.Warning,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.error,
-                modifier = Modifier.size(24.dp)
-            )
-
-            Spacer(modifier = Modifier.width(12.dp))
-
-            Text(
-                text = message,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.weight(1f)
-            )
-
-            TextButton(onClick = onRetry) {
-                Text("Retry")
-            }
-
-            IconButton(onClick = onDismiss) {
                 Icon(
-                    imageVector = Icons.Default.Close,
-                    contentDescription = "Dismiss"
+                    Icons.Default.Lightbulb,
+                    contentDescription = null,
+                    tint = MaterialTheme.extendedColors.electricMint,
+                    modifier = Modifier.size(32.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(Dimensions.spacingMedium))
+
+            // Title
+            Text(
+                text = "Start Finding Better Prices!",
+                style = AppTextStyles.productNameLarge,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(Dimensions.spacingSmall))
+
+            // Description
+            Text(
+                text = "Search for products to compare prices across Shufersal and Victory stores",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(Dimensions.spacingLarge))
+
+            // CTA Button
+            Button(
+                onClick = onSearchClick,
+                modifier = Modifier.fillMaxWidth(),
+                shape = ComponentShapes.Button,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.extendedColors.electricMint
+                )
+            ) {
+                Icon(
+                    Icons.Default.Search,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(Dimensions.spacingSmall))
+                Text(
+                    text = "Start Searching",
+                    style = AppTextStyles.buttonMedium,
+                    fontWeight = FontWeight.Bold
                 )
             }
         }

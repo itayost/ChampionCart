@@ -3,24 +3,18 @@ package com.example.championcart.presentation.screens.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.championcart.data.local.preferences.TokenManager
-import com.example.championcart.domain.repository.PriceRepository
 import com.example.championcart.domain.repository.CartRepository
-import com.example.championcart.domain.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+// Simplified HomeState with only available data
 data class HomeState(
     val userName: String = "Champion",
-    val userEmail: String = "",
     val selectedCity: String = "Tel Aviv",
-    val availableCities: List<String> = emptyList(),
-    val recentSearches: List<String> = emptyList(),
     val cartItemCount: Int = 0,
-    val totalSavings: Double = 0.0,
-    val savingsThisMonth: Double = 0.0,
-    val comparisonsCount: Int = 0,
+    val recentSearches: List<String> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null,
     val showCitySelector: Boolean = false
@@ -28,9 +22,7 @@ data class HomeState(
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val priceRepository: PriceRepository,
     private val cartRepository: CartRepository,
-    private val userRepository: UserRepository,
     private val tokenManager: TokenManager
 ) : ViewModel() {
 
@@ -39,164 +31,106 @@ class HomeViewModel @Inject constructor(
 
     init {
         loadUserData()
-        loadCities()
-        loadUserStats()
         observeCartCount()
         loadRecentSearches()
     }
 
+    // ============ DATA LOADING METHODS ============
+
     private fun loadUserData() {
         viewModelScope.launch {
             try {
-                // Get user email from token manager
+                // Get user email and extract name
                 val email = tokenManager.getUserEmail()
                 val userName = if (email != null) {
-                    // Extract name from email
+                    // Extract name from email (before @)
                     email.substringBefore("@")
                         .split(".", "_", "-")
                         .firstOrNull()
-                        ?.replaceFirstChar { it.uppercase() }
+                        ?.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
                         ?: "Champion"
                 } else {
-                    "Champion" // Guest mode
+                    "Champion" // Guest mode default
                 }
 
                 // Get saved city preference
-                val savedCity = "Tel Aviv" // Default city, could come from tokenManager.getSelectedCity()
+                val savedCity = tokenManager.getSelectedCity()
 
                 _state.update {
                     it.copy(
                         userName = userName,
-                        userEmail = email ?: "",
-                        selectedCity = savedCity
+                        selectedCity = savedCity,
+                        isLoading = false,
+                        error = null
                     )
                 }
-            } catch (e: Exception) {
-                _state.update {
-                    it.copy(error = "Failed to load user data: ${e.message}")
-                }
-            }
-        }
-    }
-
-    private fun loadCities() {
-        viewModelScope.launch {
-            _state.update { it.copy(isLoading = true) }
-
-            try {
-                val result = priceRepository.getCitiesList()
-                result.fold(
-                    onSuccess = { cities ->
-                        _state.update {
-                            it.copy(
-                                availableCities = cities,
-                                isLoading = false,
-                                error = null
-                            )
-                        }
-                    },
-                    onFailure = { exception ->
-                        _state.update {
-                            it.copy(
-                                availableCities = listOf("Tel Aviv", "Jerusalem", "Haifa"), // Fallback cities
-                                isLoading = false,
-                                error = "Failed to load cities: ${exception.message}"
-                            )
-                        }
-                    }
-                )
             } catch (e: Exception) {
                 _state.update {
                     it.copy(
-                        availableCities = listOf("Tel Aviv", "Jerusalem", "Haifa"),
-                        isLoading = false,
-                        error = "Network error: ${e.message}"
+                        error = "Failed to load user data: ${e.message}",
+                        isLoading = false
                     )
                 }
-            }
-        }
-    }
-
-    private fun loadUserStats() {
-        viewModelScope.launch {
-            try {
-                val userId = tokenManager.getUserEmail() ?: return@launch
-
-                // Get user stats from repository
-                val statsResult = userRepository.getUserStats(userId)
-                statsResult.fold(
-                    onSuccess = { stats ->
-                        _state.update {
-                            it.copy(
-                                totalSavings = stats.totalSavings,
-                                savingsThisMonth = stats.savingsThisMonth,
-                                comparisonsCount = stats.comparisonsCount
-                            )
-                        }
-                    },
-                    onFailure = {
-                        // Use default values if stats loading fails
-                        _state.update {
-                            it.copy(
-                                totalSavings = 0.0,
-                                savingsThisMonth = 0.0,
-                                comparisonsCount = 0
-                            )
-                        }
-                    }
-                )
-            } catch (e: Exception) {
-                // Continue with default values
             }
         }
     }
 
     private fun observeCartCount() {
         viewModelScope.launch {
-            cartRepository.getCartItems()
-                .catch { /* Handle error silently */ }
-                .collect { cartItems ->
-                    _state.update {
-                        it.copy(cartItemCount = cartItems.size)
+            try {
+                cartRepository.getCartItems()
+                    .catch {
+                        // Handle error silently, cart count will remain 0
                     }
-                }
+                    .collect { cartItems ->
+                        _state.update {
+                            it.copy(cartItemCount = cartItems.size)
+                        }
+                    }
+            } catch (e: Exception) {
+                // Cart observation failed, keep count at 0
+            }
         }
     }
 
     private fun loadRecentSearches() {
         viewModelScope.launch {
-            // Load recent searches from local storage
-            // For now, using mock data - could be from TokenManager or local database
-            val recentSearches = listOf(
-                "חלב תנובה",
-                "לחם",
-                "ביצים",
-                "במבה",
-                "קפה"
-            )
+            try {
+                // Load real recent searches from TokenManager
+                val recentSearches = tokenManager.getRecentSearches()
 
-            _state.update {
-                it.copy(recentSearches = recentSearches)
+                _state.update {
+                    it.copy(recentSearches = recentSearches)
+                }
+            } catch (e: Exception) {
+                // Use empty list if loading fails
+                _state.update {
+                    it.copy(recentSearches = emptyList())
+                }
             }
         }
     }
 
+    // ============ USER INTERACTION METHODS ============
+
     fun selectCity(city: String) {
         viewModelScope.launch {
-            _state.update {
-                it.copy(
-                    selectedCity = city,
-                    showCitySelector = false,
-                    error = null
-                )
-            }
-
-            // Save selected city to preferences
             try {
-                // tokenManager.saveSelectedCity(city)
+                // Save to TokenManager
+                tokenManager.saveSelectedCity(city)
+
+                _state.update {
+                    it.copy(
+                        selectedCity = city,
+                        showCitySelector = false,
+                        error = null
+                    )
+                }
             } catch (e: Exception) {
                 _state.update {
-                    it.copy(error = "Failed to save city preference")
+                    it.copy(
+                        error = "Failed to save city preference: ${e.message}"
+                    )
                 }
             }
         }
@@ -214,47 +148,66 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    fun onSearchClicked(query: String = "") {
-        // This will be handled by navigation in the UI
-        if (query.isNotEmpty()) {
-            addToRecentSearches(query)
-        }
-    }
+    // ============ SEARCH RELATED METHODS ============
 
-    fun onRecentSearchClicked(searchTerm: String) {
-        // This will be handled by navigation in the UI
-        addToRecentSearches(searchTerm)
-    }
-
-    private fun addToRecentSearches(searchTerm: String) {
+    fun onSearchQuerySelected(query: String) {
         viewModelScope.launch {
-            val currentSearches = _state.value.recentSearches.toMutableList()
+            try {
+                // Add to recent searches when user selects a search
+                tokenManager.addRecentSearch(query)
 
-            // Remove if already exists
-            currentSearches.remove(searchTerm)
-
-            // Add to beginning
-            currentSearches.add(0, searchTerm)
-
-            // Keep only last 10
-            val updatedSearches = currentSearches.take(10)
-
-            _state.update {
-                it.copy(recentSearches = updatedSearches)
+                // Reload recent searches to update UI immediately
+                loadRecentSearches()
+            } catch (e: Exception) {
+                // If saving fails, continue silently
             }
-
-            // Save to local storage
-            // tokenManager.saveRecentSearches(updatedSearches)
         }
     }
 
-    fun refreshData() {
-        loadCities()
-        loadUserStats()
-        clearError()
+    fun clearRecentSearches() {
+        viewModelScope.launch {
+            try {
+                tokenManager.clearRecentSearches()
+
+                _state.update {
+                    it.copy(recentSearches = emptyList())
+                }
+            } catch (e: Exception) {
+                _state.update {
+                    it.copy(error = "Failed to clear search history")
+                }
+            }
+        }
     }
+
+    fun removeRecentSearch(search: String) {
+        viewModelScope.launch {
+            try {
+                tokenManager.removeRecentSearch(search)
+
+                // Reload to update UI
+                loadRecentSearches()
+            } catch (e: Exception) {
+                // If removal fails, continue silently
+            }
+        }
+    }
+
+    // ============ ERROR HANDLING ============
 
     fun clearError() {
-        _state.update { it.copy(error = null) }
+        _state.update {
+            it.copy(error = null)
+        }
+    }
+
+    fun refresh() {
+        _state.update {
+            it.copy(isLoading = true, error = null)
+        }
+
+        loadUserData()
+        loadRecentSearches()
+        // Cart count is observed automatically
     }
 }
