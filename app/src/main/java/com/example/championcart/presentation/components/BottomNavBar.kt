@@ -76,7 +76,7 @@ fun BottomNavBar(navController: NavController) {
                                 ) {
                                     Text(
                                         text = cartCount.toString(),
-                                        style = AppTextStyles.badgeText
+                                        style = AppTextStyles.badge
                                     )
                                 }
                             }
@@ -97,7 +97,7 @@ fun BottomNavBar(navController: NavController) {
                     Text(
                         text = item.label,
                         // Using custom button text style for navigation labels
-                        style = AppTextStyles.buttonText.copy(
+                        style = AppTextStyles.buttonMedium.copy(
                             fontSize = 12.sp // Slightly smaller for navigation
                         )
                     )

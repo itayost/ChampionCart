@@ -454,6 +454,221 @@ object AppTextStyles {
         fontWeight = FontWeight(700),
         letterSpacing = 0.5.sp
     )
+
+    object AppTextStyles {
+        // Hero text with dynamic weight
+        val heroDisplay = TextStyle(
+            fontFamily = SpaceGroteskFontFamily,
+            fontSize = 48.sp,
+            lineHeight = 56.sp,
+            letterSpacing = (-0.5).sp,
+            fontWeight = FontWeight(700)
+        )
+
+        // Hebrew display text
+        val hebrewDisplay = TextStyle(
+            fontFamily = HeeboFontFamily,
+            fontSize = 36.sp,
+            lineHeight = 44.sp,
+            fontWeight = FontWeight.Black
+        )
+
+        val hebrewHeadline = TextStyle(
+            fontFamily = HeeboFontFamily,
+            fontSize = 24.sp,
+            lineHeight = 32.sp,
+            fontWeight = FontWeight.Bold
+        )
+
+        // Hebrew body text
+        val hebrewBody = TextStyle(
+            fontFamily = RubikFontFamily,
+            fontSize = 16.sp,
+            lineHeight = 24.sp,
+            fontWeight = FontWeight.Normal
+        )
+
+        val hebrewBodyMedium = TextStyle(
+            fontFamily = RubikFontFamily,
+            fontSize = 14.sp,
+            lineHeight = 20.sp,
+            fontWeight = FontWeight.Normal
+        )
+
+        // Hebrew support helper
+        val hebrewText = hebrewBody
+
+        // Price displays with animated transitions
+        val priceHero = TextStyle(
+            fontFamily = JetBrainsMonoFontFamily,
+            fontSize = 36.sp,
+            lineHeight = 40.sp,
+            fontWeight = FontWeight(700),
+            fontFeatureSettings = "tnum" // Tabular numbers
+        )
+
+        val priceLarge = TextStyle(
+            fontFamily = JetBrainsMonoFontFamily,
+            fontSize = 24.sp,
+            lineHeight = 28.sp,
+            fontWeight = FontWeight(600),
+            fontFeatureSettings = "tnum"
+        )
+
+        val priceMedium = TextStyle(
+            fontFamily = JetBrainsMonoFontFamily,
+            fontSize = 18.sp,
+            lineHeight = 24.sp,
+            fontWeight = FontWeight(500),
+            fontFeatureSettings = "tnum"
+        )
+
+        val priceSmall = TextStyle(
+            fontFamily = JetBrainsMonoFontFamily,
+            fontSize = 14.sp,
+            lineHeight = 20.sp,
+            fontWeight = FontWeight(500),
+            fontFeatureSettings = "tnum"
+        )
+
+        // Aliases for price displays
+        val priceDisplay = priceLarge
+        val priceDisplayLarge = priceHero
+        val priceDisplaySmall = priceSmall
+
+        // Product names with emphasis
+        val productNameLarge = TextStyle(
+            fontFamily = InterFontFamily,
+            fontSize = 18.sp,
+            lineHeight = 24.sp,
+            fontWeight = FontWeight(600)
+        )
+
+        val productName = TextStyle(
+            fontFamily = InterFontFamily,
+            fontSize = 16.sp,
+            lineHeight = 22.sp,
+            fontWeight = FontWeight(500)
+        )
+
+        // Store names with branding
+        val storeNameLarge = TextStyle(
+            fontFamily = InterFontFamily,
+            fontSize = 16.sp,
+            lineHeight = 20.sp,
+            fontWeight = FontWeight(600),
+            letterSpacing = 0.5.sp
+        )
+
+        val storeName = TextStyle(
+            fontFamily = InterFontFamily,
+            fontSize = 14.sp,
+            lineHeight = 18.sp,
+            fontWeight = FontWeight(500),
+            letterSpacing = 0.25.sp
+        )
+
+        // Button text styles
+        val buttonLarge = TextStyle(
+            fontFamily = InterFontFamily,
+            fontSize = 16.sp,
+            lineHeight = 24.sp,
+            fontWeight = FontWeight(600),
+            letterSpacing = 0.5.sp
+        )
+
+        val buttonMedium = TextStyle(
+            fontFamily = InterFontFamily,
+            fontSize = 14.sp,
+            lineHeight = 20.sp,
+            fontWeight = FontWeight(600),
+            letterSpacing = 0.5.sp
+        )
+
+        val buttonSmall = TextStyle(
+            fontFamily = InterFontFamily,
+            fontSize = 12.sp,
+            lineHeight = 16.sp,
+            fontWeight = FontWeight(600),
+            letterSpacing = 0.5.sp
+        )
+
+        // MISSING STYLES ADDED:
+        // Alias for navigation button text (referenced in BottomNavBar.kt)
+        val buttonText = buttonMedium
+
+        // Chip and badge text
+        val chip = TextStyle(
+            fontFamily = InterFontFamily,
+            fontSize = 12.sp,
+            lineHeight = 16.sp,
+            fontWeight = FontWeight(500),
+            letterSpacing = 0.25.sp
+        )
+
+        val badge = TextStyle(
+            fontFamily = InterFontFamily,
+            fontSize = 10.sp,
+            lineHeight = 12.sp,
+            fontWeight = FontWeight(600),
+            letterSpacing = 0.5.sp
+        )
+
+        // MISSING STYLES ADDED:
+        // Alias for badge text (referenced in BottomNavBar.kt and PriceComponents.kt)
+        val badgeText = badge
+
+        // Input field styles
+        val inputLabel = TextStyle(
+            fontFamily = InterFontFamily,
+            fontSize = 12.sp,
+            lineHeight = 16.sp,
+            fontWeight = FontWeight(500),
+            letterSpacing = 0.5.sp
+        )
+
+        val inputText = TextStyle(
+            fontFamily = InterFontFamily,
+            fontSize = 16.sp,
+            lineHeight = 24.sp,
+            fontWeight = FontWeight(400),
+            letterSpacing = 0.15.sp
+        )
+
+        val inputHint = TextStyle(
+            fontFamily = InterFontFamily,
+            fontSize = 16.sp,
+            lineHeight = 24.sp,
+            fontWeight = FontWeight(400),
+            letterSpacing = 0.15.sp
+        )
+
+        // Caption and supporting text
+        val caption = TextStyle(
+            fontFamily = InterFontFamily,
+            fontSize = 12.sp,
+            lineHeight = 16.sp,
+            fontWeight = FontWeight(400),
+            letterSpacing = 0.4.sp
+        )
+
+        val overline = TextStyle(
+            fontFamily = InterFontFamily,
+            fontSize = 10.sp,
+            lineHeight = 14.sp,
+            fontWeight = FontWeight(500),
+            letterSpacing = 1.5.sp
+        )
+
+        // Special effects text
+        val glowText = TextStyle(
+            fontFamily = SpaceGroteskFontFamily,
+            fontSize = 20.sp,
+            lineHeight = 24.sp,
+            fontWeight = FontWeight(700),
+            letterSpacing = 0.5.sp
+        )
+    }
 }
 
 /**

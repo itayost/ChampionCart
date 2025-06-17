@@ -38,7 +38,7 @@ object ChampionCartColors {
     // Price Indicators with Glow
     val bestPrice = Color(0xFF00E676) // Success Green
     val bestPriceGlow = Color(0x5500E676)
-    val midPrice = Color(0xFFFFB300)  // Warning Amber
+    val midPrice = Color(0xFFFFB300)  // Warning Amber (alias for warningAmber)
     val midPriceGlow = Color(0x55FFB300)
     val highPrice = Color(0xFFFF5252) // Error Red
     val highPriceGlow = Color(0x55FF5252)
@@ -63,7 +63,7 @@ object ChampionCartColors {
     val glassFrosted = Color(0xB8F8F9FF) // 72% opacity
     val glassFrostedBorder = Color(0x4DFFFFFF) // 30% white
 
-    // Text Colors
+    // Text Colors - Light Mode
     val textPrimary = Color(0xFF0A0E27)
     val textSecondary = Color(0xFF5A6178)
     val textTertiary = Color(0xFF8B92A8)
