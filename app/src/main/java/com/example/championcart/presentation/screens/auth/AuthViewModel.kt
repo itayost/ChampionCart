@@ -37,7 +37,7 @@ class AuthViewModel @Inject constructor(
         _state.update {
             it.copy(
                 email = email,
-                emailError = validateEmail(email)
+                emailError = if (email.isNotBlank()) validateEmail(email) else null
             )
         }
     }
@@ -46,7 +46,7 @@ class AuthViewModel @Inject constructor(
         _state.update {
             it.copy(
                 password = password,
-                passwordError = validatePassword(password)
+                passwordError = if (password.isNotBlank()) validatePassword(password) else null
             )
         }
     }
@@ -55,12 +55,14 @@ class AuthViewModel @Inject constructor(
         _state.update {
             it.copy(
                 confirmPassword = confirmPassword,
-                confirmPasswordError = validateConfirmPassword(confirmPassword, _state.value.password)
+                confirmPasswordError = if (confirmPassword.isNotBlank())
+                    validateConfirmPassword(confirmPassword, _state.value.password) else null
             )
         }
     }
 
-    fun toggleMode() {
+    // MISSING FUNCTION - This was being called in LoginRegisterScreen
+    fun toggleAuthMode() {
         _state.update {
             it.copy(
                 isLoginMode = !it.isLoginMode,
@@ -72,6 +74,9 @@ class AuthViewModel @Inject constructor(
             )
         }
     }
+
+    // Alias for backwards compatibility (if needed)
+    fun toggleMode() = toggleAuthMode()
 
     fun login() {
         val currentState = _state.value
@@ -208,6 +213,12 @@ class AuthViewModel @Inject constructor(
         _state.update { it.copy(error = null) }
     }
 
+    fun resetState() {
+        _state.update {
+            AuthState()
+        }
+    }
+
     private fun validateEmail(email: String): String? {
         return when {
             email.isBlank() -> "Email is required"
@@ -238,9 +249,9 @@ class AuthViewModel @Inject constructor(
 class AuthViewModelFactory(
     private val authRepository: AuthRepository
 ) : androidx.lifecycle.ViewModelProvider.Factory {
+    @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(AuthViewModel::class.java)) {
-            @Suppress("UNCHECKED_CAST")
             return AuthViewModel(authRepository) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")

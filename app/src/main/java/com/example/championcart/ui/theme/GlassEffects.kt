@@ -1,21 +1,34 @@
 package com.example.championcart.ui.theme
 
-import androidx.compose.animation.core.*
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.runtime.*
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
-import androidx.compose.ui.draw.*
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.*
-import androidx.compose.ui.graphics.drawscope.*
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import kotlin.random.Random
 
 /**
  * Champion Cart - Glass Morphism Effects
@@ -110,26 +123,23 @@ fun Modifier.animatedGradientBorder(
         label = "gradient_offset"
     )
 
-    this.drawWithCache {
+    this.drawWithContent {
+        // Draw the content first
+        drawContent()
+
+        // Draw animated border
         val brush = Brush.linearGradient(
             colors = gradientColors,
             start = Offset(0f, 0f),
             end = Offset(size.width * offset, size.height * offset)
         )
 
-        onDrawBehind {
-            val strokeWidth = borderWidth.toPx()
-            drawWithLayer {
-                // Draw background
-                drawRect(Color.Transparent)
-                // Draw border
-                drawRoundRect(
-                    brush = brush,
-                    size = size,
-                    style = Stroke(width = strokeWidth)
-                )
-            }
-        }
+        val strokeWidth = borderWidth.toPx()
+        drawRoundRect(
+            brush = brush,
+            size = size,
+            style = Stroke(width = strokeWidth)
+        )
     }
 }
 
@@ -157,43 +167,45 @@ fun Modifier.glowEffect(
         0.5f
     }
 
-    this.drawBehind {
+    this.drawWithContent {
+        // Draw glow effect behind content
         val glowRadiusPx = glowRadius.toPx()
-        drawWithLayer {
-            // Create glow effect using multiple shadow layers
-            for (i in 1..3) {
-                drawRect(
-                    color = glowColor.copy(alpha = animatedAlpha / (i * 2)),
-                    size = Size(
-                        size.width + glowRadiusPx * i,
-                        size.height + glowRadiusPx * i
-                    ),
-                    topLeft = Offset(
-                        -glowRadiusPx * i / 2,
-                        -glowRadiusPx * i / 2
-                    )
+
+        // Create glow effect using multiple shadow layers
+        for (i in 1..3) {
+            drawRect(
+                color = glowColor.copy(alpha = animatedAlpha / (i * 2)),
+                size = Size(
+                    size.width + glowRadiusPx * i,
+                    size.height + glowRadiusPx * i
+                ),
+                topLeft = Offset(
+                    -glowRadiusPx * i / 2,
+                    -glowRadiusPx * i / 2
                 )
-            }
+            )
         }
+
+        // Draw the actual content on top
+        drawContent()
     }
 }
 
-/*
+/**
  * Subtle noise texture for glass surfaces
  */
 fun Modifier.noiseTexture(
     opacity: Float = 0.02f
-) = this.drawWithCache {
-    val noise = generateNoise(size.width.toInt(), size.height.toInt())
-    onDrawOver {
-        drawWithLayer {
-            drawRect(
-                color = Color.White.copy(alpha = opacity),
-                size = size,
-                blendMode = BlendMode.Overlay
-            )
-        }
-    }
+) = this.drawWithContent {
+    // Draw content first
+    drawContent()
+
+    // Add subtle noise overlay
+    drawRect(
+        color = Color.White.copy(alpha = opacity),
+        size = size,
+        blendMode = BlendMode.Overlay
+    )
 }
 
 /**
@@ -255,16 +267,18 @@ fun Modifier.pulseEffect(
 fun Modifier.gradientOverlay(
     gradient: GradientColors,
     alpha: Float = 1f
-) = this.drawWithCache {
+) = this.drawWithContent {
+    // Draw content first
+    drawContent()
+
+    // Add gradient overlay
     val brush = Brush.linearGradient(
         colors = gradient.colors.map { it.copy(alpha = alpha) },
         start = Offset(size.width * gradient.start.x, size.height * gradient.start.y),
         end = Offset(size.width * gradient.end.x, size.height * gradient.end.y)
     )
 
-    onDrawBehind {
-        drawRect(brush = brush, size = size)
-    }
+    drawRect(brush = brush, size = size)
 }
 
 /**
@@ -289,16 +303,18 @@ fun Modifier.shimmerEffect(
         label = "shimmer_offset"
     )
 
-    this.drawWithCache {
+    this.drawWithContent {
+        // Draw content first
+        drawContent()
+
+        // Add shimmer effect
         val brush = Brush.linearGradient(
             colors = colors,
             start = Offset(size.width * offset, 0f),
             end = Offset(size.width * (offset + 0.5f), size.height)
         )
 
-        onDrawBehind {
-            drawRect(brush = brush, size = size)
-        }
+        drawRect(brush = brush, size = size, blendMode = BlendMode.Overlay)
     }
 }
 
@@ -362,24 +378,20 @@ fun Modifier.skeletonEffect(
     .clip(shape)
     .shimmerEffect()
 
-// Helper functions
-private fun generateNoise(width: Int, height: Int): ImageBitmap {
-    // Simple noise generation - in a real app you might use a more sophisticated approach
-    val random = Random(42) // Fixed seed for consistent noise
-    val pixels = IntArray(width * height) {
-        if (random.nextFloat() > 0.5f) 0xFFFFFFFF.toInt() else 0xFF000000.toInt()
-    }
-    return ImageBitmap(width, height, ImageBitmapConfig.Argb8888, true) {
-        // This is a simplified implementation
-        // In a real app, you'd properly set the pixel data
-    }
-}
+// Helper functions - removed the problematic generateNoise function
+// and drawWithLayer extension since they were causing issues
 
-// Extension for drawing with layer effects
-private fun DrawScope.drawWithLayer(block: DrawScope.() -> Unit) {
-    drawIntoCanvas { canvas ->
-        canvas.saveLayer(Rect(Offset.Zero, size), Paint())
-        block()
-        canvas.restore()
+// Simple implementation that focuses on functionality over complex effects
+private fun DrawScope.drawSimpleGlow(
+    color: Color,
+    radius: Float,
+    center: Offset = this.center
+) {
+    for (i in 1..3) {
+        drawCircle(
+            color = color.copy(alpha = 0.1f / i),
+            radius = radius * i,
+            center = center
+        )
     }
 }

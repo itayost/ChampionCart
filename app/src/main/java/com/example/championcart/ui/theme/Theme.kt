@@ -144,6 +144,8 @@ data class ExtendedColors(
     // Glass effects
     val glass: Color,
     val glassBorder: Color,
+    val glassDark: Color,
+    val glassDarkBorder: Color,
     val glassFrosted: Color,
     val glassFrostedBorder: Color,
 
@@ -199,6 +201,8 @@ val lightExtendedColors = ExtendedColors(
 
     glass = ChampionCartColors.glassLight,
     glassBorder = ChampionCartColors.glassLightBorder,
+    glassDark = ChampionCartColors.glassDark,
+    glassDarkBorder = ChampionCartColors.glassDarkBorder,
     glassFrosted = ChampionCartColors.glassFrosted,
     glassFrostedBorder = ChampionCartColors.glassFrostedBorder,
 
@@ -217,6 +221,8 @@ val lightExtendedColors = ExtendedColors(
 val darkExtendedColors = lightExtendedColors.copy(
     glass = ChampionCartColors.glassDark,
     glassBorder = ChampionCartColors.glassDarkBorder,
+    glassDark = ChampionCartColors.glassDark,
+    glassDarkBorder = ChampionCartColors.glassDarkBorder,
     backgroundGradient = ChampionCartGradients.darkBackground
 )
 
@@ -635,6 +641,8 @@ private fun createAnimatedExtendedColors(extendedColors: ExtendedColors): Extend
         ).value,
         glass = extendedColors.glass,
         glassBorder = extendedColors.glassBorder,
+        glassDark = extendedColors.glassDark,
+        glassDarkBorder = extendedColors.glassDarkBorder,
         glassFrosted = extendedColors.glassFrosted,
         glassFrostedBorder = extendedColors.glassFrostedBorder,
         shufersal = extendedColors.shufersal,
