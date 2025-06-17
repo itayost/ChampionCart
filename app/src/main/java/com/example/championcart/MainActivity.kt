@@ -9,7 +9,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import com.example.championcart.di.NetworkModule
-import com.example.championcart.presentation.navigation.ChampionCartNavigation
+import com.example.championcart.presentation.ChampionCartApp
 import com.example.championcart.ui.theme.ChampionCartTheme
 
 class MainActivity : ComponentActivity() {
@@ -18,9 +18,6 @@ class MainActivity : ComponentActivity() {
 
         // Enable edge-to-edge
         enableEdgeToEdge()
-
-        // Alternative method if enableEdgeToEdge() is not available:
-        // WindowCompat.setDecorFitsSystemWindows(window, false)
 
         // Initialize NetworkModule with context
         NetworkModule.initialize(applicationContext)
@@ -31,7 +28,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    ChampionCartNavigation()
+                    ChampionCartApp()
                 }
             }
         }

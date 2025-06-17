@@ -3,34 +3,29 @@ package com.example.championcart.presentation.navigation
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.navigation.compose.rememberNavController
 import com.example.championcart.data.local.preferences.TokenManager
 import com.example.championcart.presentation.screens.auth.LoginRegisterScreen
 import com.example.championcart.presentation.screens.cart.CartScreen
 import com.example.championcart.presentation.screens.home.HomeScreen
 import com.example.championcart.presentation.screens.profile.ProfileScreen
 import com.example.championcart.presentation.screens.search.SearchScreen
-import com.example.championcart.presentation.screens.stores.StoresScreen
 import com.example.championcart.presentation.screens.product.ProductDetailScreen
 import com.example.championcart.presentation.screens.splash.SplashScreen
-import com.example.championcart.ui.theme.AnimationSpecs
 
 /**
  * Main navigation host for the Champion Cart app
  */
 @Composable
 fun ChampionCartNavHost(
-    navController: NavHostController = rememberNavController()
+    navController: NavHostController,
+    modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     val tokenManager = TokenManager(context)
@@ -45,6 +40,7 @@ fun ChampionCartNavHost(
     NavHost(
         navController = navController,
         startDestination = startDestination,
+        modifier = modifier,
         enterTransition = { slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Left) },
         exitTransition = { slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Left) },
         popEnterTransition = { slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Right) },
@@ -112,17 +108,7 @@ fun ChampionCartNavHost(
                 }
             }
         ) {
-            HomeScreen(
-                onNavigateToSearch = {
-                    navController.navigate(Screen.Search.route)
-                },
-                onNavigateToCart = {
-                    navController.navigate(Screen.Cart.route)
-                },
-                onNavigateToProfile = {
-                    navController.navigate(Screen.Profile.route)
-                }
-            )
+            HomeScreen(navController)
         }
 
         // Search Screen
@@ -141,15 +127,7 @@ fun ChampionCartNavHost(
                 ) + fadeOut(animationSpec = tween(400))
             }
         ) {
-            SearchScreen(
-                onNavigateBack = { navController.navigateUp() },
-                onNavigateToProduct = { productId ->
-                    navController.navigate(Screen.ProductDetail.createRoute(productId))
-                },
-                onNavigateToCart = {
-                    navController.navigate(Screen.Cart.route)
-                }
-            )
+            SearchScreen()
         }
 
         // Cart Screen
@@ -158,15 +136,7 @@ fun ChampionCartNavHost(
             enterTransition = { defaultEnterTransition() },
             exitTransition = { defaultExitTransition() }
         ) {
-            CartScreen(
-                onNavigateBack = { navController.navigateUp() },
-                onNavigateToSearch = {
-                    navController.navigate(Screen.Search.route)
-                },
-                onNavigateToCheckout = {
-                    // TODO: Navigate to checkout when implemented
-                }
-            )
+            CartScreen()
         }
 
         // Profile Screen
@@ -182,17 +152,7 @@ fun ChampionCartNavHost(
                 )
             }
         ) {
-            ProfileScreen(
-                onNavigateBack = { navController.navigateUp() },
-                onNavigateToAuth = {
-                    navController.navigate(Screen.Auth.route) {
-                        popUpTo(0) { inclusive = true }
-                    }
-                },
-                onNavigateToSettings = {
-                    // TODO: Navigate to settings when implemented
-                }
-            )
+            ProfileScreen(navController)
         }
 
         // Product Detail Screen
@@ -241,17 +201,4 @@ private fun AnimatedContentTransitionScope<NavBackStackEntry>.defaultExitTransit
         AnimatedContentTransitionScope.SlideDirection.Left,
         animationSpec = tween(300, easing = FastOutSlowInEasing)
     ) + fadeOut(animationSpec = tween(300))
-}
-
-/**
- * Extension function to check if current route is a main screen
- */
-fun NavController.isMainScreen(): Boolean {
-    val currentRoute = currentBackStackEntry?.destination?.route
-    return currentRoute in listOf(
-        Screen.Home.route,
-        Screen.Search.route,
-        Screen.Cart.route,
-        Screen.Profile.route
-    )
 }

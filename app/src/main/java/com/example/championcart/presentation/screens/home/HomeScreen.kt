@@ -37,6 +37,10 @@ import kotlinx.coroutines.launch
 import java.time.LocalTime
 import kotlin.math.abs
 import kotlin.math.sin
+import androidx.compose.foundation.BorderStroke
+import androidx.navigation.NavController
+import com.example.championcart.ui.theme.extendedColors
+import com.example.championcart.ui.theme.ComponentShapes
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
