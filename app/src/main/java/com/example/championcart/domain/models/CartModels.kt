@@ -1,33 +1,15 @@
 package com.example.championcart.domain.models
 
-data class CartItem(
-    val id: String,
-    val productId: String,
-    val productName: String,
-    val price: Double,
-    val quantity: Int,
-    val imageUrl: String? = null,
-    val selectedStore: Store? = null
-)
-
-/**
- * Simple cart product for API requests
- * Matches: POST /cheapest-cart-all-chains request format
- */
-data class CartProduct(
-    val itemName: String,
-    val quantity: Int
-)
-
 /**
  * Cheapest cart result from server
  * Matches: POST /cheapest-cart-all-chains response
  */
 data class CheapestCartResult(
-    val bestStore: Store,
+    val chain: String,
+    val storeId: String,
     val totalPrice: Double,
     val worstPrice: Double,
-    val savingsAmount: Double,
+    val savings: Double,
     val savingsPercent: Double,
     val city: String,
     val items: List<CartProduct>,
@@ -35,6 +17,12 @@ data class CheapestCartResult(
     val allStores: List<StoreOption>
 ) {
     // Helper properties for UI
+    val bestStore: Store
+        get() = Store.fromChainAndStoreId(chain, storeId)
+
+    val savingsAmount: Double
+        get() = savings
+
     val savingsPercentage: Double
         get() = savingsPercent / 100.0
 
@@ -58,7 +46,7 @@ data class StoreOption(
     val storeId: String,
     val totalPrice: Double
 ) {
-    fun toStore(name: String = Store.getDefaultStoreName(chain, storeId)): Store {
+    fun toStore(name: String? = null): Store {
         return Store.fromChainAndStoreId(chain, storeId, name)
     }
 }
@@ -71,34 +59,4 @@ data class CartItemBreakdown(
     val quantity: Int,
     val price: Double,
     val totalPrice: Double
-)
-
-/**
- * Saved cart from server
- * Matches: GET /savedcarts/{email} response
- */
-data class SavedCart(
-    val cartName: String,
-    val city: String,
-    val items: List<SavedCartItem>
-)
-
-/**
- * Saved cart item with price
- */
-data class SavedCartItem(
-    val itemName: String,
-    val quantity: Int,
-    val price: Double
-)
-
-/**
- * Save cart request
- * Matches: POST /save-cart request format
- */
-data class SaveCartRequest(
-    val cartName: String,
-    val email: String,
-    val city: String,
-    val items: List<CartProduct>
 )

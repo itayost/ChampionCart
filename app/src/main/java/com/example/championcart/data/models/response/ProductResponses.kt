@@ -3,22 +3,31 @@ package com.example.championcart.data.models.response
 import com.google.gson.annotations.SerializedName
 
 /**
- * Single product response (without grouping)
- * GET /prices/by-item/{city}/{item_name} without group_by_code
+ * Single product response - matches server responses for:
+ * - GET /prices/{db_name}/store/{snif_key}
+ * - GET /prices/{db_name}/item_code/{item_code}
+ * - GET /prices/by-item/{city}/{item_name} (without grouping)
  */
 data class ProductResponse(
-    @SerializedName("item_name")
-    val itemName: String,
+    // Fields from store/item_code endpoints
+    @SerializedName("snif_key")
+    val snifKey: String? = null,
     @SerializedName("item_code")
     val itemCode: String,
-    @SerializedName("chain")
-    val chain: String,
-    @SerializedName("store_id")
-    val storeId: String,
-    @SerializedName("price")
-    val price: Double,
+    @SerializedName("item_name")
+    val itemName: String,
+    @SerializedName("item_price")
+    val itemPrice: Double? = null,
     @SerializedName("timestamp")
     val timestamp: String,
+
+    // Fields from search endpoints (without grouping)
+    @SerializedName("chain")
+    val chain: String? = null,
+    @SerializedName("store_id")
+    val storeId: String? = null,
+    @SerializedName("price")
+    val price: Double? = null,
     @SerializedName("relevance_score")
     val relevanceScore: Double? = null,
     @SerializedName("weight")
@@ -27,11 +36,18 @@ data class ProductResponse(
     val unit: String? = null,
     @SerializedName("price_per_unit")
     val pricePerUnit: Double? = null
-)
+) {
+    // Helper to get actual price regardless of field name
+    fun getActualPrice(): Double = price ?: itemPrice ?: 0.0
+
+    // Helper to get actual store ID
+    fun getActualStoreId(): String = storeId ?: snifKey ?: ""
+}
 
 /**
- * Grouped product response (with grouping)
- * GET /prices/by-item/{city}/{item_name}?group_by_code=true
+ * Grouped product response - matches server response for:
+ * - GET /prices/by-item/{city}/{item_name}?group_by_code=true
+ * - GET /prices/identical-products/{city}/{item_name}
  */
 data class GroupedProductResponse(
     @SerializedName("item_name")
@@ -55,7 +71,7 @@ data class GroupedProductResponse(
 )
 
 /**
- * Store price within grouped product
+ * Store price within grouped product - matches server structure exactly
  */
 data class StorePriceResponse(
     @SerializedName("chain")
@@ -71,7 +87,7 @@ data class StorePriceResponse(
 )
 
 /**
- * Price comparison information
+ * Price comparison information - matches server structure exactly
  */
 data class PriceComparisonResponse(
     @SerializedName("best_deal")
@@ -87,7 +103,7 @@ data class PriceComparisonResponse(
 )
 
 /**
- * Individual price deal
+ * Individual price deal - matches server structure exactly
  */
 data class PriceDealResponse(
     @SerializedName("chain")

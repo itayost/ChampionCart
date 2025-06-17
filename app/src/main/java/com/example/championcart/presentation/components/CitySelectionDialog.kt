@@ -18,7 +18,6 @@ import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.championcart.data.api.PriceApi
 import com.example.championcart.data.local.preferences.TokenManager
 import com.example.championcart.di.NetworkModule
 import com.example.championcart.ui.theme.*

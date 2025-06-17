@@ -30,9 +30,7 @@ class PriceRepositoryImpl @Inject constructor(
                 Log.d("PriceRepository", "Search response: ${Gson().toJson(responseBody)}")
 
                 responseBody?.let { items ->
-                    val groupedProducts = items.map { item ->
-                        item.toDomainModel()
-                    }
+                    val groupedProducts = items.map { it.toDomainModel() }
                     Result.success(groupedProducts)
                 } ?: Result.failure(Exception("Empty response body"))
             } else {
@@ -58,9 +56,7 @@ class PriceRepositoryImpl @Inject constructor(
                 Log.d("PriceRepository", "Identical products response: ${Gson().toJson(responseBody)}")
 
                 responseBody?.let { items ->
-                    val groupedProducts = items.map { item ->
-                        item.toDomainModel()
-                    }
+                    val groupedProducts = items.map { it.toDomainModel() }
                     Result.success(groupedProducts)
                 } ?: Result.failure(Exception("Empty response body"))
             } else {
@@ -78,23 +74,18 @@ class PriceRepositoryImpl @Inject constructor(
         items: List<CartProduct>
     ): Result<CheapestCartResult> {
         return try {
-            val requestItems = items.map { cartProduct ->
-                CartItem(
-                    itemName = cartProduct.itemName,
-                    quantity = cartProduct.quantity
-                )
-            }
-
-            val request = CheapestCartRequest(city, requestItems)
+            val request = CheapestCartRequest(
+                city = city,
+                items = items.map { CartItem(it.itemName, it.quantity) }
+            )
             val response = api.findCheapestCart(request)
 
             if (response.isSuccessful) {
                 val responseBody = response.body()
                 Log.d("PriceRepository", "Cheapest cart response: ${Gson().toJson(responseBody)}")
 
-                responseBody?.let { cheapestResponse ->
-                    val domainResult = cheapestResponse.toDomainModel()
-                    Result.success(domainResult)
+                responseBody?.let { cartResponse ->
+                    Result.success(cartResponse.toDomainModel())
                 } ?: Result.failure(Exception("Empty response body"))
             } else {
                 val errorBody = response.errorBody()?.string()
@@ -144,7 +135,10 @@ class PriceRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getStoreProducts(dbName: String, snifKey: String): Result<List<Product>> {
+    override suspend fun getStoreProducts(
+        dbName: String,
+        snifKey: String
+    ): Result<List<Product>> {
         return try {
             val response = api.getStoreProducts(dbName, snifKey)
 
@@ -164,7 +158,10 @@ class PriceRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getProductByItemCode(dbName: String, itemCode: String): Result<List<Product>> {
+    override suspend fun getProductByItemCode(
+        dbName: String,
+        itemCode: String
+    ): Result<List<Product>> {
         return try {
             val response = api.getProductByItemCode(dbName, itemCode)
 
@@ -188,73 +185,33 @@ class PriceRepositoryImpl @Inject constructor(
         query: SearchQuery,
         filters: SearchFilters
     ): Result<SearchResult> {
-        // Use basic search and apply filters locally for now
         return try {
             val searchResult = searchProducts(query.city, query.query, query.groupByCode, query.limit)
-
-            when (searchResult) {
-                is Result.Success -> {
-                    val filteredProducts = applyFilters(searchResult.getOrNull() ?: emptyList(), filters)
+            searchResult.fold(
+                onSuccess = { products ->
+                    val filteredProducts = applyFilters(products, filters)
                     val result = SearchResult(
                         query = query,
                         products = filteredProducts,
                         totalResults = filteredProducts.size
                     )
                     Result.success(result)
+                },
+                onFailure = { exception ->
+                    Result.failure(exception)
                 }
-                is Result.Failure -> searchResult
-            }
+            )
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
 
-    override suspend fun getRecommendations(city: String, limit: Int): Result<List<GroupedProduct>> {
-        // Mock implementation - could be replaced with actual API endpoint
-        return searchProducts(city, "חלב", true, limit)
-    }
+    // ============ HELPER FUNCTIONS ============
 
-    override suspend fun getTrendingProducts(city: String, limit: Int): Result<List<GroupedProduct>> {
-        // Mock implementation - could be replaced with actual API endpoint
-        return searchProducts(city, "במבה", true, limit)
-    }
-
-    override suspend fun getProductsOnSale(city: String, limit: Int): Result<List<GroupedProduct>> {
-        // Mock implementation - could be replaced with actual API endpoint
-        return searchProducts(city, "מבצע", true, limit)
-    }
-
-    override suspend fun getProductPriceHistory(
-        itemCode: String,
-        city: String,
-        days: Int
-    ): Result<List<PriceHistoryPoint>> {
-        // Mock implementation
-        return Result.success(emptyList())
-    }
-
-    override suspend fun createPriceAlert(
-        itemCode: String,
-        city: String,
-        targetPrice: Double,
-        userEmail: String
-    ): Result<PriceAlert> {
-        // Mock implementation
-        return Result.failure(Exception("Price alerts not implemented yet"))
-    }
-
-    override suspend fun getUserPriceAlerts(userEmail: String): Result<List<PriceAlert>> {
-        // Mock implementation
-        return Result.success(emptyList())
-    }
-
-    override suspend fun deletePriceAlert(alertId: String): Result<Unit> {
-        // Mock implementation
-        return Result.success(Unit)
-    }
-
-    // Helper functions
-    private fun applyFilters(products: List<GroupedProduct>, filters: SearchFilters): List<GroupedProduct> {
+    private fun applyFilters(
+        products: List<GroupedProduct>,
+        filters: SearchFilters
+    ): List<GroupedProduct> {
         var filtered = products
 
         // Apply chain filter
@@ -274,12 +231,6 @@ class PriceRepositoryImpl @Inject constructor(
                         (filters.minPrice == null || lowestPrice >= filters.minPrice) &&
                         (filters.maxPrice == null || lowestPrice <= filters.maxPrice)
             }
-        }
-
-        // Apply on sale filter
-        if (filters.showOnSaleOnly) {
-            // This would need more data from the API to determine if items are on sale
-            // For now, just return all products
         }
 
         // Apply sorting
@@ -308,7 +259,8 @@ class PriceRepositoryImpl @Inject constructor(
     }
 }
 
-// Extension functions to convert API models to domain models
+// ============ EXTENSION FUNCTIONS TO CONVERT API MODELS TO DOMAIN MODELS ============
+
 private fun GroupedProductResponse.toDomainModel(): GroupedProduct {
     return GroupedProduct(
         itemCode = itemCode,
@@ -355,8 +307,8 @@ private fun ProductResponse.toDomainModel(): Product {
     return Product(
         itemCode = itemCode,
         itemName = itemName,
-        chain = chain,
-        storeId = storeId,
+        chain = chain.toString(),
+        storeId = storeId.toString(),
         price = price,
         timestamp = timestamp,
         relevanceScore = relevanceScore,

@@ -3,8 +3,7 @@ package com.example.championcart.data.models.response
 import com.google.gson.annotations.SerializedName
 
 /**
- * Cheapest cart response matching server API exactly
- * POST /cheapest-cart-all-chains response
+ * Cheapest cart response - matches POST /cheapest-cart-all-chains exactly
  */
 data class CheapestCartResponse(
     @SerializedName("chain")
@@ -30,7 +29,7 @@ data class CheapestCartResponse(
 )
 
 /**
- * Cart item in response
+ * Cart item in cheapest cart response - matches server structure exactly
  */
 data class CartItemResponse(
     @SerializedName("item_name")
@@ -40,7 +39,7 @@ data class CartItemResponse(
 )
 
 /**
- * Store option in cheapest cart response
+ * Store option in cheapest cart response - matches server structure exactly
  */
 data class StoreOptionResponse(
     @SerializedName("chain")
@@ -52,8 +51,8 @@ data class StoreOptionResponse(
 )
 
 /**
- * Save cart response
- * POST /save-cart response
+ * Save cart response - matches POST /save-cart exactly
+ * Server returns: {"message": "Cart saved successfully"}
  */
 data class SaveCartResponse(
     @SerializedName("message")
@@ -61,8 +60,7 @@ data class SaveCartResponse(
 )
 
 /**
- * Saved carts response
- * GET /savedcarts/{email} response
+ * Saved carts response - matches GET /savedcarts/{email} exactly
  */
 data class SavedCartsResponse(
     @SerializedName("email")
@@ -72,7 +70,7 @@ data class SavedCartsResponse(
 )
 
 /**
- * Individual saved cart
+ * Individual saved cart in the response - matches server structure exactly
  */
 data class SavedCartResponse(
     @SerializedName("cart_name")
@@ -84,7 +82,7 @@ data class SavedCartResponse(
 )
 
 /**
- * Saved cart item with price
+ * Item in saved cart - includes price, matches server structure exactly
  */
 data class SavedCartItemResponse(
     @SerializedName("item_name")

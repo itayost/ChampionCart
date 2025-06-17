@@ -1,10 +1,7 @@
 package com.example.championcart.domain.models
 
-import java.time.LocalDateTime
-
 /**
- * User model matching auth API responses
- * From: POST /login and POST /register
+ * User model for authentication and profile
  */
 data class User(
     val id: String,
@@ -12,10 +9,8 @@ data class User(
     val firstName: String? = null,
     val lastName: String? = null,
     val phone: String? = null,
-    val preferences: UserPreferences = UserPreferences(),
     val isGuest: Boolean = false,
-    val createdAt: LocalDateTime = LocalDateTime.now(),
-    val lastLoginAt: LocalDateTime? = null
+    val preferences: UserPreferences = UserPreferences()
 ) {
     val displayName: String
         get() = when {
@@ -27,11 +22,11 @@ data class User(
 }
 
 /**
- * User preferences and settings
+ * User preferences and settings - Complete version matching UserRepositoryImpl
  */
 data class UserPreferences(
     val defaultCity: String = "Tel Aviv",
-    val language: Language = Language.HEBREW,
+    val language: Language = Language.ENGLISH,
     val currency: Currency = Currency.ILS,
     val theme: ThemePreference = ThemePreference.SYSTEM,
     val notificationsEnabled: Boolean = true,
@@ -43,77 +38,14 @@ data class UserPreferences(
 )
 
 /**
- * Budget alert settings
- */
-data class BudgetAlerts(
-    val monthlyBudget: Double? = null,
-    val weeklyBudget: Double? = null,
-    val alertThreshold: Double = 0.8, // Alert when 80% of budget is reached
-    val isEnabled: Boolean = true
-)
-
-/**
- * User statistics for profile screen
- */
-data class UserStats(
-    val totalSavings: Double = 0.0,
-    val savingsThisMonth: Double = 0.0,
-    val savingsThisYear: Double = 0.0,
-    val totalComparisons: Int = 0,
-    val comparisonsThisMonth: Int = 0,
-    val averageSavingsPerCart: Double = 0.0,
-    val favoriteStoreChain: String? = null,
-    val totalCartsSaved: Int = 0,
-    val activePriceAlerts: Int = 0
-)
-
-/**
- * Saved cart from server
- * Matches: GET /savedcarts/{email} response
- */
-data class SavedCart(
-    val cartName: String,
-    val city: String,
-    val items: List<SavedCartItem>,
-    val createdAt: LocalDateTime = LocalDateTime.now(),
-    val updatedAt: LocalDateTime = LocalDateTime.now()
-) {
-    val totalPrice: Double
-        get() = items.sumOf { it.price * it.quantity }
-
-    val itemCount: Int
-        get() = items.sumOf { it.quantity }
-}
-
-/**
- * Saved cart item with price
- */
-data class SavedCartItem(
-    val itemName: String,
-    val quantity: Int,
-    val price: Double
-)
-
-/**
- * Save cart request
- * Matches: POST /save-cart request format
- */
-data class SaveCartRequest(
-    val cartName: String,
-    val email: String,
-    val city: String,
-    val items: List<CartProduct>
-)
-
-/**
- * Supported languages
+ * Language options
  */
 enum class Language {
-    HEBREW, ENGLISH, ARABIC
+    ENGLISH, HEBREW
 }
 
 /**
- * Supported currencies
+ * Currency options
  */
 enum class Currency {
     ILS, USD, EUR
@@ -127,15 +59,35 @@ enum class ThemePreference {
 }
 
 /**
- * Dietary restrictions
+ * Dietary restriction options
  */
 enum class DietaryRestriction {
-    KOSHER,
-    HALAL,
-    VEGETARIAN,
-    VEGAN,
-    GLUTEN_FREE,
-    LACTOSE_FREE,
-    NUT_FREE,
-    DIABETIC_FRIENDLY
+    VEGETARIAN, VEGAN, KOSHER, HALAL, GLUTEN_FREE
 }
+
+/**
+ * Budget alert settings
+ */
+data class BudgetAlerts(
+    val monthlyBudget: Double? = null,
+    val weeklyBudget: Double? = null,
+    val alertThreshold: Double = 0.8,
+    val isEnabled: Boolean = true
+)
+
+/**
+ * User statistics for profile screen - Complete version
+ */
+data class UserStats(
+    val totalSavings: Double = 0.0,
+    val savingsThisMonth: Double = 0.0,
+    val savingsThisYear: Double = 0.0,
+    val comparisonsCount: Int = 0,
+    // Add missing properties that UserRepositoryImpl expects
+    val totalComparisons: Int = 0,
+    val comparisonsThisMonth: Int = 0,
+    val averageSavingsPerCart: Double = 0.0,
+    val favoriteStoreChain: String? = null,
+    val totalCartsSaved: Int = 0,
+    val activePriceAlerts: Int = 0
+)

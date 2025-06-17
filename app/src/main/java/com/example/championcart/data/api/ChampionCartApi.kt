@@ -10,48 +10,56 @@ interface ChampionCartApi {
     // ============ AUTHENTICATION ENDPOINTS ============
 
     /**
-     * Login user
-     * POST /login
-     */
-    @POST("login")
-    suspend fun login(
-        @Body request: LoginRequest
-    ): Response<AuthResponse>
-
-    /**
      * Register new user
      * POST /register
+     * Request: {"email": "user@example.com", "password": "securepassword123"}
+     * Response: {"message": "User registered successfully"}
      */
     @POST("register")
     suspend fun register(
         @Body request: RegisterRequest
     ): Response<RegisterResponse>
 
+    /**
+     * Login user
+     * POST /login
+     * Request: {"email": "user@example.com", "password": "securepassword123"}
+     * Response: {"access_token": "...", "token_type": "bearer"}
+     */
+    @POST("login")
+    suspend fun login(
+        @Body request: LoginRequest
+    ): Response<AuthResponse>
+
     // ============ PRICE QUERY ENDPOINTS ============
 
     /**
      * Get all prices for a specific store
      * GET /prices/{db_name}/store/{snif_key}
+     * Response: Array of products with snif_key, item_price fields
      */
     @GET("prices/{db_name}/store/{snif_key}")
     suspend fun getStoreProducts(
         @Path("db_name") dbName: String,      // "shufersal" or "victory"
-        @Path("snif_key") snifKey: String     // Store identifier
+        @Path("snif_key") snifKey: String     // Store identifier like "7290027600007-001-001"
     ): Response<List<ProductResponse>>
 
     /**
      * Get all prices for a specific item code
      * GET /prices/{db_name}/item_code/{item_code}
+     * Response: Array of products with snif_key, item_price fields
      */
     @GET("prices/{db_name}/item_code/{item_code}")
     suspend fun getProductByItemCode(
         @Path("db_name") dbName: String,      // "shufersal" or "victory"
-        @Path("item_code") itemCode: String   // Product barcode
+        @Path("item_code") itemCode: String   // Product barcode like "7290000042435"
     ): Response<List<ProductResponse>>
 
     /**
      * Search products by name and city
      * GET /prices/by-item/{city}/{item_name}
+     * With grouping: Returns grouped products with nested prices array
+     * Without grouping: Returns individual products with chain, store_id, price fields
      */
     @GET("prices/by-item/{city}/{item_name}")
     suspend fun searchProducts(
@@ -62,20 +70,9 @@ interface ChampionCartApi {
     ): Response<List<GroupedProductResponse>>
 
     /**
-     * Search products without grouping (returns individual products)
-     * GET /prices/by-item/{city}/{item_name}?group_by_code=false
-     */
-    @GET("prices/by-item/{city}/{item_name}")
-    suspend fun searchProductsUngrouped(
-        @Path("city") city: String,
-        @Path("item_name") itemName: String,
-        @Query("group_by_code") groupByCode: Boolean = false,
-        @Query("limit") limit: Int? = null
-    ): Response<List<ProductResponse>>
-
-    /**
      * Get identical products across chains
      * GET /prices/identical-products/{city}/{item_name}
+     * Response: Grouped products that exist in multiple chains
      */
     @GET("prices/identical-products/{city}/{item_name}")
     suspend fun getIdenticalProducts(
@@ -89,6 +86,7 @@ interface ChampionCartApi {
     /**
      * Find cheapest cart across all chains
      * POST /cheapest-cart-all-chains
+     * Request: {"city": "Tel Aviv", "items": [{"item_name": "חלב", "quantity": 2}]}
      */
     @POST("cheapest-cart-all-chains")
     suspend fun findCheapestCart(
@@ -98,6 +96,7 @@ interface ChampionCartApi {
     /**
      * Save cart for user
      * POST /save-cart
+     * Request: {"cart_name": "Weekly Shopping", "email": "user@example.com", "city": "Tel Aviv", "items": [...]}
      */
     @POST("save-cart")
     suspend fun saveCart(
@@ -106,7 +105,8 @@ interface ChampionCartApi {
 
     /**
      * Get saved carts for user
-     * GET /savedcarts/{email}
+     * GET /savedcarts/{email}?city={city}
+     * Response: {"email": "...", "saved_carts": [...]}
      */
     @GET("savedcarts/{email}")
     suspend fun getSavedCarts(
@@ -119,6 +119,7 @@ interface ChampionCartApi {
     /**
      * Get list of all cities
      * GET /cities-list
+     * Response: ["Afula", "Akko", "Arad", ...]
      */
     @GET("cities-list")
     suspend fun getCitiesList(): Response<List<String>>
@@ -126,6 +127,7 @@ interface ChampionCartApi {
     /**
      * Get cities with store counts
      * GET /cities-list-with-stores
+     * Response: ["Tel Aviv: 45 shufersal, 12 victory", ...]
      */
     @GET("cities-list-with-stores")
     suspend fun getCitiesWithStores(): Response<List<String>>
@@ -133,6 +135,7 @@ interface ChampionCartApi {
     /**
      * Check API health
      * GET /health
+     * Response: {"status": "healthy", "chains_available": {"shufersal": true, "victory": true}}
      */
     @GET("health")
     suspend fun checkHealth(): Response<ApiHealthResponse>
@@ -140,6 +143,7 @@ interface ChampionCartApi {
     /**
      * Get API information
      * GET /
+     * Response: {"message": "Welcome to the Champion Cart API", "version": "1.1", "improvements": [...]}
      */
     @GET("/")
     suspend fun getApiInfo(): Response<ApiInfoResponse>

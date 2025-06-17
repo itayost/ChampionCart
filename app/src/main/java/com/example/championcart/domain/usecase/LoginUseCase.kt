@@ -20,34 +20,22 @@ class LoginUseCase @Inject constructor(
 
         return try {
             // Attempt login with repository
-            when (val result = authRepository.login(email, password)) {
-                is Result.Success -> {
-                    val authResponse = result.getOrNull()!!
-
+            val result = authRepository.login(email, password)
+            result.fold(
+                onSuccess = { authResponse ->
                     // Save token to local storage
                     authRepository.saveAuthToken(authResponse)
-
-                    // Get user profile
-                    when (val userResult = authRepository.getUserProfile()) {
-                        is Result.Success -> {
-                            val user = userResult.getOrNull()!!
-                            AuthResult.Success(user, authResponse)
-                        }
-                        is Result.Failure -> {
-                            // Create basic user from email if profile fetch fails
-                            val basicUser = User(
-                                id = generateUserId(email),
-                                email = email,
-                                isGuest = false
-                            )
-                            AuthResult.Success(basicUser, authResponse)
-                        }
-                    }
+                    // Get user profile and return success
+                    val user = User(
+                        id = generateUserId(email),
+                        email = email
+                    )
+                    AuthResult.Success(user, authResponse)
+                },
+                onFailure = { exception ->
+                    AuthResult.Error(mapAuthError(exception))
                 }
-                is Result.Failure -> {
-                    AuthResult.Error(mapAuthError(result.exception))
-                }
-            }
+            )
         } catch (e: Exception) {
             AuthResult.Error("Login failed: ${e.message}")
         }

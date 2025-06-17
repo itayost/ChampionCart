@@ -1,9 +1,7 @@
 package com.example.championcart.di
 
 import android.content.Context
-import com.example.championcart.data.api.AuthApi
-import com.example.championcart.data.api.CartApi
-import com.example.championcart.data.api.PriceApi
+import com.example.championcart.data.api.ChampionCartApi
 import com.example.championcart.data.local.preferences.TokenManager
 import com.example.championcart.utils.Constants
 import okhttp3.Interceptor
@@ -58,11 +56,9 @@ object NetworkModule {
     private val loggingInterceptor by lazy {
         HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BODY
-            // This will log the raw JSON responses
         }
     }
 
-    // Add a custom logging interceptor for debugging
     private val debugInterceptor by lazy {
         Interceptor { chain ->
             val request = chain.request()
@@ -79,7 +75,7 @@ object NetworkModule {
     private val okHttpClient by lazy {
         OkHttpClient.Builder()
             .addInterceptor(authInterceptor)
-            .addInterceptor(debugInterceptor)  // Add debug interceptor
+            .addInterceptor(debugInterceptor)
             .addInterceptor(loggingInterceptor)
             .connectTimeout(Constants.CONNECT_TIMEOUT, TimeUnit.SECONDS)
             .readTimeout(Constants.READ_TIMEOUT, TimeUnit.SECONDS)
@@ -95,7 +91,8 @@ object NetworkModule {
             .build()
     }
 
-    val authApi: AuthApi by lazy { retrofit.create(AuthApi::class.java) }
-    val priceApi: PriceApi by lazy { retrofit.create(PriceApi::class.java) }
-    val cartApi: CartApi by lazy { retrofit.create(CartApi::class.java) }
+    // ============ SINGLE API INTERFACE ============
+    val api: ChampionCartApi by lazy {
+        retrofit.create(ChampionCartApi::class.java)
+    }
 }

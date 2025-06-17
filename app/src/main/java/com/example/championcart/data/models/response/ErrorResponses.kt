@@ -1,18 +1,7 @@
 package com.example.championcart.data.models.response
 
-import com.google.gson.annotations.SerializedName
-
 /**
- * Generic API error response
- * Used for all error responses
- */
-data class ApiErrorResponse(
-    @SerializedName("detail")
-    val detail: String
-)
-
-/**
- * Network error wrapper
+ * Network error wrapper for client-side errors
  */
 data class NetworkErrorResponse(
     val message: String,

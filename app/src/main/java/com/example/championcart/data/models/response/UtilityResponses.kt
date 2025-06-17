@@ -3,24 +3,8 @@ package com.example.championcart.data.models.response
 import com.google.gson.annotations.SerializedName
 
 /**
- * Cities list response
- * GET /cities-list response
- */
-data class CitiesListResponse(
-    val cities: List<String>
-)
-
-/**
- * Cities with stores response
- * GET /cities-list-with-stores response
- */
-data class CitiesWithStoresResponse(
-    val citiesWithStores: List<String>
-)
-
-/**
- * API health response
- * GET /health response
+ * API health response - matches GET /health exactly
+ * Server returns: {"status": "healthy", "chains_available": {"shufersal": true, "victory": true}}
  */
 data class ApiHealthResponse(
     @SerializedName("status")
@@ -30,8 +14,8 @@ data class ApiHealthResponse(
 )
 
 /**
- * API info response
- * GET / response
+ * API info response - matches GET / exactly
+ * Server returns: {"message": "Welcome to the Champion Cart API", "version": "1.1", "improvements": [...]}
  */
 data class ApiInfoResponse(
     @SerializedName("message")

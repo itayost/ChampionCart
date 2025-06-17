@@ -17,7 +17,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.championcart.data.api.CartApi
 import com.example.championcart.data.local.CartManager
 import com.example.championcart.data.local.preferences.TokenManager
 import com.example.championcart.data.models.response.SavedCart
