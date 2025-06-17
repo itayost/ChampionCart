@@ -2,7 +2,9 @@ package com.example.championcart.domain.models
 
 /**
  * Product model matching server API response
- * From: GET /prices/by-item/{city}/{item_name}
+ * From: GET /prices/by-item/{city}/{item_name} (without grouping)
+ * From: GET /prices/{db_name}/store/{snif_key}
+ * From: GET /prices/{db_name}/item_code/{item_code}
  */
 data class Product(
     val itemCode: String,
@@ -28,6 +30,7 @@ data class CartProduct(
 
 /**
  * Cart item for UI with complete product information
+ * This model includes UI-specific fields not provided by server
  */
 data class CartItem(
     val id: String,
@@ -35,6 +38,6 @@ data class CartItem(
     val productName: String,
     val price: Double,
     val quantity: Int,
-    val imageUrl: String? = null,
-    val selectedStore: Store? = null
+    val imageUrl: String? = null,        // UI-only field
+    val selectedStore: Store? = null     // UI-only field
 )

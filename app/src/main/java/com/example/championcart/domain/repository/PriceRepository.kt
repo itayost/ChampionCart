@@ -63,11 +63,5 @@ interface PriceRepository {
         itemCode: String // Product barcode
     ): Result<List<Product>>
 
-    /**
-     * Advanced search with filters
-     */
-    suspend fun searchProductsWithFilters(
-        query: SearchQuery,
-        filters: SearchFilters
-    ): Result<SearchResult>
+    // REMOVED: searchProductsWithFilters() - server doesn't support advanced filtering
 }

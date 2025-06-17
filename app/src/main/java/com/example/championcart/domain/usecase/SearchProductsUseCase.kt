@@ -34,25 +34,6 @@ class SearchProductsUseCase @Inject constructor(
     }
 
     /**
-     * Search with advanced filters
-     */
-    suspend fun searchWithFilters(
-        searchQuery: SearchQuery,
-        filters: SearchFilters
-    ): Result<SearchResult> {
-        // Validate search query
-        if (searchQuery.query.isBlank()) {
-            return Result.failure(Exception("Search query cannot be empty"))
-        }
-
-        if (searchQuery.city.isBlank()) {
-            return Result.failure(Exception("City cannot be empty"))
-        }
-
-        return priceRepository.searchProductsWithFilters(searchQuery, filters)
-    }
-
-    /**
      * Get identical products across chains only
      */
     suspend fun getIdenticalProducts(
@@ -88,59 +69,18 @@ class SearchProductsUseCase @Inject constructor(
         }
 
         // Search for products and extract unique names as suggestions
-        return when (val result = invoke(city, partialQuery, limit = limit)) {
-            is Result.Success -> {
-                val suggestions = result.getOrNull()
-                    ?.map { it.itemName }
-                    ?.distinct()
-                    ?.take(limit)
-                    ?: emptyList()
+        return invoke(city, partialQuery, limit = limit).fold(
+            onSuccess = { products ->
+                val suggestions = products
+                    .map { it.itemName }
+                    .distinct()
+                    .take(limit)
                 Result.success(suggestions)
+            },
+            onFailure = { exception ->
+                Result.failure(exception)
             }
-            is Result.Failure -> Result.failure(result.exception)
-        }
-    }
-
-    /**
-     * Search for trending products
-     */
-    suspend fun getTrendingProducts(
-        city: String,
-        limit: Int = 20
-    ): Result<List<GroupedProduct>> {
-        if (city.isBlank()) {
-            return Result.failure(Exception("City cannot be empty"))
-        }
-
-        return priceRepository.getTrendingProducts(city, limit)
-    }
-
-    /**
-     * Search for products on sale
-     */
-    suspend fun getProductsOnSale(
-        city: String,
-        limit: Int = 50
-    ): Result<List<GroupedProduct>> {
-        if (city.isBlank()) {
-            return Result.failure(Exception("City cannot be empty"))
-        }
-
-        return priceRepository.getProductsOnSale(city, limit)
-    }
-
-    /**
-     * Get personalized recommendations
-     */
-    suspend fun getRecommendations(
-        city: String,
-        limit: Int = 10
-    ): Result<List<GroupedProduct>> {
-        if (city.isBlank()) {
-            return Result.failure(Exception("City cannot be empty"))
-        }
-
-        return priceRepository.getRecommendations(city, limit)
+        )
     }
 }
 

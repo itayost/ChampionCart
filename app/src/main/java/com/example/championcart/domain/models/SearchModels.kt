@@ -59,7 +59,7 @@ data class PriceDeal(
 )
 
 /**
- * Search query parameters
+ * Search query parameters - only server-supported fields
  */
 data class SearchQuery(
     val query: String,
@@ -67,36 +67,3 @@ data class SearchQuery(
     val groupByCode: Boolean = true,
     val limit: Int? = 50
 )
-
-/**
- * Search result wrapper
- */
-data class SearchResult(
-    val query: SearchQuery,
-    val products: List<GroupedProduct>,
-    val totalResults: Int,
-    val executionTimeMs: Long = 0L
-)
-
-/**
- * Search filters for advanced search
- */
-data class SearchFilters(
-    val chains: List<String> = emptyList(),
-    val minPrice: Double? = null,
-    val maxPrice: Double? = null,
-    val sortBy: SortOption = SortOption.RELEVANCE,
-    val showOnSaleOnly: Boolean = false
-)
-
-/**
- * Search result sorting options
- */
-enum class SortOption {
-    RELEVANCE,
-    PRICE_LOW_TO_HIGH,
-    PRICE_HIGH_TO_LOW,
-    NAME_A_TO_Z,
-    NAME_Z_TO_A,
-    SAVINGS_HIGH_TO_LOW
-}

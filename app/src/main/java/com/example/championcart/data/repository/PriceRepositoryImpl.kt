@@ -78,6 +78,7 @@ class PriceRepositoryImpl @Inject constructor(
                 city = city,
                 items = items.map { CartItem(it.itemName, it.quantity) }
             )
+
             val response = api.findCheapestCart(request)
 
             if (response.isSuccessful) {
@@ -85,7 +86,8 @@ class PriceRepositoryImpl @Inject constructor(
                 Log.d("PriceRepository", "Cheapest cart response: ${Gson().toJson(responseBody)}")
 
                 responseBody?.let { cartResponse ->
-                    Result.success(cartResponse.toDomainModel())
+                    val result = cartResponse.toDomainModel()
+                    Result.success(result)
                 } ?: Result.failure(Exception("Empty response body"))
             } else {
                 val errorBody = response.errorBody()?.string()
@@ -102,16 +104,15 @@ class PriceRepositoryImpl @Inject constructor(
             val response = api.getCitiesList()
 
             if (response.isSuccessful) {
-                val cities = response.body()
-                cities?.let {
-                    Result.success(it)
-                } ?: Result.failure(Exception("Empty cities list"))
+                val cities = response.body() ?: emptyList()
+                Log.d("PriceRepository", "Cities list response: $cities")
+                Result.success(cities)
             } else {
                 val errorBody = response.errorBody()?.string()
-                Result.failure(Exception("Get cities failed: ${parseErrorMessage(errorBody)}"))
+                Result.failure(Exception("Get cities list failed: ${parseErrorMessage(errorBody)}"))
             }
         } catch (e: Exception) {
-            Log.e("PriceRepository", "Get cities error", e)
+            Log.e("PriceRepository", "Get cities list error", e)
             Result.failure(e)
         }
     }
@@ -121,10 +122,9 @@ class PriceRepositoryImpl @Inject constructor(
             val response = api.getCitiesWithStores()
 
             if (response.isSuccessful) {
-                val cities = response.body()
-                cities?.let {
-                    Result.success(it)
-                } ?: Result.failure(Exception("Empty cities with stores list"))
+                val cities = response.body() ?: emptyList()
+                Log.d("PriceRepository", "Cities with stores response: $cities")
+                Result.success(cities)
             } else {
                 val errorBody = response.errorBody()?.string()
                 Result.failure(Exception("Get cities with stores failed: ${parseErrorMessage(errorBody)}"))
@@ -144,9 +144,11 @@ class PriceRepositoryImpl @Inject constructor(
 
             if (response.isSuccessful) {
                 val responseBody = response.body()
-                responseBody?.let { products ->
-                    val domainProducts = products.map { it.toDomainModel() }
-                    Result.success(domainProducts)
+                Log.d("PriceRepository", "Store products response: ${Gson().toJson(responseBody)}")
+
+                responseBody?.let { items ->
+                    val products = items.map { it.toDomainModel() }
+                    Result.success(products)
                 } ?: Result.failure(Exception("Empty response body"))
             } else {
                 val errorBody = response.errorBody()?.string()
@@ -167,9 +169,11 @@ class PriceRepositoryImpl @Inject constructor(
 
             if (response.isSuccessful) {
                 val responseBody = response.body()
-                responseBody?.let { products ->
-                    val domainProducts = products.map { it.toDomainModel() }
-                    Result.success(domainProducts)
+                Log.d("PriceRepository", "Product by item code response: ${Gson().toJson(responseBody)}")
+
+                responseBody?.let { items ->
+                    val products = items.map { it.toDomainModel() }
+                    Result.success(products)
                 } ?: Result.failure(Exception("Empty response body"))
             } else {
                 val errorBody = response.errorBody()?.string()
@@ -181,68 +185,7 @@ class PriceRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun searchProductsWithFilters(
-        query: SearchQuery,
-        filters: SearchFilters
-    ): Result<SearchResult> {
-        return try {
-            val searchResult = searchProducts(query.city, query.query, query.groupByCode, query.limit)
-            searchResult.fold(
-                onSuccess = { products ->
-                    val filteredProducts = applyFilters(products, filters)
-                    val result = SearchResult(
-                        query = query,
-                        products = filteredProducts,
-                        totalResults = filteredProducts.size
-                    )
-                    Result.success(result)
-                },
-                onFailure = { exception ->
-                    Result.failure(exception)
-                }
-            )
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-
     // ============ HELPER FUNCTIONS ============
-
-    private fun applyFilters(
-        products: List<GroupedProduct>,
-        filters: SearchFilters
-    ): List<GroupedProduct> {
-        var filtered = products
-
-        // Apply chain filter
-        if (filters.chains.isNotEmpty()) {
-            filtered = filtered.filter { product ->
-                product.prices.any { price ->
-                    filters.chains.contains(price.chain)
-                }
-            }
-        }
-
-        // Apply price filter
-        if (filters.minPrice != null || filters.maxPrice != null) {
-            filtered = filtered.filter { product ->
-                val lowestPrice = product.lowestPrice
-                lowestPrice != null &&
-                        (filters.minPrice == null || lowestPrice >= filters.minPrice) &&
-                        (filters.maxPrice == null || lowestPrice <= filters.maxPrice)
-            }
-        }
-
-        // Apply sorting
-        return when (filters.sortBy) {
-            SortOption.PRICE_LOW_TO_HIGH -> filtered.sortedBy { it.lowestPrice ?: Double.MAX_VALUE }
-            SortOption.PRICE_HIGH_TO_LOW -> filtered.sortedByDescending { it.lowestPrice ?: 0.0 }
-            SortOption.NAME_A_TO_Z -> filtered.sortedBy { it.itemName }
-            SortOption.NAME_Z_TO_A -> filtered.sortedByDescending { it.itemName }
-            SortOption.SAVINGS_HIGH_TO_LOW -> filtered.sortedByDescending { it.savings }
-            SortOption.RELEVANCE -> filtered // Keep original order for relevance
-        }
-    }
 
     private fun parseErrorMessage(errorBody: String?): String {
         return try {
@@ -307,9 +250,9 @@ private fun ProductResponse.toDomainModel(): Product {
     return Product(
         itemCode = itemCode,
         itemName = itemName,
-        chain = chain.toString(),
-        storeId = storeId.toString(),
-        price = price,
+        chain = chain ?: "",
+        storeId = storeId ?: snifKey ?: "",
+        price = price ?: itemPrice,
         timestamp = timestamp,
         relevanceScore = relevanceScore,
         weight = weight,
