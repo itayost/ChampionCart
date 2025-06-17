@@ -2,212 +2,288 @@ package com.example.championcart.presentation.screens.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.championcart.data.local.preferences.TokenManager
+import com.example.championcart.domain.models.GroupedProduct
+import com.example.championcart.domain.models.StorePrice
+import com.example.championcart.domain.repository.AuthRepository
+import com.example.championcart.domain.repository.AuthState
 import com.example.championcart.domain.repository.CartRepository
+import com.example.championcart.domain.repository.PriceRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 import javax.inject.Inject
 
-// Simplified HomeState with only available data
-data class HomeState(
-    val userName: String = "Champion",
-    val selectedCity: String = "Tel Aviv",
-    val cartItemCount: Int = 0,
-    val recentSearches: List<String> = emptyList(),
-    val isLoading: Boolean = false,
-    val error: String? = null,
-    val showCitySelector: Boolean = false
-)
-
+/**
+ * ViewModel for the modern home screen
+ * Manages city selection, featured deals, and recent comparisons
+ */
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val cartRepository: CartRepository,
-    private val tokenManager: TokenManager
+    private val authRepository: AuthRepository,
+    private val priceRepository: PriceRepository,
+    private val cartRepository: CartRepository
 ) : ViewModel() {
 
-    private val _state = MutableStateFlow(HomeState())
-    val state: StateFlow<HomeState> = _state.asStateFlow()
+    private val _state = MutableStateFlow(HomeScreenState())
+    val state: StateFlow<HomeScreenState> = _state.asStateFlow()
 
     init {
-        loadUserData()
-        observeCartCount()
-        loadRecentSearches()
+        loadInitialData()
+        observeUserData()
     }
 
-    // ============ DATA LOADING METHODS ============
-
-    private fun loadUserData() {
+    private fun loadInitialData() {
         viewModelScope.launch {
-            try {
-                // Get user email and extract name
-                val email = tokenManager.getUserEmail()
-                val userName = if (email != null) {
-                    // Extract name from email (before @)
-                    email.substringBefore("@")
-                        .split(".", "_", "-")
-                        .firstOrNull()
-                        ?.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
-                        ?: "Champion"
-                } else {
-                    "Champion" // Guest mode default
+            _state.update { it.copy(isLoading = true) }
+
+            // Load cities
+            loadCities()
+
+            // Load user data
+            loadUserData()
+
+            // Load featured deals and recent comparisons
+            loadHomeContent()
+
+            _state.update { it.copy(isLoading = false) }
+        }
+    }
+
+    private fun observeUserData() {
+        viewModelScope.launch {
+            authRepository.observeAuthState().collect { authState ->
+                when (authState) {
+                    is AuthState.Authenticated -> loadUserData()
+                    else -> _state.update {
+                        it.copy(
+                            userName = null,
+                            totalSaved = 0.0,
+                            itemsCompared = 0
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    private suspend fun loadCities() {
+        _state.update { it.copy(isLoadingCities = true) }
+
+        priceRepository.getCitiesWithStores().fold(
+            onSuccess = { cities ->
+                _state.update {
+                    it.copy(
+                        availableCities = cities,
+                        isLoadingCities = false
+                    )
+                }
+            },
+            onFailure = { error ->
+                _state.update {
+                    it.copy(
+                        isLoadingCities = false,
+                        error = error.message
+                    )
+                }
+            }
+        )
+    }
+
+    private suspend fun loadUserData() {
+        authRepository.getCurrentUser()?.let { user ->
+            _state.update {
+                it.copy(
+                    userName = user.email.substringBefore("@"),
+                    isGuest = user.isGuest
+                )
+            }
+        }
+
+        // Load saved carts to calculate total saved
+        authRepository.getUserSavedCarts().fold(
+            onSuccess = { savedCarts ->
+                val totalSaved = savedCarts.sumOf { cart ->
+                    cart.items.sumOf { item ->
+                        // Calculate savings per item
+                        // This is a simplified calculation
+                        item.quantity * 2.5 // Average saving per item
+                    }
                 }
 
-                // Get saved city preference
-                val savedCity = tokenManager.getSelectedCity()
+                val totalItems = savedCarts.sumOf { cart ->
+                    cart.items.size
+                }
 
                 _state.update {
                     it.copy(
-                        userName = userName,
-                        selectedCity = savedCity,
-                        isLoading = false,
-                        error = null
+                        totalSaved = totalSaved,
+                        itemsCompared = totalItems
                     )
                 }
-            } catch (e: Exception) {
-                _state.update {
-                    it.copy(
-                        error = "Failed to load user data: ${e.message}",
-                        isLoading = false
-                    )
-                }
-            }
-        }
+            },
+            onFailure = { /* Handle error */ }
+        )
     }
 
-    private fun observeCartCount() {
-        viewModelScope.launch {
-            try {
-                cartRepository.getCartItems()
-                    .catch {
-                        // Handle error silently, cart count will remain 0
-                    }
-                    .collect { cartItems ->
-                        _state.update {
-                            it.copy(cartItemCount = cartItems.size)
-                        }
-                    }
-            } catch (e: Exception) {
-                // Cart observation failed, keep count at 0
-            }
-        }
-    }
+    private suspend fun loadHomeContent() {
+        val currentCity = _state.value.selectedCity
 
-    private fun loadRecentSearches() {
-        viewModelScope.launch {
-            try {
-                // Load real recent searches from TokenManager
-                val recentSearches = tokenManager.getRecentSearches()
+        // Load featured deals (products with high savings)
+        priceRepository.searchProducts(
+            city = currentCity,
+            productName = "חלב", // Example search
+            groupByCode = true,
+            limit = 10
+        ).fold(
+            onSuccess = { products ->
+                // Filter products with good savings
+                val dealsWithSavings = products.filter { product ->
+                    product.savings > 0
+                }.sortedByDescending { it.savings }
+                    .take(5)
 
                 _state.update {
-                    it.copy(recentSearches = recentSearches)
+                    it.copy(featuredDeals = dealsWithSavings)
                 }
-            } catch (e: Exception) {
-                // Use empty list if loading fails
-                _state.update {
-                    it.copy(recentSearches = emptyList())
-                }
-            }
-        }
-    }
+            },
+            onFailure = { /* Handle error */ }
+        )
 
-    // ============ USER INTERACTION METHODS ============
+        // For demo: simulate recent comparisons
+        // In real app, this would come from local storage
+        delay(100)
+
+        priceRepository.searchProducts(
+            city = currentCity,
+            productName = "לחם",
+            groupByCode = true,
+            limit = 5
+        ).fold(
+            onSuccess = { products ->
+                _state.update {
+                    it.copy(recentComparisons = products)
+                }
+
+                // Update cheapest store based on results
+                val cheapestStore = products
+                    .flatMap { it.prices }
+                    .minByOrNull { it.price }
+                    ?.chain
+
+                _state.update {
+                    it.copy(cheapestStore = cheapestStore)
+                }
+            },
+            onFailure = { /* Handle error */ }
+        )
+    }
 
     fun selectCity(city: String) {
         viewModelScope.launch {
-            try {
-                // Save to TokenManager
-                tokenManager.saveSelectedCity(city)
-
-                _state.update {
-                    it.copy(
-                        selectedCity = city,
-                        showCitySelector = false,
-                        error = null
-                    )
-                }
-            } catch (e: Exception) {
-                _state.update {
-                    it.copy(
-                        error = "Failed to save city preference: ${e.message}"
-                    )
-                }
+            _state.update {
+                it.copy(
+                    selectedCity = city,
+                    showCitySelector = false,
+                    recentCities = (listOf(city) + it.recentCities).distinct().take(3)
+                )
             }
+
+            // Reload content for new city
+            loadHomeContent()
         }
     }
 
     fun showCitySelector() {
-        _state.update {
-            it.copy(showCitySelector = true)
-        }
+        _state.update { it.copy(showCitySelector = true) }
     }
 
     fun hideCitySelector() {
-        _state.update {
-            it.copy(showCitySelector = false)
-        }
-    }
-
-    // ============ SEARCH RELATED METHODS ============
-
-    fun onSearchQuerySelected(query: String) {
-        viewModelScope.launch {
-            try {
-                // Add to recent searches when user selects a search
-                tokenManager.addRecentSearch(query)
-
-                // Reload recent searches to update UI immediately
-                loadRecentSearches()
-            } catch (e: Exception) {
-                // If saving fails, continue silently
-            }
-        }
-    }
-
-    fun clearRecentSearches() {
-        viewModelScope.launch {
-            try {
-                tokenManager.clearRecentSearches()
-
-                _state.update {
-                    it.copy(recentSearches = emptyList())
-                }
-            } catch (e: Exception) {
-                _state.update {
-                    it.copy(error = "Failed to clear search history")
-                }
-            }
-        }
-    }
-
-    fun removeRecentSearch(search: String) {
-        viewModelScope.launch {
-            try {
-                tokenManager.removeRecentSearch(search)
-
-                // Reload to update UI
-                loadRecentSearches()
-            } catch (e: Exception) {
-                // If removal fails, continue silently
-            }
-        }
-    }
-
-    // ============ ERROR HANDLING ============
-
-    fun clearError() {
-        _state.update {
-            it.copy(error = null)
-        }
+        _state.update { it.copy(showCitySelector = false) }
     }
 
     fun refresh() {
-        _state.update {
-            it.copy(isLoading = true, error = null)
-        }
+        viewModelScope.launch {
+            _state.update { it.copy(isRefreshing = true) }
 
-        loadUserData()
-        loadRecentSearches()
-        // Cart count is observed automatically
+            loadHomeContent()
+            loadUserData()
+
+            // Simulate network delay
+            delay(1000)
+
+            _state.update { it.copy(isRefreshing = false) }
+        }
+    }
+
+    fun addToCart(product: GroupedProduct, storePrice: StorePrice) {
+        viewModelScope.launch {
+            // Convert to domain Product model
+            val domainProduct = com.example.championcart.domain.models.Product(
+                itemCode = product.itemCode,
+                itemName = product.itemName,
+                chain = storePrice.chain,
+                storeId = storePrice.storeId,
+                price = storePrice.price,
+                timestamp = storePrice.timestamp,
+                weight = product.weight,
+                unit = product.unit,
+                pricePerUnit = product.pricePerUnit
+            )
+
+            cartRepository.addToCart(domainProduct, 1).fold(
+                onSuccess = {
+                    _state.update {
+                        it.copy(showCartAddedFeedback = true)
+                    }
+
+                    // Hide feedback after delay
+                    delay(2000)
+                    _state.update {
+                        it.copy(showCartAddedFeedback = false)
+                    }
+                },
+                onFailure = { error ->
+                    _state.update {
+                        it.copy(error = error.message)
+                    }
+                }
+            )
+        }
+    }
+
+    fun clearError() {
+        _state.update { it.copy(error = null) }
     }
 }
+
+/**
+ * Home screen UI state
+ */
+data class HomeScreenState(
+    // User data
+    val userName: String? = null,
+    val isGuest: Boolean = false,
+
+    // City selection
+    val selectedCity: String = "תל אביב",
+    val availableCities: List<String> = emptyList(),
+    val recentCities: List<String> = emptyList(),
+    val showCitySelector: Boolean = false,
+    val isLoadingCities: Boolean = false,
+
+    // Stats
+    val totalSaved: Double = 0.0,
+    val itemsCompared: Int = 0,
+    val cheapestStore: String? = null,
+
+    // Content
+    val featuredDeals: List<GroupedProduct> = emptyList(),
+    val recentComparisons: List<GroupedProduct> = emptyList(),
+
+    // UI states
+    val isLoading: Boolean = false,
+    val isRefreshing: Boolean = false,
+    val showCartAddedFeedback: Boolean = false,
+    val error: String? = null
+)

@@ -8,8 +8,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -17,312 +16,459 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
-import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.championcart.data.api.ChampionCartApi
-import com.example.championcart.data.local.preferences.TokenManager
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.example.championcart.ui.theme.*
-import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import javax.inject.Inject
+import androidx.compose.ui.tooling.preview.Preview as Preview
 
-data class CitySelectionUiState(
-    val cities: List<String> = emptyList(),
-    val filteredCities: List<String> = emptyList(),
-    val selectedCity: String = "Tel Aviv",
-    val searchQuery: String = "",
-    val isLoading: Boolean = false,
-    val error: String? = null
+/**
+ * City information data class
+ * Parses from server format: "Tel Aviv: 45 shufersal, 12 victory"
+ */
+data class CityInfo(
+    val name: String,
+    val nameHebrew: String,
+    val totalStores: Int,
+    val storeBreakdown: Map<String, Int>,
+    val isPopular: Boolean = false
 )
 
-@HiltViewModel
-class CitySelectionViewModel @Inject constructor(
-    private val api: ChampionCartApi,
-    private val tokenManager: TokenManager
-) : ViewModel() {
+/**
+ * Modern city selector with glassmorphic bottom sheet
+ * Features search, recent cities, and store count visualization
+ */
+@OptIn(ExperimentalAnimationApi::class)
+@Composable
+internal fun CitySelector(
+    currentCity: String,
+    cities: List<String>, // Raw format from server
+    onCitySelected: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    isLoading: Boolean = false,
+    recentCities: List<String> = emptyList()
+) {
+    var isExpanded by remember { mutableStateOf(false) }
+    val haptics = LocalHapticFeedback.current
 
-    private val _uiState = MutableStateFlow(CitySelectionUiState())
-    val uiState: StateFlow<CitySelectionUiState> = _uiState.asStateFlow()
-
-    init {
-        loadCities()
-        _uiState.value = _uiState.value.copy(
-            selectedCity = tokenManager.getSelectedCity()
-        )
+    // Parse city data
+    val parsedCities = remember(cities) {
+        cities.map { parseCityString(it) }
+            .sortedByDescending { it.totalStores }
     }
 
-    private fun loadCities() {
-        viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true)
+    // Current city info
+    val currentCityInfo = remember(currentCity, parsedCities) {
+        parsedCities.find { it.name.equals(currentCity, ignoreCase = true) }
+            ?: CityInfo(currentCity, translateCityName(currentCity), 0, emptyMap())
+    }
 
-            try {
-                val response = api.getCitiesList()
-                if (response.isSuccessful) {
-                    val cities: List<String> = response.body() ?: emptyList()
-                    _uiState.value = _uiState.value.copy(
-                        cities = cities,
-                        filteredCities = cities,
-                        isLoading = false
-                    )
-                } else {
-                    _uiState.value = _uiState.value.copy(
-                        error = "Failed to load cities",
-                        isLoading = false
-                    )
-                }
-            } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    error = e.message ?: "Unknown error",
-                    isLoading = false
-                )
+    Column(modifier = modifier) {
+        // Compact city display
+        CitySelectorButton(
+            cityInfo = currentCityInfo,
+            isExpanded = isExpanded,
+            isLoading = isLoading,
+            onClick = {
+                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                isExpanded = true
             }
+        )
+
+        // City selection dialog
+        if (isExpanded) {
+            CitySelectionDialog(
+                cities = parsedCities,
+                currentCity = currentCity,
+                recentCities = recentCities,
+                onCitySelected = { city ->
+                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onCitySelected(city)
+                    isExpanded = false
+                },
+                onDismiss = { isExpanded = false }
+            )
         }
-    }
-
-    fun onSearchQueryChanged(query: String) {
-        _uiState.value = _uiState.value.copy(
-            searchQuery = query,
-            filteredCities = if (query.isEmpty()) {
-                _uiState.value.cities
-            } else {
-                _uiState.value.cities.filter {
-                    it.contains(query, ignoreCase = true)
-                }
-            }
-        )
-    }
-
-    fun selectCity(city: String) {
-        tokenManager.saveSelectedCity(city)
-        _uiState.value = _uiState.value.copy(selectedCity = city)
     }
 }
 
+@ExperimentalAnimationApi
+@OptIn(ExperimentalAnimationApi::class)
 @Composable
-fun CitySelectionBottomSheet(
-    currentCity: String,
-    onCitySelected: (String) -> Unit,
-    onDismiss: () -> Unit,
-    tokenManager: TokenManager
+private fun CitySelectorButton(
+    cityInfo: CityInfo,
+    isExpanded: Boolean,
+    isLoading: Boolean,
+    onClick: () -> Unit
 ) {
-    val viewModel: CitySelectionViewModel = hiltViewModel()
-    val uiState by viewModel.uiState.collectAsState()
-    val haptics = LocalHapticFeedback.current
-    val keyboardController = LocalSoftwareKeyboardController.current
+    val rotation by animateFloatAsState(
+        targetValue = if (isExpanded) 180f else 0f,
+        animationSpec = SpringSpecs.Bouncy,
+        label = "arrowRotation"
+    )
 
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        shape = ComponentShapes.BottomSheet,
-        color = MaterialTheme.extendedColors.glassFrosted
+    Card(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(64.dp),
+        shape = GlassmorphicShapes.GlassCard,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(Dimensions.paddingLarge)
+                .background(
+                    brush = Brush.horizontalGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.extended.electricMint.copy(alpha = 0.05f),
+                            Color.Transparent
+                        )
+                    )
+                )
+                .padding(horizontal = SpacingTokens.L, vertical = SpacingTokens.M)
         ) {
-            // Header with animated icon
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally
+            Row(
+                modifier = Modifier.fillMaxSize(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
+                // Location icon and city info
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    horizontalArrangement = Arrangement.spacedBy(SpacingTokens.M)
                 ) {
                     // Animated location icon
-                    AnimatedLocationIcon()
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(
+                                MaterialTheme.colorScheme.extended.electricMint.copy(alpha = 0.1f)
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.LocationOn,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.extended.electricMint,
+                            modifier = Modifier
+                                .size(24.dp)
+                                .animateContentSize()
+                        )
+                    }
 
                     Column {
                         Text(
-                            text = "Select Your City",
-                            style = AppTextStyles.hebrewHeadline,
-                            fontWeight = FontWeight.Bold,
+                            text = cityInfo.nameHebrew,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onSurface
                         )
-                        Text(
-                            text = "Current: $currentCity",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
 
-                    IconButton(onClick = onDismiss) {
-                        Icon(
-                            Icons.Default.Close,
-                            contentDescription = "Close",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(Dimensions.spacingLarge))
-
-                // Search field
-                OutlinedTextField(
-                    value = uiState.searchQuery,
-                    onValueChange = viewModel::onSearchQueryChanged,
-                    modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("Search cities...") },
-                    leadingIcon = {
-                        Icon(
-                            Icons.Default.Search,
-                            contentDescription = "Search"
-                        )
-                    },
-                    trailingIcon = {
-                        if (uiState.searchQuery.isNotEmpty()) {
-                            IconButton(
-                                onClick = { viewModel.onSearchQueryChanged("") }
-                            ) {
-                                Icon(
-                                    Icons.Default.Clear,
-                                    contentDescription = "Clear"
+                        AnimatedContent(
+                            targetState = isLoading,
+                            transitionSpec = {
+                                fadeIn() with fadeOut()
+                            },
+                            label = "storeCountAnimation"
+                        ) { loading ->
+                            if (loading) {
+                                LoadingDots()
+                            } else {
+                                Text(
+                                    text = "${cityInfo.totalStores} חנויות זמינות",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                                 )
                             }
                         }
-                    },
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                    keyboardActions = KeyboardActions(
-                        onSearch = { keyboardController?.hide() }
-                    ),
-                    singleLine = true,
-                    shape = ComponentShapes.TextField
+                    }
+                }
+
+                // Dropdown arrow
+                Icon(
+                    Icons.Default.KeyboardArrowDown,
+                    contentDescription = "Select city",
+                    modifier = Modifier
+                        .size(24.dp)
+                        .rotate(rotation),
+                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
             }
+        }
+    }
+}
 
-            Spacer(modifier = Modifier.height(Dimensions.spacingLarge))
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CitySelectionDialog(
+    cities: List<CityInfo>,
+    currentCity: String,
+    recentCities: List<String>,
+    onCitySelected: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var searchQuery by remember { mutableStateOf("") }
+    val focusRequester = remember { FocusRequester() }
 
-            // Content based on state
-            Box(modifier = Modifier.weight(1f)) {
-                when {
-                    uiState.isLoading -> {
-                        // Loading state
-                        Column(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
-                        ) {
-                            CircularProgressIndicator(
-                                color = MaterialTheme.extendedColors.electricMint
-                            )
-                            Spacer(modifier = Modifier.height(Dimensions.spacingMedium))
-                            Text(
-                                text = "Loading cities...",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                    uiState.error != null -> {
-                        // Error state
-                        Column(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
-                        ) {
-                            Icon(
-                                Icons.Default.Error,
-                                contentDescription = null,
-                                modifier = Modifier.size(48.dp),
-                                tint = MaterialTheme.colorScheme.error
-                            )
-                            Spacer(modifier = Modifier.height(Dimensions.spacingMedium))
-                            Text(
-                                text = uiState.error!!,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.error,
-                                textAlign = TextAlign.Center
-                            )
-                        }
-                    }
-                    uiState.filteredCities.isEmpty() -> {
-                        // Empty state
-                        Column(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(Dimensions.spacingMedium)
-                        ) {
-                            Icon(
-                                Icons.Default.LocationOff,
-                                contentDescription = null,
-                                modifier = Modifier.size(48.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                            )
-                            Text(
-                                text = "No cities found",
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                textAlign = TextAlign.Center
-                            )
-                        }
-                    }
-                    else -> {
-                        // Cities list
-                        LazyColumn(
-                            verticalArrangement = Arrangement.spacedBy(Dimensions.spacingExtraSmall),
-                            contentPadding = PaddingValues(vertical = Dimensions.spacingSmall)
-                        ) {
-                            items(uiState.filteredCities) { city ->
-                                CityItem(
-                                    city = city,
-                                    isSelected = city == uiState.selectedCity,
-                                    onClick = {
-                                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                                        viewModel.selectCity(city)
-                                        onCitySelected(city)
-                                        onDismiss()
-                                    }
+    // Filter cities based on search
+    val filteredCities = remember(searchQuery, cities) {
+        if (searchQuery.isEmpty()) cities
+        else cities.filter {
+            it.name.contains(searchQuery, ignoreCase = true) ||
+                    it.nameHebrew.contains(searchQuery, ignoreCase = true)
+        }
+    }
+
+    // Group cities
+    val popularCities = remember(cities) {
+        listOf("Tel Aviv", "Jerusalem", "Haifa", "Beer Sheva", "Rishon LeZion")
+            .mapNotNull { cityName -> cities.find { it.name.equals(cityName, ignoreCase = true) } }
+    }
+
+    val recentCityInfos = remember(recentCities, cities) {
+        recentCities.mapNotNull { cityName ->
+            cities.find { it.name.equals(cityName, ignoreCase = true) }
+        }
+    }
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(
+            dismissOnBackPress = true,
+            dismissOnClickOutside = true,
+            usePlatformDefaultWidth = false
+        )
+    ) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight(0.9f)
+                .padding(horizontal = SpacingTokens.L),
+            shape = GlassmorphicShapes.GlassCardLarge,
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+        ) {
+            Column(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                // Header
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            brush = Brush.verticalGradient(
+                                colors = listOf(
+                                    MaterialTheme.colorScheme.extended.electricMint.copy(alpha = 0.1f),
+                                    Color.Transparent
                                 )
-                            }
+                            )
+                        )
+                        .padding(SpacingTokens.L)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "בחר עיר",
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold
+                        )
+
+                        IconButton(onClick = onDismiss) {
+                            Icon(
+                                Icons.Default.Close,
+                                contentDescription = "Close",
+                                tint = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                }
+
+                // Search bar
+                SearchCityBar(
+                    query = searchQuery,
+                    onQueryChange = { searchQuery = it },
+                    focusRequester = focusRequester,
+                    modifier = Modifier.padding(horizontal = SpacingTokens.L)
+                )
+
+                Spacer(modifier = Modifier.height(SpacingTokens.M))
+
+                // City list
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .weight(1f),
+                    contentPadding = PaddingValues(
+                        horizontal = SpacingTokens.L,
+                        vertical = SpacingTokens.M
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(SpacingTokens.S)
+                ) {
+                    // Recent cities section
+                    if (recentCityInfos.isNotEmpty() && searchQuery.isEmpty()) {
+                        item {
+                            SectionHeader(title = "ערים אחרונות", icon = Icons.Default.History)
+                        }
+
+                        items(recentCityInfos) { city ->
+                            CityItem(
+                                cityInfo = city,
+                                isSelected = city.name.equals(currentCity, ignoreCase = true),
+                                isRecent = true,
+                                onClick = { onCitySelected(city.name) }
+                            )
+                        }
+
+                        item { Spacer(modifier = Modifier.height(SpacingTokens.M)) }
+                    }
+
+                    // Popular cities section
+                    if (searchQuery.isEmpty()) {
+                        item {
+                            SectionHeader(title = "ערים פופולריות", icon = Icons.Default.Star)
+                        }
+
+                        items(popularCities) { city ->
+                            CityItem(
+                                cityInfo = city,
+                                isSelected = city.name.equals(currentCity, ignoreCase = true),
+                                isPopular = true,
+                                onClick = { onCitySelected(city.name) }
+                            )
+                        }
+
+                        item { Spacer(modifier = Modifier.height(SpacingTokens.M)) }
+                    }
+
+                    // All cities section
+                    item {
+                        SectionHeader(
+                            title = if (searchQuery.isEmpty()) "כל הערים" else "תוצאות חיפוש",
+                            icon = if (searchQuery.isEmpty()) Icons.Default.LocationCity else Icons.Default.Search
+                        )
+                    }
+
+                    items(filteredCities) { city ->
+                        CityItem(
+                            cityInfo = city,
+                            isSelected = city.name.equals(currentCity, ignoreCase = true),
+                            onClick = { onCitySelected(city.name) }
+                        )
+                    }
+
+                    // No results
+                    if (filteredCities.isEmpty()) {
+                        item {
+                            EmptyCitySearch(query = searchQuery)
                         }
                     }
                 }
             }
+        }
+    }
 
-            // Bottom action buttons
-            if (!uiState.isLoading) {
-                Spacer(modifier = Modifier.height(Dimensions.spacingMedium))
+    // Request focus on search field
+    LaunchedEffect(Unit) {
+        delay(100)
+        focusRequester.requestFocus()
+    }
+}
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingMedium)
+@Composable
+private fun SearchCityBar(
+    query: String,
+    onQueryChange: (String) -> Unit,
+    focusRequester: FocusRequester,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(56.dp)
+            .clip(GlassmorphicShapes.SearchField)
+            .background(MaterialTheme.colorScheme.extended.surfaceGlass)
+            .padding(horizontal = SpacingTokens.L)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxSize(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(SpacingTokens.M)
+        ) {
+            Icon(
+                Icons.Default.Search,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.extended.electricMint,
+                modifier = Modifier.size(24.dp)
+            )
+
+            BasicTextField(
+                value = query,
+                onValueChange = onQueryChange,
+                modifier = Modifier
+                    .weight(1f)
+                    .focusRequester(focusRequester),
+                textStyle = MaterialTheme.typography.bodyLarge.copy(
+                    color = MaterialTheme.colorScheme.onSurface
+                ),
+                singleLine = true,
+                cursorBrush = SolidColor(MaterialTheme.colorScheme.extended.electricMint),
+                decorationBox = { innerTextField ->
+                    Box {
+                        if (query.isEmpty()) {
+                            Text(
+                                text = "חפש עיר...",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                            )
+                        }
+                        innerTextField()
+                    }
+                }
+            )
+
+            // Clear button
+            AnimatedVisibility(
+                visible = query.isNotEmpty(),
+                enter = scaleIn() + fadeIn(),
+                exit = scaleOut() + fadeOut()
+            ) {
+                IconButton(
+                    onClick = { onQueryChange("") },
+                    modifier = Modifier.size(24.dp)
                 ) {
-                    OutlinedButton(
-                        onClick = onDismiss,
-                        modifier = Modifier.weight(1f),
-                        shape = ComponentShapes.Button
-                    ) {
-                        Text("Cancel")
-                    }
-
-                    Button(
-                        onClick = {
-                            onCitySelected(uiState.selectedCity)
-                            onDismiss()
-                        },
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.extendedColors.electricMint
-                        ),
-                        shape = ComponentShapes.Button
-                    ) {
-                        Text("Confirm")
-                    }
+                    Icon(
+                        Icons.Default.Clear,
+                        contentDescription = "Clear search",
+                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        modifier = Modifier.size(20.dp)
+                    )
                 }
             }
         }
@@ -330,115 +476,307 @@ fun CitySelectionBottomSheet(
 }
 
 @Composable
-private fun AnimatedLocationIcon() {
-    val infiniteTransition = rememberInfiniteTransition(label = "location_icon")
-    val scale by infiniteTransition.animateFloat(
-        initialValue = 1f,
-        targetValue = 1.1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1000, easing = EaseInOutSine),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "scale"
-    )
-
-    Icon(
-        Icons.Default.LocationOn,
-        contentDescription = null,
-        modifier = Modifier
-            .size(32.dp)
-            .scale(scale),
-        tint = MaterialTheme.extendedColors.electricMint
-    )
-}
-
-@Composable
-private fun CityItem(
-    city: String,
-    isSelected: Boolean,
-    onClick: () -> Unit
+private fun SectionHeader(
+    title: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector
 ) {
-    val animatedBackgroundColor by animateColorAsState(
-        targetValue = if (isSelected) {
-            MaterialTheme.extendedColors.electricMint.copy(alpha = 0.1f)
-        } else {
-            Color.Transparent
-        },
-        animationSpec = tween(300),
-        label = "background"
-    )
-
-    val animatedBorderColor by animateColorAsState(
-        targetValue = if (isSelected) {
-            MaterialTheme.extendedColors.electricMint
-        } else {
-            Color.Transparent
-        },
-        animationSpec = tween(300),
-        label = "border"
-    )
-
-    Surface(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick() },
-        shape = ComponentShapes.CardSmall,
-        color = animatedBackgroundColor,
-        border = if (isSelected) {
-            androidx.compose.foundation.BorderStroke(
-                2.dp,
-                animatedBorderColor
-            )
-        } else null
+            .padding(vertical = SpacingTokens.S),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(SpacingTokens.S)
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.extended.cosmicPurple,
+            modifier = Modifier.size(20.dp)
+        )
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CityItem(
+    cityInfo: CityInfo,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    isRecent: Boolean = false,
+    isPopular: Boolean = false
+) {
+    val backgroundColor by animateColorAsState(
+        targetValue = when {
+            isSelected -> MaterialTheme.colorScheme.extended.electricMint.copy(alpha = 0.15f)
+            else -> Color.Transparent
+        },
+        animationSpec = SpringSpecs.ColorAnimation,
+        label = "cityItemBg"
+    )
+
+    val scale by animateFloatAsState(
+        targetValue = if (isSelected) 1.02f else 1f,
+        animationSpec = SpringSpecs.Bouncy,
+        label = "cityItemScale"
+    )
+
+    Card(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .scale(scale),
+        shape = GlassmorphicShapes.GlassCardSmall,
+        colors = CardDefaults.cardColors(containerColor = backgroundColor),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = if (isSelected) 2.dp else 0.dp
+        )
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(Dimensions.paddingMedium),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+                .padding(SpacingTokens.L),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = city,
-                style = if (city.any { Character.UnicodeBlock.of(it) == Character.UnicodeBlock.HEBREW }) {
-                    AppTextStyles.hebrewBody
-                } else {
-                    MaterialTheme.typography.bodyLarge
-                },
-                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                color = if (isSelected) {
-                    MaterialTheme.extendedColors.electricMint
-                } else {
-                    MaterialTheme.colorScheme.onSurface
-                }
-            )
+            // City info
+            Column(modifier = Modifier.weight(1f)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(SpacingTokens.S)
+                ) {
+                    Text(
+                        text = cityInfo.nameHebrew,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
+                    )
 
-            if (isSelected) {
-                Icon(
-                    Icons.Default.Check,
-                    contentDescription = "Selected",
-                    tint = MaterialTheme.extendedColors.electricMint,
-                    modifier = Modifier.size(Dimensions.iconSizeSmall)
+                    // Tags
+                    if (isPopular) {
+                        CityTag(
+                            text = "פופולרי",
+                            color = MaterialTheme.colorScheme.extended.cosmicPurple
+                        )
+                    }
+                    if (isRecent) {
+                        CityTag(
+                            text = "אחרון",
+                            color = MaterialTheme.colorScheme.extended.electricMint
+                        )
+                    }
+                }
+
+                // Store breakdown
+                StoreBreakdown(cityInfo.storeBreakdown)
+            }
+
+            // Total stores badge
+            Box(
+                modifier = Modifier
+                    .clip(GlassmorphicShapes.BottomSheet)
+                    .background(
+                        if (isSelected) {
+                            MaterialTheme.colorScheme.extended.electricMint
+                        } else {
+                            MaterialTheme.colorScheme.extended.surfaceGlass
+                        }
+                    )
+                    .padding(horizontal = SpacingTokens.M, vertical = SpacingTokens.S)
+            ) {
+                Text(
+                    text = cityInfo.totalStores.toString(),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = if (isSelected) {
+                        MaterialTheme.colorScheme.extended.deepNavy
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    }
                 )
             }
         }
     }
 }
 
-// Legacy Dialog version for backward compatibility
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CitySelectionDialog(
-    currentCity: String,
-    onCitySelected: (String) -> Unit,
-    onDismiss: () -> Unit,
-    tokenManager: TokenManager
+private fun CityTag(
+    text: String,
+    color: Color
 ) {
-    // Redirect to modern bottom sheet
-    CitySelectionBottomSheet(
-        currentCity = currentCity,
-        onCitySelected = onCitySelected,
-        onDismiss = onDismiss,
-        tokenManager = tokenManager
+    Box(
+        modifier = Modifier
+            .clip(CircleShape)
+            .background(color.copy(alpha = 0.15f))
+            .padding(horizontal = SpacingTokens.S, vertical = 2.dp)
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelSmall,
+            color = color,
+            fontWeight = FontWeight.Medium
+        )
+    }
+}
+
+@Composable
+private fun StoreBreakdown(breakdown: Map<String, Int>) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(SpacingTokens.M)
+    ) {
+        breakdown.forEach { (chain, count) ->
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                // Chain icon
+                Box(
+                    modifier = Modifier
+                        .size(16.dp)
+                        .clip(CircleShape)
+                        .background(getChainColor(chain).copy(alpha = 0.2f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = chain.first().uppercase(),
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold
+                        ),
+                        color = getChainColor(chain)
+                    )
+                }
+
+                Text(
+                    text = count.toString(),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun EmptyCitySearch(query: String) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = SpacingTokens.XL),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Icon(
+            Icons.Default.SearchOff,
+            contentDescription = null,
+            modifier = Modifier.size(48.dp),
+            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+        )
+
+        Spacer(modifier = Modifier.height(SpacingTokens.M))
+
+        Text(
+            text = "לא נמצאו תוצאות עבור \"$query\"",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+            textAlign = TextAlign.Center
+        )
+    }
+}
+
+@Composable
+private fun LoadingDots() {
+    val infiniteTransition = rememberInfiniteTransition(label = "loading")
+
+    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        repeat(3) { index ->
+            val alpha by infiniteTransition.animateFloat(
+                initialValue = 0.3f,
+                targetValue = 1f,
+                animationSpec = infiniteRepeatable(
+                    animation = keyframes {
+                        durationMillis = 1000
+                        0.3f at 0 with LinearEasing
+                        1f at 300 + (index * 100) with LinearEasing
+                        0.3f at 600 + (index * 100) with LinearEasing
+                    },
+                    repeatMode = RepeatMode.Restart
+                ),
+                label = "dot_$index"
+            )
+
+            Box(
+                modifier = Modifier
+                    .size(4.dp)
+                    .clip(CircleShape)
+                    .background(
+                        MaterialTheme.colorScheme.extended.electricMint.copy(alpha = alpha)
+                    )
+            )
+        }
+    }
+}
+
+// Helper functions
+private fun parseCityString(cityString: String): CityInfo {
+    // Parse format: "Tel Aviv: 45 shufersal, 12 victory"
+    val parts = cityString.split(":")
+    val cityName = parts[0].trim()
+
+    val storeBreakdown = mutableMapOf<String, Int>()
+    var totalStores = 0
+
+    if (parts.size > 1) {
+        val storeParts = parts[1].trim().split(",")
+        storeParts.forEach { storePart ->
+            val storeInfo = storePart.trim().split(" ")
+            if (storeInfo.size >= 2) {
+                val count = storeInfo[0].toIntOrNull() ?: 0
+                val chain = storeInfo[1]
+                storeBreakdown[chain] = count
+                totalStores += count
+            }
+        }
+    }
+
+    return CityInfo(
+        name = cityName,
+        nameHebrew = translateCityName(cityName),
+        totalStores = totalStores,
+        storeBreakdown = storeBreakdown
     )
+}
+
+private fun translateCityName(englishName: String): String {
+    return when (englishName.lowercase()) {
+        "tel aviv" -> "תל אביב"
+        "jerusalem" -> "ירושלים"
+        "haifa" -> "חיפה"
+        "beer sheva", "beersheva" -> "באר שבע"
+        "rishon lezion" -> "ראשון לציון"
+        "petah tikva" -> "פתח תקווה"
+        "ashdod" -> "אשדוד"
+        "netanya" -> "נתניה"
+        "holon" -> "חולון"
+        "bnei brak" -> "בני ברק"
+        "ramat gan" -> "רמת גן"
+        "ashkelon" -> "אשקלון"
+        "rehovot" -> "רחובות"
+        "bat yam" -> "בת ים"
+        "herzliya" -> "הרצליה"
+        else -> englishName // Return as-is if translation not found
+    }
+}
+
+private fun getChainColor(chain: String): Color {
+    return when (chain.lowercase()) {
+        "shufersal" -> Color(0xFF0056B3) // Shufersal blue
+        "victory" -> Color(0xFFE31E24) // Victory red
+        "rami levy" -> Color(0xFFFFD700) // Rami Levy yellow
+        "mega" -> Color(0xFF006400) // Mega green
+        else -> BrandColors.CosmicPurple
+    }
 }

@@ -388,7 +388,7 @@ private fun createAnimatedColorScheme(targetScheme: ColorScheme): ColorScheme {
 }
 
 /**
- * Create animated extended colors
+ * Create animated extended colors - COMPLETE VERSION
  */
 @Composable
 private fun createAnimatedExtendedColors(targetColors: ExtendedColors): ExtendedColors {
@@ -396,12 +396,13 @@ private fun createAnimatedExtendedColors(targetColors: ExtendedColors): Extended
         snap()
     } else {
         spring(
-            dampingRatio = SpringSpecs.DampingRatioNoBounce,
-            stiffness = SpringSpecs.StiffnessLow
+            dampingRatio = Spring.DampingRatioNoBouncy,
+            stiffness = Spring.StiffnessLow
         )
     }
 
     return ExtendedColors(
+        // Primary Brand Colors
         electricMint = animateColorAsState(
             targetValue = targetColors.electricMint,
             animationSpec = animationSpec,
@@ -412,6 +413,22 @@ private fun createAnimatedExtendedColors(targetColors: ExtendedColors): Extended
             animationSpec = animationSpec,
             label = "electricMintVariant"
         ).value,
+        electricMintLight = animateColorAsState(
+            targetValue = targetColors.electricMintLight,
+            animationSpec = animationSpec,
+            label = "electricMintLight"
+        ).value,
+        electricMintDark = animateColorAsState(
+            targetValue = targetColors.electricMintDark,
+            animationSpec = animationSpec,
+            label = "electricMintDark"
+        ).value,
+        electricMintGlow = animateColorAsState(
+            targetValue = targetColors.electricMintGlow,
+            animationSpec = animationSpec,
+            label = "electricMintGlow"
+        ).value,
+
         cosmicPurple = animateColorAsState(
             targetValue = targetColors.cosmicPurple,
             animationSpec = animationSpec,
@@ -422,6 +439,44 @@ private fun createAnimatedExtendedColors(targetColors: ExtendedColors): Extended
             animationSpec = animationSpec,
             label = "cosmicPurpleVariant"
         ).value,
+        cosmicPurpleLight = animateColorAsState(
+            targetValue = targetColors.cosmicPurpleLight,
+            animationSpec = animationSpec,
+            label = "cosmicPurpleLight"
+        ).value,
+        cosmicPurpleDark = animateColorAsState(
+            targetValue = targetColors.cosmicPurpleDark,
+            animationSpec = animationSpec,
+            label = "cosmicPurpleDark"
+        ).value,
+        cosmicPurpleGlow = animateColorAsState(
+            targetValue = targetColors.cosmicPurpleGlow,
+            animationSpec = animationSpec,
+            label = "cosmicPurpleGlow"
+        ).value,
+
+        // Neon Coral
+        neonCoral = animateColorAsState(
+            targetValue = targetColors.neonCoral,
+            animationSpec = animationSpec,
+            label = "neonCoral"
+        ).value,
+        neonCoralLight = animateColorAsState(
+            targetValue = targetColors.neonCoralLight,
+            animationSpec = animationSpec,
+            label = "neonCoralLight"
+        ).value,
+        neonCoralDark = animateColorAsState(
+            targetValue = targetColors.neonCoralDark,
+            animationSpec = animationSpec,
+            label = "neonCoralDark"
+        ).value,
+        neonCoralGlow = animateColorAsState(
+            targetValue = targetColors.neonCoralGlow,
+            animationSpec = animationSpec,
+            label = "neonCoralGlow"
+        ).value,
+
         deepNavy = animateColorAsState(
             targetValue = targetColors.deepNavy,
             animationSpec = animationSpec,
@@ -432,37 +487,140 @@ private fun createAnimatedExtendedColors(targetColors: ExtendedColors): Extended
             animationSpec = animationSpec,
             label = "deepNavyVariant"
         ).value,
+
+        // Glassmorphic Overlays
         glassLight = targetColors.glassLight,
         glassMedium = targetColors.glassMedium,
         glassHeavy = targetColors.glassHeavy,
         glassAccent = targetColors.glassAccent,
-        success = targetColors.success,
-        successContainer = targetColors.successContainer,
-        onSuccess = targetColors.onSuccess,
-        onSuccessContainer = targetColors.onSuccessContainer,
-        warning = targetColors.warning,
-        warningContainer = targetColors.warningContainer,
-        onWarning = targetColors.onWarning,
-        onWarningContainer = targetColors.onWarningContainer,
-        info = targetColors.info,
-        infoContainer = targetColors.infoContainer,
-        onInfo = targetColors.onInfo,
-        onInfoContainer = targetColors.onInfoContainer,
-        bestPrice = targetColors.bestPrice,
-        bestPriceContainer = targetColors.bestPriceContainer,
-        onBestPrice = targetColors.onBestPrice,
-        midPrice = targetColors.midPrice,
-        midPriceContainer = targetColors.midPriceContainer,
-        onMidPrice = targetColors.onMidPrice,
-        highPrice = targetColors.highPrice,
-        highPriceContainer = targetColors.highPriceContainer,
-        onHighPrice = targetColors.onHighPrice,
+
+        // Semantic State Colors
+        success = animateColorAsState(
+            targetValue = targetColors.success,
+            animationSpec = animationSpec,
+            label = "success"
+        ).value,
+        successContainer = animateColorAsState(
+            targetValue = targetColors.successContainer,
+            animationSpec = animationSpec,
+            label = "successContainer"
+        ).value,
+        onSuccess = animateColorAsState(
+            targetValue = targetColors.onSuccess,
+            animationSpec = animationSpec,
+            label = "onSuccess"
+        ).value,
+        onSuccessContainer = animateColorAsState(
+            targetValue = targetColors.onSuccessContainer,
+            animationSpec = animationSpec,
+            label = "onSuccessContainer"
+        ).value,
+
+        warning = animateColorAsState(
+            targetValue = targetColors.warning,
+            animationSpec = animationSpec,
+            label = "warning"
+        ).value,
+        warningContainer = animateColorAsState(
+            targetValue = targetColors.warningContainer,
+            animationSpec = animationSpec,
+            label = "warningContainer"
+        ).value,
+        onWarning = animateColorAsState(
+            targetValue = targetColors.onWarning,
+            animationSpec = animationSpec,
+            label = "onWarning"
+        ).value,
+        onWarningContainer = animateColorAsState(
+            targetValue = targetColors.onWarningContainer,
+            animationSpec = animationSpec,
+            label = "onWarningContainer"
+        ).value,
+
+        info = animateColorAsState(
+            targetValue = targetColors.info,
+            animationSpec = animationSpec,
+            label = "info"
+        ).value,
+        infoContainer = animateColorAsState(
+            targetValue = targetColors.infoContainer,
+            animationSpec = animationSpec,
+            label = "infoContainer"
+        ).value,
+        onInfo = animateColorAsState(
+            targetValue = targetColors.onInfo,
+            animationSpec = animationSpec,
+            label = "onInfo"
+        ).value,
+        onInfoContainer = animateColorAsState(
+            targetValue = targetColors.onInfoContainer,
+            animationSpec = animationSpec,
+            label = "onInfoContainer"
+        ).value,
+
+        // Price Comparison Colors
+        bestPrice = animateColorAsState(
+            targetValue = targetColors.bestPrice,
+            animationSpec = animationSpec,
+            label = "bestPrice"
+        ).value,
+        bestPriceContainer = animateColorAsState(
+            targetValue = targetColors.bestPriceContainer,
+            animationSpec = animationSpec,
+            label = "bestPriceContainer"
+        ).value,
+        bestPriceGlow = animateColorAsState(
+            targetValue = targetColors.bestPriceGlow,
+            animationSpec = animationSpec,
+            label = "bestPriceGlow"
+        ).value,
+        onBestPrice = animateColorAsState(
+            targetValue = targetColors.onBestPrice,
+            animationSpec = animationSpec,
+            label = "onBestPrice"
+        ).value,
+
+        midPrice = animateColorAsState(
+            targetValue = targetColors.midPrice,
+            animationSpec = animationSpec,
+            label = "midPrice"
+        ).value,
+        midPriceContainer = animateColorAsState(
+            targetValue = targetColors.midPriceContainer,
+            animationSpec = animationSpec,
+            label = "midPriceContainer"
+        ).value,
+        onMidPrice = animateColorAsState(
+            targetValue = targetColors.onMidPrice,
+            animationSpec = animationSpec,
+            label = "onMidPrice"
+        ).value,
+
+        highPrice = animateColorAsState(
+            targetValue = targetColors.highPrice,
+            animationSpec = animationSpec,
+            label = "highPrice"
+        ).value,
+        highPriceContainer = animateColorAsState(
+            targetValue = targetColors.highPriceContainer,
+            animationSpec = animationSpec,
+            label = "highPriceContainer"
+        ).value,
+        onHighPrice = animateColorAsState(
+            targetValue = targetColors.onHighPrice,
+            animationSpec = animationSpec,
+            label = "onHighPrice"
+        ).value,
+
+        // Store Chain Colors
         shufersal = targetColors.shufersal,
         ramiLevi = targetColors.ramiLevi,
         victory = targetColors.victory,
         mega = targetColors.mega,
         osherAd = targetColors.osherAd,
         coop = targetColors.coop,
+
+        // Product Category Colors
         dairy = targetColors.dairy,
         meat = targetColors.meat,
         produce = targetColors.produce,
@@ -471,55 +629,140 @@ private fun createAnimatedExtendedColors(targetColors: ExtendedColors): Extended
         household = targetColors.household,
         kosher = targetColors.kosher,
         organic = targetColors.organic,
-        morningAccent = animateColorAsState(
-            targetValue = targetColors.morningAccent,
+
+        // Time-Based Accent Colors
+        morningAccent = targetColors.morningAccent,
+        afternoonAccent = targetColors.afternoonAccent,
+        eveningAccent = targetColors.eveningAccent,
+        nightAccent = targetColors.nightAccent,
+
+        // Gradient Colors
+        gradientStart = animateColorAsState(
+            targetValue = targetColors.gradientStart,
             animationSpec = animationSpec,
-            label = "morningAccent"
+            label = "gradientStart"
         ).value,
-        afternoonAccent = animateColorAsState(
-            targetValue = targetColors.afternoonAccent,
+        gradientMiddle = animateColorAsState(
+            targetValue = targetColors.gradientMiddle,
             animationSpec = animationSpec,
-            label = "afternoonAccent"
+            label = "gradientMiddle"
         ).value,
-        eveningAccent = animateColorAsState(
-            targetValue = targetColors.eveningAccent,
+        gradientEnd = animateColorAsState(
+            targetValue = targetColors.gradientEnd,
             animationSpec = animationSpec,
-            label = "eveningAccent"
+            label = "gradientEnd"
         ).value,
-        nightAccent = animateColorAsState(
-            targetValue = targetColors.nightAccent,
+
+        // Interactive States
+        interactiveDefault = animateColorAsState(
+            targetValue = targetColors.interactiveDefault,
             animationSpec = animationSpec,
-            label = "nightAccent"
+            label = "interactiveDefault"
         ).value,
-        gradientStart = targetColors.gradientStart,
-        gradientMiddle = targetColors.gradientMiddle,
-        gradientEnd = targetColors.gradientEnd,
-        interactiveDefault = targetColors.interactiveDefault,
-        interactiveHover = targetColors.interactiveHover,
-        interactivePressed = targetColors.interactivePressed,
-        interactiveDisabled = targetColors.interactiveDisabled,
-        interactiveFocus = targetColors.interactiveFocus,
-        surfaceGlass = targetColors.surfaceGlass,
-        surfaceElevated = targetColors.surfaceElevated,
-        surfaceCard = targetColors.surfaceCard,
-        surfaceModal = targetColors.surfaceModal,
-        surfaceNavigation = targetColors.surfaceNavigation,
-        borderSubtle = targetColors.borderSubtle,
-        borderDefault = targetColors.borderDefault,
-        borderStrong = targetColors.borderStrong,
-        borderGlass = targetColors.borderGlass,
-        textPrimary = targetColors.textPrimary,
-        textSecondary = targetColors.textSecondary,
-        textTertiary = targetColors.textTertiary,
-        textInverse = targetColors.textInverse,
-        textOnGlass = targetColors.textOnGlass,
+        interactiveHover = animateColorAsState(
+            targetValue = targetColors.interactiveHover,
+            animationSpec = animationSpec,
+            label = "interactiveHover"
+        ).value,
+        interactivePressed = animateColorAsState(
+            targetValue = targetColors.interactivePressed,
+            animationSpec = animationSpec,
+            label = "interactivePressed"
+        ).value,
+        interactiveDisabled = animateColorAsState(
+            targetValue = targetColors.interactiveDisabled,
+            animationSpec = animationSpec,
+            label = "interactiveDisabled"
+        ).value,
+        interactiveFocus = animateColorAsState(
+            targetValue = targetColors.interactiveFocus,
+            animationSpec = animationSpec,
+            label = "interactiveFocus"
+        ).value,
+
+        // Surface Variants
+        surfaceGlass = animateColorAsState(
+            targetValue = targetColors.surfaceGlass,
+            animationSpec = animationSpec,
+            label = "surfaceGlass"
+        ).value,
+        surfaceElevated = animateColorAsState(
+            targetValue = targetColors.surfaceElevated,
+            animationSpec = animationSpec,
+            label = "surfaceElevated"
+        ).value,
+        surfaceCard = animateColorAsState(
+            targetValue = targetColors.surfaceCard,
+            animationSpec = animationSpec,
+            label = "surfaceCard"
+        ).value,
+        surfaceModal = animateColorAsState(
+            targetValue = targetColors.surfaceModal,
+            animationSpec = animationSpec,
+            label = "surfaceModal"
+        ).value,
+        surfaceNavigation = animateColorAsState(
+            targetValue = targetColors.surfaceNavigation,
+            animationSpec = animationSpec,
+            label = "surfaceNavigation"
+        ).value,
+
+        // Border & Outline Variants
+        borderSubtle = animateColorAsState(
+            targetValue = targetColors.borderSubtle,
+            animationSpec = animationSpec,
+            label = "borderSubtle"
+        ).value,
+        borderDefault = animateColorAsState(
+            targetValue = targetColors.borderDefault,
+            animationSpec = animationSpec,
+            label = "borderDefault"
+        ).value,
+        borderStrong = animateColorAsState(
+            targetValue = targetColors.borderStrong,
+            animationSpec = animationSpec,
+            label = "borderStrong"
+        ).value,
+        borderGlass = animateColorAsState(
+            targetValue = targetColors.borderGlass,
+            animationSpec = animationSpec,
+            label = "borderGlass"
+        ).value,
+
+        // Text Variants
+        textPrimary = animateColorAsState(
+            targetValue = targetColors.textPrimary,
+            animationSpec = animationSpec,
+            label = "textPrimary"
+        ).value,
+        textSecondary = animateColorAsState(
+            targetValue = targetColors.textSecondary,
+            animationSpec = animationSpec,
+            label = "textSecondary"
+        ).value,
+        textTertiary = animateColorAsState(
+            targetValue = targetColors.textTertiary,
+            animationSpec = animationSpec,
+            label = "textTertiary"
+        ).value,
+        textInverse = animateColorAsState(
+            targetValue = targetColors.textInverse,
+            animationSpec = animationSpec,
+            label = "textInverse"
+        ).value,
+        textOnGlass = animateColorAsState(
+            targetValue = targetColors.textOnGlass,
+            animationSpec = animationSpec,
+            label = "textOnGlass"
+        ).value,
+
+        // Special Effects
         shadow = targetColors.shadow,
         glow = targetColors.glow,
         shimmer = targetColors.shimmer,
         highlight = targetColors.highlight
     )
 }
-
 /**
  * Time-based color helpers
  */

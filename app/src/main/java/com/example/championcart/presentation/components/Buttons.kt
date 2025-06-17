@@ -1,18 +1,21 @@
 package com.example.championcart.presentation.components
 
-import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -26,6 +29,7 @@ import com.example.championcart.ui.theme.*
  * Primary CTA Button with gradient background
  * Used for main actions like "Add to Cart", "Checkout", etc.
  */
+@OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun PrimaryButton(
     text: String,
@@ -50,14 +54,16 @@ fun PrimaryButton(
             else -> 1f
         },
         animationSpec = spring(
-            dampingRatio = SpringSpecs.DampingRatioMediumBounce,
-            stiffness = SpringSpecs.StiffnessMedium
-        )
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "buttonScale"
     )
 
     val buttonAlpha by animateFloatAsState(
         targetValue = if (enabled) 1f else 0.6f,
-        animationSpec = tween(200)
+        animationSpec = tween(200),
+        label = "buttonAlpha"
     )
 
     Button(
@@ -69,7 +75,7 @@ fun PrimaryButton(
         },
         modifier = modifier
             .fillMaxWidth()
-            .height(SizingTokens.ButtonXL)
+            .height(56.dp)
             .scale(scale),
         enabled = enabled && !loading,
         shape = GlassmorphicShapes.Button,
@@ -94,7 +100,8 @@ fun PrimaryButton(
                 targetState = loading,
                 transitionSpec = {
                     fadeIn() with fadeOut()
-                }
+                },
+                label = "loadingAnimation"
             ) { isLoading ->
                 if (isLoading) {
                     CircularProgressIndicator(
@@ -129,6 +136,7 @@ fun PrimaryButton(
  * Secondary Button with outline style
  * Used for secondary actions
  */
+@OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun SecondaryButton(
     text: String,
@@ -150,9 +158,10 @@ fun SecondaryButton(
             else -> 1f
         },
         animationSpec = spring(
-            dampingRatio = SpringSpecs.DampingRatioMediumBounce,
-            stiffness = SpringSpecs.StiffnessMedium
-        )
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "buttonScale"
     )
 
     OutlinedButton(
@@ -164,7 +173,7 @@ fun SecondaryButton(
         },
         modifier = modifier
             .fillMaxWidth()
-            .height(SizingTokens.ButtonXL)
+            .height(56.dp)
             .scale(scale),
         enabled = enabled && !loading,
         shape = GlassmorphicShapes.Button,
@@ -182,7 +191,8 @@ fun SecondaryButton(
             targetState = loading,
             transitionSpec = {
                 fadeIn() with fadeOut()
-            }
+            },
+            label = "loadingAnimation"
         ) { isLoading ->
             if (isLoading) {
                 CircularProgressIndicator(
@@ -219,7 +229,7 @@ fun GlassmorphicIconButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    size: Dp = SizingTokens.IconButtonM,
+    size: Dp = 48.dp,
     colors: IconButtonColors = IconButtonDefaults.iconButtonColors(),
     content: @Composable () -> Unit
 ) {
@@ -230,9 +240,10 @@ fun GlassmorphicIconButton(
     val scale by animateFloatAsState(
         targetValue = if (isPressed) 0.9f else 1f,
         animationSpec = spring(
-            dampingRatio = SpringSpecs.DampingRatioMediumBounce,
-            stiffness = SpringSpecs.StiffnessMedium
-        )
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "iconScale"
     )
 
     IconButton(
@@ -276,9 +287,10 @@ fun GradientFAB(
     val scale by animateFloatAsState(
         targetValue = if (isPressed) 0.92f else 1f,
         animationSpec = spring(
-            dampingRatio = SpringSpecs.DampingRatioHighBounce,
-            stiffness = SpringSpecs.StiffnessMedium
-        )
+            dampingRatio = Spring.DampingRatioHighBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "fabScale"
     )
 
     if (text != null) {
@@ -291,9 +303,9 @@ fun GradientFAB(
                 .scale(scale)
                 .shadow(
                     elevation = 8.dp,
-                    shape = ComponentShapes.Navigation.FAB
+                    shape = GlassmorphicShapes.Button
                 ),
-            shape = ComponentShapes.Navigation.FAB,
+            shape = GlassmorphicShapes.Button,
             containerColor = Color.Transparent,
             contentColor = Color.White,
             interactionSource = interactionSource
@@ -330,9 +342,9 @@ fun GradientFAB(
                 .scale(scale)
                 .shadow(
                     elevation = 8.dp,
-                    shape = ComponentShapes.Navigation.FAB
+                    shape = CircleShape
                 ),
-            shape = ComponentShapes.Navigation.FAB,
+            shape = CircleShape,
             containerColor = Color.Transparent,
             contentColor = Color.White,
             interactionSource = interactionSource
@@ -376,5 +388,59 @@ fun GlassmorphicTextButton(
                 fontWeight = FontWeight.Medium
             )
         )
+    }
+}
+
+/**
+ * Toggle Button Group
+ */
+@Composable
+fun ToggleButtonGroup(
+    options: List<String>,
+    selectedOption: String,
+    onOptionSelected: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(GlassmorphicShapes.Button)
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+            .padding(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        options.forEach { option ->
+            val isSelected = option == selectedOption
+            val backgroundColor by animateColorAsState(
+                targetValue = if (isSelected) {
+                    MaterialTheme.colorScheme.extended.electricMint
+                } else {
+                    Color.Transparent
+                },
+                animationSpec = tween(300),
+                label = "toggleBg"
+            )
+
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(GlassmorphicShapes.ButtonSmall)
+                    .background(backgroundColor)
+                    .clickable { onOptionSelected(option) }
+                    .padding(vertical = SpacingTokens.M),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = option,
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                    color = if (isSelected) {
+                        MaterialTheme.colorScheme.extended.deepNavy
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    }
+                )
+            }
+        }
     }
 }

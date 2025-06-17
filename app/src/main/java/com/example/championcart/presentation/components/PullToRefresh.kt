@@ -5,6 +5,7 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
@@ -14,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.championcart.ui.theme.*
@@ -48,143 +50,6 @@ fun PullToRefreshBox(
         )
     }
 }
-
-/**
- * Skeleton loaders for different content types
- */
-object SkeletonLoaders {
-
-    @Composable
-    fun ProductCardSkeleton(
-        modifier: Modifier = Modifier
-    ) {
-        Card(
-            modifier = modifier
-                .fillMaxWidth()
-                .height(280.dp),
-            shape = ComponentShapes.Product.ProductCard,
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface
-            )
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(SpacingTokens.M)
-            ) {
-                // Image skeleton
-                SkeletonLoader(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(140.dp),
-                    shape = RoundedCornerShape(12.dp)
-                )
-
-                Spacer(modifier = Modifier.height(SpacingTokens.S))
-
-                // Title skeleton
-                SkeletonLoader(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(20.dp)
-                )
-
-                Spacer(modifier = Modifier.height(SpacingTokens.XS))
-
-                // Subtitle skeleton
-                SkeletonLoader(
-                    modifier = Modifier
-                        .fillMaxWidth(0.7f)
-                        .height(16.dp)
-                )
-
-                Spacer(modifier = Modifier.weight(1f))
-
-                // Price skeleton
-                SkeletonLoader(
-                    modifier = Modifier
-                        .width(80.dp)
-                        .height(24.dp)
-                )
-
-                Spacer(modifier = Modifier.height(SpacingTokens.S))
-
-                // Button skeleton
-                SkeletonLoader(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp),
-                    shape = GlassmorphicShapes.Button
-                )
-            }
-        }
-    }
-
-    @Composable
-    fun ListItemSkeleton(
-        modifier: Modifier = Modifier
-    ) {
-        Row(
-            modifier = modifier
-                .fillMaxWidth()
-                .padding(SpacingTokens.M),
-            horizontalArrangement = Arrangement.spacedBy(SpacingTokens.M)
-        ) {
-            // Thumbnail skeleton
-            SkeletonLoader(
-                modifier = Modifier.size(60.dp),
-                shape = RoundedCornerShape(8.dp)
-            )
-
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(SpacingTokens.XS)
-            ) {
-                // Title skeleton
-                SkeletonLoader(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(20.dp)
-                )
-
-                // Subtitle skeleton
-                SkeletonLoader(
-                    modifier = Modifier
-                        .fillMaxWidth(0.6f)
-                        .height(16.dp)
-                )
-            }
-
-            // Action skeleton
-            SkeletonLoader(
-                modifier = Modifier
-                    .width(60.dp)
-                    .height(32.dp),
-                shape = RoundedCornerShape(16.dp)
-            )
-        }
-    }
-
-    @Composable
-    fun TextSkeleton(
-        lines: Int = 3,
-        modifier: Modifier = Modifier
-    ) {
-        Column(
-            modifier = modifier,
-            verticalArrangement = Arrangement.spacedBy(SpacingTokens.S)
-        ) {
-            repeat(lines) { index ->
-                SkeletonLoader(
-                    modifier = Modifier
-                        .fillMaxWidth(if (index == lines - 1) 0.7f else 1f)
-                        .height(16.dp)
-                )
-            }
-        }
-    }
-}
-
 /**
  * Custom Snackbar with Electric Harmony styling
  */

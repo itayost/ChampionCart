@@ -1,19 +1,36 @@
 package com.example.championcart.ui.theme
 
+import android.content.res.Configuration
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedCard
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 
@@ -42,10 +59,10 @@ fun ThemePreviewContainer(
 }
 
 @Preview(name = "Colors - Light", showBackground = true)
-@Preview(name = "Colors - Dark", showBackground = true, uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES)
+@Preview(name = "Colors - Dark", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
-fun ColorPreview(@PreviewParameter(ThemePreviewProvider::class) darkTheme: Boolean) {
-    ThemePreviewContainer(darkTheme) {
+fun ColorPreview() {
+    ThemePreviewContainer {
         LazyColumn(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -106,7 +123,8 @@ private fun ColorSwatch(name: String, color: Color) {
         Box(
             modifier = Modifier
                 .size(60.dp)
-                .background(color, RoundedCornerShape(8.dp))
+                .clip(RoundedCornerShape(8.dp))
+                .background(color)
         )
         Text(
             name,
@@ -117,10 +135,10 @@ private fun ColorSwatch(name: String, color: Color) {
 }
 
 @Preview(name = "Typography - Light", showBackground = true)
-@Preview(name = "Typography - Dark", showBackground = true, uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES)
+@Preview(name = "Typography - Dark", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
-fun TypographyPreview(@PreviewParameter(ThemePreviewProvider::class) darkTheme: Boolean) {
-    ThemePreviewContainer(darkTheme) {
+fun TypographyPreview() {
+    ThemePreviewContainer {
         LazyColumn(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -153,7 +171,10 @@ fun TypographyPreview(@PreviewParameter(ThemePreviewProvider::class) darkTheme: 
 }
 
 @Composable
-private fun TypographySection(title: String, styles: List<Pair<String, @Composable () -> Unit>>) {
+private fun TypographySection(
+    title: String,
+    styles: List<Pair<String, @Composable () -> Unit>>
+) {
     Column {
         Text(
             title,
@@ -235,9 +256,9 @@ private fun ShapeSwatch(name: String, shape: RoundedCornerShape) {
         Box(
             modifier = Modifier
                 .size(60.dp)
+                .clip(shape)
                 .background(
-                    MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
-                    shape
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
                 )
         )
         Text(
@@ -308,7 +329,10 @@ fun ComponentsPreview() {
                         Box(
                             modifier = Modifier
                                 .size(80.dp, 50.dp)
-                                .glassCard(GlassIntensity.Light),
+                                .glassmorphic(
+                                    intensity = GlassIntensity.Light,
+                                    shape = RoundedCornerShape(8.dp)
+                                ),
                             contentAlignment = Alignment.Center
                         ) {
                             Text("Light", style = MaterialTheme.typography.bodySmall)
@@ -317,7 +341,10 @@ fun ComponentsPreview() {
                         Box(
                             modifier = Modifier
                                 .size(80.dp, 50.dp)
-                                .glassCard(GlassIntensity.Medium),
+                                .glassmorphic(
+                                    intensity = GlassIntensity.Medium,
+                                    shape = RoundedCornerShape(12.dp)
+                                ),
                             contentAlignment = Alignment.Center
                         ) {
                             Text("Medium", style = MaterialTheme.typography.bodySmall)
@@ -326,7 +353,10 @@ fun ComponentsPreview() {
                         Box(
                             modifier = Modifier
                                 .size(80.dp, 50.dp)
-                                .glassCard(GlassIntensity.Heavy),
+                                .glassmorphic(
+                                    intensity = GlassIntensity.Heavy,
+                                    shape = RoundedCornerShape(16.dp)
+                                ),
                             contentAlignment = Alignment.Center
                         ) {
                             Text("Heavy", style = MaterialTheme.typography.bodySmall)
@@ -355,7 +385,8 @@ private fun ComponentSection(title: String, content: @Composable () -> Unit) {
 private val brandColors = listOf(
     "Electric Mint" to BrandColors.ElectricMint,
     "Cosmic Purple" to BrandColors.CosmicPurple,
-    "Deep Navy" to BrandColors.DeepNavy
+    "Deep Navy" to BrandColors.DeepNavy,
+    "Neon Coral" to BrandColors.NeonCoral
 )
 
 private val priceColors = listOf(
@@ -367,7 +398,8 @@ private val priceColors = listOf(
 private val storeColors = listOf(
     "Shufersal" to Color(0xFF0066CC),
     "Rami Levy" to Color(0xFFFF6B35),
-    "Victory" to Color(0xFF8BC34A)
+    "Victory" to Color(0xFF8BC34A),
+    "Mega" to Color(0xFFBA68C8)
 )
 
 private val glassColors = listOf(
@@ -376,39 +408,61 @@ private val glassColors = listOf(
     "Glass Heavy" to BrandColors.GlassHeavy
 )
 
-private val displayStyles = listOf(
+// Fixed: Properly define composable lambdas
+private val displayStyles = listOf<Pair<String, @Composable () -> Unit>>(
     "Display Large" to { Text("Display Large", style = MaterialTheme.typography.displayLarge) },
     "Display Medium" to { Text("Display Medium", style = MaterialTheme.typography.displayMedium) },
     "Display Small" to { Text("Display Small", style = MaterialTheme.typography.displaySmall) }
 )
 
-private val headlineStyles = listOf(
+private val headlineStyles = listOf<Pair<String, @Composable () -> Unit>>(
     "Headline Large" to { Text("Headline Large", style = MaterialTheme.typography.headlineLarge) },
     "Headline Medium" to { Text("Headline Medium", style = MaterialTheme.typography.headlineMedium) },
     "Headline Small" to { Text("Headline Small", style = MaterialTheme.typography.headlineSmall) }
 )
 
-private val bodyStyles = listOf(
+private val bodyStyles = listOf<Pair<String, @Composable () -> Unit>>(
     "Body Large" to { Text("Body Large", style = MaterialTheme.typography.bodyLarge) },
     "Body Medium" to { Text("Body Medium", style = MaterialTheme.typography.bodyMedium) },
     "Body Small" to { Text("Body Small", style = MaterialTheme.typography.bodySmall) }
 )
 
-private val hebrewStyles = listOf(
-    "Hebrew Display" to { Text("תצוגה עברית", style = AppTextStyles.hebrewDisplayLarge) },
-    "Hebrew Headline" to { Text("כותרת עברית", style = AppTextStyles.hebrewHeadline) },
-    "Hebrew Body" to { Text("טקסט גוף עברי", style = AppTextStyles.hebrewBodyLarge) }
+private val hebrewStyles = listOf<Pair<String, @Composable () -> Unit>>(
+    "Hebrew Display" to {
+        Text(
+            "תצוגה עברית גדולה",
+            style = MaterialTheme.typography.displayLarge,
+            fontFamily = HeeboFontFamily
+        )
+    },
+    "Hebrew Headline" to {
+        Text(
+            "כותרת עברית",
+            style = MaterialTheme.typography.headlineMedium,
+            fontFamily = HeeboFontFamily
+        )
+    },
+    "Hebrew Body" to {
+        Text(
+            "טקסט גוף עברי רגיל",
+            style = MaterialTheme.typography.bodyLarge,
+            fontFamily = InterFontFamily
+        )
+    }
 )
 
 private val materialShapes = listOf(
     "Extra Small" to RoundedCornerShape(4.dp),
     "Small" to RoundedCornerShape(8.dp),
     "Medium" to RoundedCornerShape(16.dp),
-    "Large" to RoundedCornerShape(24.dp)
+    "Large" to RoundedCornerShape(24.dp),
+    "Extra Large" to RoundedCornerShape(32.dp)
 )
 
 private val glassmorphicShapes = listOf(
-    "Glass Card" to GlassmorphicShapes.GlassCard as RoundedCornerShape,
-    "Button" to GlassmorphicShapes.Button as RoundedCornerShape,
-    "Chip" to GlassmorphicShapes.Chip as RoundedCornerShape
+    "Glass Card" to GlassmorphicShapes.GlassCard,
+    "Button" to GlassmorphicShapes.Button,
+    "Chip" to GlassmorphicShapes.Chip,
+    "Search Field" to GlassmorphicShapes.SearchField,
+    "Bottom Sheet" to GlassmorphicShapes.BottomSheet
 )
