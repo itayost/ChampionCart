@@ -52,7 +52,7 @@ fun ProfileScreen(
             text = {
                 Text(
                     "Are you sure you want to logout?",
-                    style = AppTextStyles.bodyLarge
+                    style = MaterialTheme.typography.bodyLarge
                 )
             },
             confirmButton = {
@@ -68,12 +68,12 @@ fun ProfileScreen(
                         containerColor = MaterialTheme.extendedColors.errorRed
                     )
                 ) {
-                    Text("Logout", style = AppTextStyles.buttonText)
+                    Text("Logout", style = MaterialTheme.typography.labelLarge)
                 }
             },
             dismissButton = {
                 TextButton(onClick = viewModel::hideLogoutDialog) {
-                    Text("Cancel", style = AppTextStyles.buttonText)
+                    Text("Cancel", style = MaterialTheme.typography.labelLarge)
                 }
             }
         )
@@ -247,13 +247,13 @@ private fun ProfileHeader(
                 if (!isGuest) {
                     Text(
                         text = userEmail,
-                        style = AppTextStyles.bodyLarge,
+                        style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 } else {
                     Text(
                         text = "Sign in to access all features",
-                        style = AppTextStyles.bodyLarge,
+                        style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -454,12 +454,12 @@ private fun SettingItem(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = title,
-                    style = AppTextStyles.bodyLarge,
+                    style = AppTextStyles.hebrewBody,
                     fontWeight = FontWeight.Medium
                 )
                 Text(
                     text = subtitle,
-                    style = AppTextStyles.caption,
+                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
@@ -499,12 +499,12 @@ private fun SettingToggleItem(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = title,
-                style = AppTextStyles.bodyLarge,
+                style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Medium
             )
             Text(
                 text = subtitle,
-                style = AppTextStyles.caption,
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
@@ -556,7 +556,7 @@ private fun ActionsSection(
                         modifier = Modifier.size(20.dp)
                     )
                     Spacer(modifier = Modifier.width(Dimensions.spacingSmall))
-                    Text("Sign In", style = AppTextStyles.buttonText)
+                    Text("Sign In", style = MaterialTheme.typography.labelLarge)
                 }
             } else {
                 OutlinedButton(
@@ -570,7 +570,7 @@ private fun ActionsSection(
                         modifier = Modifier.size(20.dp)
                     )
                     Spacer(modifier = Modifier.width(Dimensions.spacingSmall))
-                    Text("Saved Carts", style = AppTextStyles.buttonText)
+                    Text("Saved Carts", style = MaterialTheme.typography.labelLarge)
                 }
 
                 OutlinedButton(
@@ -587,7 +587,7 @@ private fun ActionsSection(
                         modifier = Modifier.size(20.dp)
                     )
                     Spacer(modifier = Modifier.width(Dimensions.spacingSmall))
-                    Text("Logout", style = AppTextStyles.buttonText)
+                    Text("Logout", style = MaterialTheme.typography.labelLarge)
                 }
             }
         }
@@ -631,7 +631,7 @@ private fun CitySelectionDialog(
                         Spacer(modifier = Modifier.width(Dimensions.spacingSmall))
                         Text(
                             text = city,
-                            style = AppTextStyles.bodyLarge,
+                            style = MaterialTheme.typography.bodyLarge,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
                         )
                     }
@@ -640,7 +640,7 @@ private fun CitySelectionDialog(
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel", style = AppTextStyles.buttonText)
+                Text("Cancel", style = MaterialTheme.typography.labelLarge)
             }
         }
     )
@@ -680,7 +680,7 @@ private fun LanguageSelectionDialog(
                         Spacer(modifier = Modifier.width(Dimensions.spacingSmall))
                         Text(
                             text = language.displayName,
-                            style = AppTextStyles.bodyLarge,
+                            style = MaterialTheme.typography.bodyLarge,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
                         )
                     }
@@ -689,7 +689,7 @@ private fun LanguageSelectionDialog(
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel", style = AppTextStyles.buttonText)
+                Text("Cancel", style = MaterialTheme.typography.labelLarge)
             }
         }
     )
@@ -729,7 +729,7 @@ private fun ThemeSelectionDialog(
                         Spacer(modifier = Modifier.width(Dimensions.spacingSmall))
                         Text(
                             text = theme.displayName,
-                            style = AppTextStyles.bodyLarge,
+                            style = MaterialTheme.typography.bodyLarge,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
                         )
                     }
@@ -738,7 +738,7 @@ private fun ThemeSelectionDialog(
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel", style = AppTextStyles.buttonText)
+                Text("Cancel", style = MaterialTheme.typography.labelLarge)
             }
         }
     )

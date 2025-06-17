@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.championcart.data.local.preferences.TokenManager
 import com.example.championcart.domain.models.GroupedProduct
+import com.example.championcart.domain.models.Product
 import com.example.championcart.domain.models.SortOption
 import com.example.championcart.domain.repository.CartRepository
 import com.example.championcart.domain.repository.PriceRepository
@@ -57,7 +58,7 @@ class SearchViewModel @Inject constructor(
             )
 
             // Get selected city from preferences
-            val savedCity = "Tel Aviv" // Could be tokenManager.getSelectedCity()
+            val savedCity = tokenManager.getSelectedCity()
 
             _state.update {
                 it.copy(
@@ -79,36 +80,23 @@ class SearchViewModel @Inject constructor(
     }
 
     fun searchProducts() {
-        val currentState = _state.value
-        val query = currentState.searchQuery.trim()
-
-        if (query.isEmpty()) {
-            _state.update { it.copy(error = "Please enter a search term") }
-            return
-        }
+        val query = _state.value.searchQuery.trim()
+        if (query.isEmpty()) return
 
         viewModelScope.launch {
-            _state.update {
-                it.copy(
-                    isLoading = true,
-                    error = null,
-                    hasSearched = true
-                )
-            }
+            _state.update { it.copy(isLoading = true, error = null) }
 
             try {
-                val result = if (currentState.showIdenticalOnly) {
-                    // Search for identical products across chains only
+                val result = if (_state.value.showIdenticalOnly) {
                     priceRepository.getIdenticalProducts(
-                        city = currentState.selectedCity,
+                        city = _state.value.selectedCity,
                         productName = query,
                         limit = 50
                     )
                 } else {
-                    // Regular search using use case
-                    searchProductsUseCase(
-                        city = currentState.selectedCity,
-                        query = query,
+                    priceRepository.searchProducts(
+                        city = _state.value.selectedCity,
+                        productName = query,
                         groupByCode = true,
                         limit = 50
                     )
@@ -116,16 +104,15 @@ class SearchViewModel @Inject constructor(
 
                 result.fold(
                     onSuccess = { products ->
-                        val sortedProducts = sortProducts(products, currentState.sortOption)
+                        val sortedProducts = sortProducts(products, _state.value.sortOption)
                         _state.update {
                             it.copy(
                                 groupedProducts = sortedProducts,
                                 isLoading = false,
+                                hasSearched = true,
                                 error = null
                             )
                         }
-
-                        // Save to recent searches
                         saveRecentSearch(query)
                     },
                     onFailure = { exception ->
@@ -189,7 +176,7 @@ class SearchViewModel @Inject constructor(
 
         // Save city preference
         viewModelScope.launch {
-            // tokenManager.saveSelectedCity(city)
+            tokenManager.saveSelectedCity(city)
         }
     }
 
@@ -200,17 +187,34 @@ class SearchViewModel @Inject constructor(
                 val bestPrice = groupedProduct.prices.minByOrNull { it.price }
 
                 if (bestPrice != null) {
-                    // Add to cart through CartRepository
-                    cartRepository.addToCart(
-                        productId = groupedProduct.itemCode,
-                        productName = groupedProduct.itemName,
+                    // Convert GroupedProduct to Product for CartRepository
+                    val product = Product(
+                        itemCode = groupedProduct.itemCode,
+                        itemName = groupedProduct.itemName,
+                        chain = bestPrice.chain,
                         price = bestPrice.price,
-                        quantity = 1,
-                        storeChain = bestPrice.chain,
-                        storeId = bestPrice.storeId
+                        storeId = bestPrice.storeId,
+                        timestamp = bestPrice.timestamp,
+                        relevanceScore = groupedProduct.relevanceScore,
+                        weight = groupedProduct.weight,
+                        unit = groupedProduct.unit,
+                        pricePerUnit = groupedProduct.pricePerUnit
                     )
 
-                    // Could show success message here
+                    // Add to cart using correct CartRepository method
+                    val result = cartRepository.addToCart(product = product, quantity = 1)
+
+                    result.fold(
+                        onSuccess = {
+                            // Could show success message here
+                            // _state.update { it.copy(successMessage = "Added to cart") }
+                        },
+                        onFailure = { exception ->
+                            _state.update {
+                                it.copy(error = "Failed to add to cart: ${exception.message}")
+                            }
+                        }
+                    )
                 } else {
                     _state.update {
                         it.copy(error = "No price information available for this product")
@@ -273,7 +277,7 @@ class SearchViewModel @Inject constructor(
 
             _state.update { it.copy(recentSearches = updatedRecent) }
 
-            // Save to local storage
+            // Save to local storage (could add to TokenManager later)
             // tokenManager.saveRecentSearches(updatedRecent)
         }
     }
