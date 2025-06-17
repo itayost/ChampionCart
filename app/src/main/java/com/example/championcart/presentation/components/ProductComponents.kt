@@ -1,8 +1,7 @@
 package com.example.championcart.presentation.components
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.Image
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -62,141 +61,100 @@ data class ProductWithPrices(
     val product: Product,
     val prices: List<ProductPrice>,
     val bestPrice: ProductPrice? = null,
-    val averagePrice: Double = 0.0
+    val averagePrice: Double = 0.0,
+    val savingsFromBest: Double = 0.0
 )
 
 /**
- * Main Product Card Component
+ * Main Product Card - Electric Harmony Design
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProductCard(
     productWithPrices: ProductWithPrices,
+    onProductClick: (Product) -> Unit,
+    onAddToList: (Product) -> Unit,
+    onFavoriteToggle: (Product) -> Unit,
     modifier: Modifier = Modifier,
-    onCardClick: () -> Unit = {},
-    onAddToList: () -> Unit = {},
-    onFavoriteClick: () -> Unit = {},
     isFavorite: Boolean = false,
-    showPriceComparison: Boolean = true,
     isCompact: Boolean = false
 ) {
-    var isPressed by remember { mutableStateOf(false) }
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.98f else 1f,
-        animationSpec = SpringSpecs.Bouncy,
-        label = "cardScale"
-    )
+    val product = productWithPrices.product
 
     Card(
+        onClick = { onProductClick(product) },
         modifier = modifier
-            .width(if (isCompact) 160.dp else ProductTokens.CardWidth)
-            .scale(scale)
-            .bouncyClickable(
-                onClick = onCardClick,
-                onPressChange = { isPressed = it }
-            )
-            .glassCard(GlassIntensity.Medium),
+            .fillMaxWidth()
+            .aspectRatio(if (isCompact) 1f else 0.8f),
         colors = CardDefaults.cardColors(
-            containerColor = Color.Transparent
-        )
+            containerColor = MaterialTheme.colorScheme.extended.surfaceGlass
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 2.dp,
+            pressedElevation = 8.dp
+        ),
+        shape = GlassmorphicShapes.GlassCard
     ) {
         Column(
-            modifier = Modifier.padding(ProductTokens.CardPadding)
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(SpacingTokens.M)
         ) {
-            // Product Image with badges
-            ProductImageSection(
-                product = productWithPrices.product,
-                isFavorite = isFavorite,
-                onFavoriteClick = onFavoriteClick,
-                isCompact = isCompact
-            )
+            // Product Image with Favorite Button
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(if (isCompact) 0.5f else 0.4f)
+            ) {
+                AsyncImage(
+                    model = product.imageUrl,
+                    contentDescription = product.nameHebrew ?: product.name,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(GlassmorphicShapes.GlassCardSmall),
+                    contentScale = ContentScale.Crop,
+                    placeholder = painterResource(id = android.R.drawable.ic_menu_gallery)
+                )
+
+                // Favorite Button
+                FavoriteButton(
+                    isFavorite = isFavorite,
+                    onClick = { onFavoriteToggle(product) },
+                    modifier = Modifier.align(Alignment.TopEnd)
+                )
+
+                // Product Badges
+                ProductBadges(
+                    isKosher = product.isKosher,
+                    isOrganic = product.isOrganic,
+                    modifier = Modifier.align(Alignment.TopStart)
+                )
+            }
 
             Spacer(modifier = Modifier.height(SpacingTokens.S))
 
             // Product Info
-            ProductInfoSection(
-                product = productWithPrices.product,
-                isCompact = isCompact
+            ProductInfo(
+                product = product,
+                isCompact = isCompact,
+                modifier = Modifier.weight(if (isCompact) 0.3f else 0.4f)
             )
 
             Spacer(modifier = Modifier.height(SpacingTokens.S))
 
             // Price Section
-            if (showPriceComparison && productWithPrices.prices.isNotEmpty()) {
-                PriceSection(
-                    prices = productWithPrices.prices,
-                    bestPrice = productWithPrices.bestPrice,
-                    isCompact = isCompact
-                )
-            }
-
-            Spacer(modifier = Modifier.height(SpacingTokens.M))
+            PriceSection(
+                prices = productWithPrices.prices,
+                bestPrice = productWithPrices.bestPrice,
+                isCompact = isCompact,
+                modifier = Modifier.weight(if (isCompact) 0.2f else 0.2f)
+            )
 
             // Action Button
             ProductActionButton(
-                onAddToList = onAddToList,
+                onAddToList = { onAddToList(product) },
                 isCompact = isCompact
             )
-        }
-    }
-}
-
-/**
- * Product Image Section with badges
- */
-@Composable
-private fun ProductImageSection(
-    product: Product,
-    isFavorite: Boolean,
-    onFavoriteClick: () -> Unit,
-    isCompact: Boolean
-) {
-    val imageHeight = if (isCompact) 80.dp else 120.dp
-
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(imageHeight)
-    ) {
-        // Product Image
-        AsyncImage(
-            model = product.imageUrl,
-            contentDescription = product.name,
-            modifier = Modifier
-                .fillMaxSize()
-                .clip(GlassmorphicShapes.ProductCard),
-            contentScale = ContentScale.Crop,
-            placeholder = painterResource(id = android.R.drawable.ic_menu_gallery),
-            error = painterResource(id = android.R.drawable.ic_menu_gallery)
-        )
-
-        // Favorite Button
-        FavoriteButton(
-            isFavorite = isFavorite,
-            onClick = onFavoriteClick,
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(SpacingTokens.XS)
-        )
-
-        // Product Badges
-        Row(
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .padding(SpacingTokens.XS),
-            horizontalArrangement = Arrangement.spacedBy(SpacingTokens.XS)
-        ) {
-            if (product.isKosher) {
-                ProductBadge(
-                    text = "כשר",
-                    backgroundColor = MaterialTheme.colorScheme.extended.kosher
-                )
-            }
-            if (product.isOrganic) {
-                ProductBadge(
-                    text = "אורגני",
-                    backgroundColor = MaterialTheme.colorScheme.extended.organic
-                )
-            }
         }
     }
 }
@@ -205,40 +163,89 @@ private fun ProductImageSection(
  * Product Information Section
  */
 @Composable
-private fun ProductInfoSection(
+private fun ProductInfo(
     product: Product,
-    isCompact: Boolean
+    isCompact: Boolean,
+    modifier: Modifier = Modifier
 ) {
-    Column {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(SpacingTokens.XS)
+    ) {
+        // Product Name (Hebrew first)
+        Text(
+            text = product.nameHebrew ?: product.name,
+            style = if (isCompact) {
+                AppTextStyles.productNameSmall
+            } else {
+                AppTextStyles.productName
+            }.withSmartHebrewSupport(product.nameHebrew ?: product.name),
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = if (isCompact) 1 else 2,
+            overflow = TextOverflow.Ellipsis
+        )
+
         // Brand
         Text(
             text = product.brand,
-            style = if (isCompact) MaterialTheme.typography.bodySmall else MaterialTheme.typography.bodyMedium,
+            style = if (isCompact) {
+                AppTextStyles.caption
+            } else {
+                AppTextStyles.storeNameSmall
+            },
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
 
-        Spacer(modifier = Modifier.height(SpacingTokens.XXS))
-
-        // Product Name
-        Text(
-            text = product.nameHebrew ?: product.name,
-            style = if (isCompact) AppTextStyles.productNameSmall else AppTextStyles.productName,
-            color = MaterialTheme.colorScheme.onSurface,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            lineHeight = if (isCompact) MaterialTheme.typography.bodySmall.lineHeight else MaterialTheme.typography.bodyMedium.lineHeight
-        )
-
-        Spacer(modifier = Modifier.height(SpacingTokens.XXS))
-
         // Unit
         Text(
             text = product.unit,
-            style = MaterialTheme.typography.bodySmall,
+            style = AppTextStyles.caption,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
         )
+    }
+}
+
+/**
+ * Product Badges (Kosher, Organic, etc.)
+ */
+@Composable
+private fun ProductBadges(
+    isKosher: Boolean,
+    isOrganic: Boolean,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(SpacingTokens.XXS)
+    ) {
+        if (isKosher) {
+            Badge(
+                modifier = Modifier.size(20.dp),
+                containerColor = MaterialTheme.colorScheme.extended.kosher
+            ) {
+                Text(
+                    "כ",
+                    style = AppTextStyles.badge,
+                    color = Color.White
+                )
+            }
+        }
+
+        if (isOrganic) {
+            Badge(
+                modifier = Modifier.size(20.dp),
+                containerColor = MaterialTheme.colorScheme.extended.organic
+            ) {
+                Icon(
+                    Icons.Default.Eco,
+                    contentDescription = "Organic",
+                    tint = Color.White,
+                    modifier = Modifier.size(12.dp)
+                )
+            }
+        }
     }
 }
 
@@ -249,107 +256,120 @@ private fun ProductInfoSection(
 private fun PriceSection(
     prices: List<ProductPrice>,
     bestPrice: ProductPrice?,
-    isCompact: Boolean
+    isCompact: Boolean,
+    modifier: Modifier = Modifier
 ) {
-    val sortedPrices = prices.sortedBy { it.price }
-    val displayPrices = if (isCompact) sortedPrices.take(2) else sortedPrices.take(3)
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(SpacingTokens.XS)
+    ) {
+        if (bestPrice != null) {
+            // Best Price Display
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = "${bestPrice.price}${bestPrice.currency}",
+                        style = if (isCompact) {
+                            AppTextStyles.priceMedium
+                        } else {
+                            AppTextStyles.priceLarge
+                        },
+                        color = MaterialTheme.colorScheme.extended.bestPrice
+                    )
 
-    Column {
-        displayPrices.forEach { price ->
-            PriceRow(
-                price = price,
-                isBestPrice = price == bestPrice,
-                isCompact = isCompact
-            )
-            if (price != displayPrices.last()) {
-                Spacer(modifier = Modifier.height(SpacingTokens.XS))
+                    Text(
+                        text = bestPrice.storeNameHebrew,
+                        style = AppTextStyles.caption.withSmartHebrewSupport(bestPrice.storeNameHebrew),
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    )
+                }
+
+                if (bestPrice.isOnSale && bestPrice.originalPrice != null) {
+                    Column(
+                        horizontalAlignment = Alignment.End
+                    ) {
+                        Text(
+                            text = "${bestPrice.originalPrice}${bestPrice.currency}",
+                            style = AppTextStyles.priceSmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                            textDecoration = androidx.compose.ui.text.style.TextDecoration.LineThrough
+                        )
+
+                        val savings = ((bestPrice.originalPrice - bestPrice.price) / bestPrice.originalPrice * 100).toInt()
+                        Text(
+                            text = "-$savings%",
+                            style = AppTextStyles.badge,
+                            color = MaterialTheme.colorScheme.extended.bestPrice
+                        )
+                    }
+                }
             }
-        }
 
-        if (prices.size > displayPrices.size) {
-            Text(
-                text = "+${prices.size - displayPrices.size} חנויות נוספות",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(top = SpacingTokens.XS)
-            )
+            // Price Comparison Indicator
+            if (prices.size > 1 && !isCompact) {
+                Spacer(modifier = Modifier.height(SpacingTokens.XS))
+                PriceComparisonIndicator(
+                    prices = prices,
+                    bestPrice = bestPrice
+                )
+            }
         }
     }
 }
 
 /**
- * Individual Price Row
+ * Price Comparison Visual Indicator
  */
 @Composable
-private fun PriceRow(
-    price: ProductPrice,
-    isBestPrice: Boolean,
-    isCompact: Boolean
+private fun PriceComparisonIndicator(
+    prices: List<ProductPrice>,
+    bestPrice: ProductPrice
 ) {
-    val priceLevel = when {
-        isBestPrice -> PriceLevel.Best
-        else -> PriceLevel.Mid
-    }
+    val maxPrice = prices.maxOfOrNull { it.price } ?: bestPrice.price
+    val minPrice = prices.minOfOrNull { it.price } ?: bestPrice.price
+    val priceRange = maxPrice - minPrice
 
-    val backgroundColor by animateColorAsState(
-        targetValue = if (isBestPrice) {
-            MaterialTheme.colorScheme.extended.bestPriceContainer.copy(alpha = 0.2f)
-        } else {
-            Color.Transparent
-        },
-        animationSpec = SpringSpecs.Smooth,
-        label = "priceBackground"
-    )
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(backgroundColor, RoundedCornerShape(6.dp))
-            .padding(horizontal = SpacingTokens.XS, vertical = SpacingTokens.XXS),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+    LazyRow(
+        horizontalArrangement = Arrangement.spacedBy(SpacingTokens.XS)
     ) {
-        // Store Name
-        Text(
-            text = price.storeNameHebrew,
-            style = if (isCompact) MaterialTheme.typography.bodySmall else AppTextStyles.storeNameSmall,
-            color = ColorHelpers.getStoreColor(price.storeName),
-            fontWeight = if (isBestPrice) FontWeight.SemiBold else FontWeight.Normal,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f)
-        )
-
-        Spacer(modifier = Modifier.width(SpacingTokens.XS))
-
-        // Price
-        Row(
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            if (price.isOnSale && price.originalPrice != null) {
-                Text(
-                    text = "${price.originalPrice}${price.currency}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                    textDecoration = androidx.compose.ui.text.style.TextDecoration.LineThrough
-                )
-                Spacer(modifier = Modifier.width(SpacingTokens.XXS))
+        items(prices.take(3)) { price ->
+            val normalizedPrice: Float = if (priceRange > 0) {
+                ((price.price - minPrice) / priceRange).toFloat()
+            } else {
+                0.5f
             }
 
-            Text(
-                text = "${price.price}${price.currency}",
-                style = if (isCompact) AppTextStyles.priceSmall else AppTextStyles.priceMedium,
-                color = ColorHelpers.getPriceColor(priceLevel),
-                fontWeight = if (isBestPrice) FontWeight.Bold else FontWeight.Medium
-            )
+            val priceLevel = when {
+                price.price == minPrice -> com.example.championcart.ui.theme.PriceLevel.Best
+                normalizedPrice < 0.5f -> com.example.championcart.ui.theme.PriceLevel.Mid
+                else -> com.example.championcart.ui.theme.PriceLevel.High
+            }
 
-            if (isBestPrice) {
-                Spacer(modifier = Modifier.width(SpacingTokens.XXS))
-                Icon(
-                    Icons.Default.Star,
-                    contentDescription = "Best Price",
-                    tint = MaterialTheme.colorScheme.extended.bestPrice,
-                    modifier = Modifier.size(12.dp)
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(SpacingTokens.XXS)
+            ) {
+                val priceColor = ColorHelpers.getPriceColor(priceLevel)
+
+                Box(
+                    modifier = Modifier
+                        .width(24.dp)
+                        .height(4.dp)
+                        .background(
+                            priceColor,
+                            RoundedCornerShape(2.dp)
+                        )
+                )
+
+                Text(
+                    text = price.storeNameHebrew.take(3),
+                    style = AppTextStyles.caption,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    textAlign = TextAlign.Center
                 )
             }
         }
@@ -384,13 +404,17 @@ private fun ProductActionButton(
         Spacer(modifier = Modifier.width(SpacingTokens.XS))
         Text(
             "הוסף לרשימה",
-            style = if (isCompact) MaterialTheme.typography.bodySmall else AppTextStyles.buttonTextSmall
+            style = if (isCompact) {
+                MaterialTheme.typography.bodySmall
+            } else {
+                AppTextStyles.buttonTextSmall
+            }.withSmartHebrewSupport("הוסף לרשימה")
         )
     }
 }
 
 /**
- * Favorite Button with animation
+ * Favorite Button with proper animation specs
  */
 @Composable
 private fun FavoriteButton(
@@ -399,19 +423,28 @@ private fun FavoriteButton(
     modifier: Modifier = Modifier
 ) {
     var isPressed by remember { mutableStateOf(false) }
+
+    // Float animation for scale - this works with SpringSpec<Float>
     val scale by animateFloatAsState(
         targetValue = if (isPressed) 0.8f else 1f,
-        animationSpec = SpringSpecs.Playful,
+        animationSpec = spring(
+            dampingRatio = SpringSpecs.DampingRatioHighBounce,
+            stiffness = SpringSpecs.StiffnessHigh
+        ),
         label = "favoriteScale"
     )
 
+    // Color animation - must use AnimationSpec<Color>
     val iconColor by animateColorAsState(
         targetValue = if (isFavorite) {
             MaterialTheme.colorScheme.error
         } else {
             MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
         },
-        animationSpec = SpringSpecs.Smooth,
+        animationSpec = spring(
+            dampingRatio = SpringSpecs.DampingRatioLowBounce,
+            stiffness = SpringSpecs.StiffnessMedium
+        ),
         label = "favoriteColor"
     )
 
@@ -423,8 +456,7 @@ private fun FavoriteButton(
             .background(
                 MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
                 CircleShape
-            ),
-        interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+            )
     ) {
         Icon(
             if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
@@ -436,69 +468,121 @@ private fun FavoriteButton(
 }
 
 /**
- * Product Badge
+ * Compact Product Card for grid views
  */
 @Composable
-private fun ProductBadge(
-    text: String,
-    backgroundColor: Color,
-    modifier: Modifier = Modifier
+fun CompactProductCard(
+    productWithPrices: ProductWithPrices,
+    onProductClick: (Product) -> Unit,
+    onAddToList: (Product) -> Unit,
+    modifier: Modifier = Modifier,
+    isFavorite: Boolean = false
 ) {
-    Surface(
+    ProductCard(
+        productWithPrices = productWithPrices,
+        onProductClick = onProductClick,
+        onAddToList = onAddToList,
+        onFavoriteToggle = { /* Handle favorite */ },
         modifier = modifier,
-        color = backgroundColor.copy(alpha = 0.9f),
-        shape = RoundedCornerShape(4.dp)
-    ) {
-        Text(
-            text = text,
-            style = MaterialTheme.typography.bodySmall,
-            color = Color.White,
-            modifier = Modifier.padding(horizontal = SpacingTokens.XS, vertical = 2.dp),
-            fontWeight = FontWeight.Medium
-        )
-    }
+        isFavorite = isFavorite,
+        isCompact = true
+    )
 }
 
 /**
- * Product Grid Component
+ * List Product Card for list views
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProductGrid(
-    products: List<ProductWithPrices>,
+fun ListProductCard(
+    productWithPrices: ProductWithPrices,
+    onProductClick: (Product) -> Unit,
+    onAddToList: (Product) -> Unit,
+    onFavoriteToggle: (Product) -> Unit,
     modifier: Modifier = Modifier,
-    columns: Int = 2,
-    onProductClick: (ProductWithPrices) -> Unit = {},
-    onAddToList: (ProductWithPrices) -> Unit = {},
-    onFavoriteClick: (ProductWithPrices) -> Unit = {},
-    favoriteProductIds: Set<String> = emptySet(),
-    isCompact: Boolean = false
+    isFavorite: Boolean = false
 ) {
-    val chunkedProducts = products.chunked(columns)
+    val product = productWithPrices.product
 
-    Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(SpacingTokens.M)
+    Card(
+        onClick = { onProductClick(product) },
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.extended.surfaceGlass
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        shape = GlassmorphicShapes.GlassCardSmall
     ) {
-        chunkedProducts.forEach { rowProducts ->
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(SpacingTokens.S)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(SpacingTokens.M),
+            horizontalArrangement = Arrangement.spacedBy(SpacingTokens.M)
+        ) {
+            // Product Image
+            AsyncImage(
+                model = product.imageUrl,
+                contentDescription = product.nameHebrew ?: product.name,
+                modifier = Modifier
+                    .size(80.dp)
+                    .clip(GlassmorphicShapes.GlassCardSmall),
+                contentScale = ContentScale.Crop,
+                placeholder = painterResource(id = android.R.drawable.ic_menu_gallery)
+            )
+
+            // Product Info
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(SpacingTokens.XS)
             ) {
-                rowProducts.forEach { product ->
-                    ProductCard(
-                        productWithPrices = product,
-                        modifier = Modifier.weight(1f),
-                        onCardClick = { onProductClick(product) },
-                        onAddToList = { onAddToList(product) },
-                        onFavoriteClick = { onFavoriteClick(product) },
-                        isFavorite = favoriteProductIds.contains(product.product.id),
-                        isCompact = isCompact
+                Text(
+                    text = product.nameHebrew ?: product.name,
+                    style = AppTextStyles.productName.withSmartHebrewSupport(
+                        product.nameHebrew ?: product.name
+                    ),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                Text(
+                    text = product.brand,
+                    style = AppTextStyles.storeNameSmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                )
+
+                productWithPrices.bestPrice?.let { price ->
+                    Text(
+                        text = "${price.price}${price.currency}",
+                        style = AppTextStyles.priceMedium,
+                        color = MaterialTheme.colorScheme.extended.bestPrice
                     )
                 }
+            }
 
-                // Add empty spaces for incomplete rows
-                repeat(columns - rowProducts.size) {
-                    Spacer(modifier = Modifier.weight(1f))
+            // Actions
+            Column(
+                verticalArrangement = Arrangement.spacedBy(SpacingTokens.S),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                FavoriteButton(
+                    isFavorite = isFavorite,
+                    onClick = { onFavoriteToggle(product) }
+                )
+
+                Button(
+                    onClick = { onAddToList(product) },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.extended.electricMint
+                    ),
+                    shape = GlassmorphicShapes.ButtonSmall,
+                    contentPadding = PaddingValues(SpacingTokens.S)
+                ) {
+                    Icon(
+                        Icons.Default.Add,
+                        contentDescription = "Add to list",
+                        modifier = Modifier.size(16.dp)
+                    )
                 }
             }
         }
@@ -506,82 +590,58 @@ fun ProductGrid(
 }
 
 /**
- * Extension function for bouncy clickable
+ * Product-specific Price Level Helper (for internal component use)
  */
+enum class ProductPriceLevel { Best, Mid, High }
+
+/**
+ * Preview for Product Card
+ */
+@Preview(showBackground = true)
 @Composable
-private fun Modifier.bouncyClickable(
-    onClick: () -> Unit,
-    onPressChange: (Boolean) -> Unit = {}
-): Modifier = this.clickable(
-    interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
-    indication = null
-) {
-    onClick()
-}
-
-// Preview Data
-private val sampleProduct = Product(
-    id = "1",
-    name = "Milk 3% 1L",
-    nameHebrew = "חלב 3% ליטר",
-    brand = "תנובה",
-    imageUrl = "",
-    category = "dairy",
-    unit = "ליטר",
-    isKosher = true,
-    isOrganic = false
-)
-
-private val samplePrices = listOf(
-    ProductPrice("1", "Shufersal", "שופרסל", 6.90, currency = "₪"),
-    ProductPrice("2", "Rami Levy", "רמי לוי", 7.20, currency = "₪"),
-    ProductPrice("3", "Victory", "ויקטורי", 7.50, currency = "₪")
-)
-
-private val sampleProductWithPrices = ProductWithPrices(
-    product = sampleProduct,
-    prices = samplePrices,
-    bestPrice = samplePrices.first(),
-    averagePrice = 7.2
-)
-
-@Preview(name = "Product Card - Light")
-@Composable
-private fun ProductCardPreview() {
+fun ProductCardPreview() {
     ChampionCartTheme {
-        Surface {
-            ProductCard(
-                productWithPrices = sampleProductWithPrices,
-                modifier = Modifier.padding(16.dp)
-            )
-        }
-    }
-}
+        val sampleProduct = Product(
+            id = "1",
+            name = "Milk 3% Fat",
+            nameHebrew = "חלב 3% שומן",
+            brand = "Tnuva",
+            imageUrl = "",
+            category = "Dairy",
+            unit = "1L",
+            isKosher = true,
+            isOrganic = false
+        )
 
-@Preview(name = "Product Card - Compact")
-@Composable
-private fun ProductCardCompactPreview() {
-    ChampionCartTheme {
-        Surface {
-            ProductCard(
-                productWithPrices = sampleProductWithPrices,
-                modifier = Modifier.padding(16.dp),
-                isCompact = true
+        val samplePrices = listOf(
+            ProductPrice(
+                storeId = "1",
+                storeName = "Shufersal",
+                storeNameHebrew = "שופרסל",
+                price = 5.90,
+                originalPrice = 6.90,
+                isOnSale = true
+            ),
+            ProductPrice(
+                storeId = "2",
+                storeName = "Rami Levy",
+                storeNameHebrew = "רמי לוי",
+                price = 6.20
             )
-        }
-    }
-}
+        )
 
-@Preview(name = "Product Grid")
-@Composable
-private fun ProductGridPreview() {
-    ChampionCartTheme {
-        Surface {
-            ProductGrid(
-                products = listOf(sampleProductWithPrices, sampleProductWithPrices, sampleProductWithPrices),
-                modifier = Modifier.padding(16.dp),
-                columns = 2
-            )
-        }
+        val productWithPrices = ProductWithPrices(
+            product = sampleProduct,
+            prices = samplePrices,
+            bestPrice = samplePrices[0]
+        )
+
+        ProductCard(
+            productWithPrices = productWithPrices,
+            onProductClick = {},
+            onAddToList = {},
+            onFavoriteToggle = {},
+            modifier = Modifier.padding(16.dp)
+        )
     }
 }

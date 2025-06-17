@@ -7,7 +7,10 @@ import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
+import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
+import androidx.compose.material3.windowsizeclass.WindowSizeClass
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -19,9 +22,6 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import androidx.window.core.layout.WindowHeightSizeClass
-import androidx.window.core.layout.WindowSizeClass
-import androidx.window.core.layout.WindowWidthSizeClass
 
 /**
  * Champion Cart - Responsive Theme System
@@ -127,6 +127,7 @@ object ResponsiveBreakpoints {
 /**
  * Main responsive configuration provider
  */
+@OptIn(ExperimentalMaterial3AdaptiveApi::class, ExperimentalMaterial3WindowSizeClassApi::class)
 @Composable
 fun rememberResponsiveConfig(): ResponsiveConfig {
     val configuration = LocalConfiguration.current
@@ -140,9 +141,9 @@ fun rememberResponsiveConfig(): ResponsiveConfig {
 
     // Determine screen size
     val screenSize = when (windowSizeClass.windowWidthSizeClass) {
-        WindowWidthSizeClass.COMPACT -> ScreenSize.Compact
-        WindowWidthSizeClass.MEDIUM -> ScreenSize.Medium
-        WindowWidthSizeClass.EXPANDED -> ScreenSize.Expanded
+        WindowWidthSizeClass.Compact -> ScreenSize.Compact
+        WindowWidthSizeClass.Medium -> ScreenSize.Medium
+        WindowWidthSizeClass.Expanded -> ScreenSize.Expanded
         else -> ScreenSize.Compact
     }
 
@@ -211,21 +212,18 @@ private fun determineFormFactor(
 ): DeviceFormFactor {
     val minDimension = minOf(screenWidth, screenHeight)
     val maxDimension = maxOf(screenWidth, screenHeight)
-    val aspectRatio = maxDimension / minDimension
 
     return when {
-        // Very wide aspect ratios suggest foldables
-        aspectRatio > 2.1f -> DeviceFormFactor.Foldable
+        // Desktop-like dimensions
+        minDimension > 840.dp && maxDimension > 1200.dp -> DeviceFormFactor.Desktop
 
-        // Large screens are tablets or desktop
-        minDimension >= ResponsiveBreakpoints.ExpandedMinWidth -> {
-            if (maxDimension >= 1200.dp) DeviceFormFactor.Desktop else DeviceFormFactor.Tablet
-        }
+        // Tablet-like dimensions
+        minDimension > 600.dp -> DeviceFormFactor.Tablet
 
-        // Medium screens might be tablets in portrait
-        minDimension >= ResponsiveBreakpoints.CompactMaxWidth -> DeviceFormFactor.Tablet
+        // Foldable detection (heuristic based on unusual aspect ratios)
+        isLandscape && maxDimension / minDimension > 2.1f -> DeviceFormFactor.Foldable
 
-        // Everything else is phone
+        // Default to phone
         else -> DeviceFormFactor.Phone
     }
 }
@@ -239,31 +237,15 @@ private fun determineNavigationLayout(
     isLandscape: Boolean
 ): NavigationLayout {
     return when {
-        // Compact screens always use bottom navigation
-        screenSize == ScreenSize.Compact -> NavigationLayout.BottomNavigation
-
-        // Medium screens use rail in landscape, bottom in portrait
-        screenSize == ScreenSize.Medium -> {
-            if (isLandscape && formFactor != DeviceFormFactor.Phone) {
-                NavigationLayout.NavigationRail
-            } else {
-                NavigationLayout.BottomNavigation
-            }
-        }
-
-        // Expanded screens use drawer or dual pane
-        screenSize == ScreenSize.Expanded -> {
-            if (formFactor == DeviceFormFactor.Desktop) {
-                NavigationLayout.DualPane
-            } else {
-                NavigationLayout.NavigationDrawer
-            }
-        }
+        screenSize == ScreenSize.Expanded -> NavigationLayout.NavigationDrawer
+        screenSize == ScreenSize.Medium && formFactor != DeviceFormFactor.Phone -> NavigationLayout.NavigationRail
+        screenSize == ScreenSize.Medium && isLandscape -> NavigationLayout.NavigationRail
+        else -> NavigationLayout.BottomNavigation
     }
 }
 
 /**
- * Determine content layout
+ * Determine content layout based on screen characteristics
  */
 private fun determineContentLayout(
     screenSize: ScreenSize,
@@ -271,172 +253,48 @@ private fun determineContentLayout(
     isLandscape: Boolean
 ): ContentLayout {
     return when {
-        screenSize == ScreenSize.Compact -> ContentLayout.SinglePane
-
+        screenSize == ScreenSize.Expanded && formFactor == DeviceFormFactor.Desktop -> ContentLayout.TriplePane
+        screenSize == ScreenSize.Expanded -> ContentLayout.DualPane
         screenSize == ScreenSize.Medium && isLandscape -> ContentLayout.DualPane
-
-        screenSize == ScreenSize.Expanded -> {
-            when (formFactor) {
-                DeviceFormFactor.Desktop -> ContentLayout.TriplePane
-                DeviceFormFactor.Tablet -> if (isLandscape) ContentLayout.DualPane else ContentLayout.SinglePane
-                DeviceFormFactor.Foldable -> ContentLayout.DualPane
-                else -> ContentLayout.SinglePane
-            }
-        }
-
         else -> ContentLayout.SinglePane
     }
 }
 
 /**
- * Calculate content padding based on navigation layout
+ * Calculate content padding based on layout configuration
  */
-@Composable
 private fun calculateContentPadding(
     screenSize: ScreenSize,
     navigationLayout: NavigationLayout,
     layoutDirection: LayoutDirection
 ): PaddingValues {
-    val systemBarsPadding = WindowInsets.systemBars
-    val density = LocalDensity.current
-
-    val basePadding = when (screenSize) {
-        ScreenSize.Compact -> LayoutTokens.ScreenMarginCompact
-        ScreenSize.Medium -> LayoutTokens.ScreenMarginMedium
-        ScreenSize.Expanded -> LayoutTokens.ScreenMarginExpanded
+    val horizontal = when (screenSize) {
+        ScreenSize.Compact -> SpacingTokens.M
+        ScreenSize.Medium -> SpacingTokens.L
+        ScreenSize.Expanded -> SpacingTokens.XL
     }
 
-    val navigationPadding = when (navigationLayout) {
-        NavigationLayout.NavigationRail -> {
-            if (layoutDirection == LayoutDirection.Ltr) {
-                PaddingValues(start = 80.dp)
-            } else {
-                PaddingValues(end = 80.dp)
-            }
-        }
-        NavigationLayout.NavigationDrawer -> {
-            if (layoutDirection == LayoutDirection.Ltr) {
-                PaddingValues(start = 240.dp)
-            } else {
-                PaddingValues(end = 240.dp)
-            }
-        }
-        NavigationLayout.BottomNavigation -> PaddingValues(bottom = 80.dp)
-        NavigationLayout.DualPane -> PaddingValues()
+    val vertical = when (screenSize) {
+        ScreenSize.Compact -> SpacingTokens.S
+        ScreenSize.Medium -> SpacingTokens.M
+        ScreenSize.Expanded -> SpacingTokens.L
+    }
+
+    val startPadding = when (navigationLayout) {
+        NavigationLayout.NavigationRail -> SpacingTokens.XXL
+        NavigationLayout.NavigationDrawer -> 0.dp
+        else -> horizontal
     }
 
     return PaddingValues(
-        start = basePadding + navigationPadding.calculateStartPadding(layoutDirection),
-        top = basePadding + navigationPadding.calculateTopPadding(),
-        end = basePadding + navigationPadding.calculateEndPadding(layoutDirection),
-        bottom = basePadding + navigationPadding.calculateBottomPadding()
+        start = startPadding,
+        top = vertical,
+        end = horizontal,
+        bottom = when (navigationLayout) {
+            NavigationLayout.BottomNavigation -> SpacingTokens.XXL
+            else -> vertical
+        }
     )
-}
-
-/**
- * Responsive component sizing helpers
- */
-object ResponsiveSizing {
-    @Composable
-    fun buttonHeight(): Dp {
-        val config = LocalResponsiveConfig.current
-        return config.componentTokens.buttonHeight
-    }
-
-    @Composable
-    fun cardPadding(): Dp {
-        val config = LocalResponsiveConfig.current
-        return config.componentTokens.cardPadding
-    }
-
-    @Composable
-    fun listItemHeight(): Dp {
-        val config = LocalResponsiveConfig.current
-        return config.componentTokens.listItemHeight
-    }
-
-    @Composable
-    fun gridColumns(): Int {
-        val config = LocalResponsiveConfig.current
-        return config.gridColumns
-    }
-
-    @Composable
-    fun maxContentWidth(): Dp {
-        val config = LocalResponsiveConfig.current
-        return config.maxContentWidth
-    }
-}
-
-/**
- * Responsive layout helpers
- */
-object ResponsiveLayout {
-    @Composable
-    fun shouldUseBottomNavigation(): Boolean {
-        val config = LocalResponsiveConfig.current
-        return config.navigationLayout == NavigationLayout.BottomNavigation
-    }
-
-    @Composable
-    fun shouldUseNavigationRail(): Boolean {
-        val config = LocalResponsiveConfig.current
-        return config.navigationLayout == NavigationLayout.NavigationRail
-    }
-
-    @Composable
-    fun shouldUseNavigationDrawer(): Boolean {
-        val config = LocalResponsiveConfig.current
-        return config.navigationLayout == NavigationLayout.NavigationDrawer
-    }
-
-    @Composable
-    fun shouldUseDualPane(): Boolean {
-        val config = LocalResponsiveConfig.current
-        return config.contentLayout in listOf(ContentLayout.DualPane, ContentLayout.TriplePane)
-    }
-
-    @Composable
-    fun shouldUseTriplePane(): Boolean {
-        val config = LocalResponsiveConfig.current
-        return config.contentLayout == ContentLayout.TriplePane
-    }
-
-    @Composable
-    fun isCompactScreen(): Boolean {
-        val config = LocalResponsiveConfig.current
-        return config.screenSize == ScreenSize.Compact
-    }
-
-    @Composable
-    fun isMediumScreen(): Boolean {
-        val config = LocalResponsiveConfig.current
-        return config.screenSize == ScreenSize.Medium
-    }
-
-    @Composable
-    fun isExpandedScreen(): Boolean {
-        val config = LocalResponsiveConfig.current
-        return config.screenSize == ScreenSize.Expanded
-    }
-
-    @Composable
-    fun isTablet(): Boolean {
-        val config = LocalResponsiveConfig.current
-        return config.formFactor == DeviceFormFactor.Tablet
-    }
-
-    @Composable
-    fun isFoldable(): Boolean {
-        val config = LocalResponsiveConfig.current
-        return config.formFactor == DeviceFormFactor.Foldable
-    }
-
-    @Composable
-    fun isDesktop(): Boolean {
-        val config = LocalResponsiveConfig.current
-        return config.formFactor == DeviceFormFactor.Desktop
-    }
 }
 
 /**

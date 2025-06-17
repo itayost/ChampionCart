@@ -5,11 +5,9 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -24,80 +22,85 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.championcart.ui.theme.*
 
 /**
  * Champion Cart - Search Components
- * Smart product discovery with Hebrew-first design and glassmorphic effects
+ * Hebrew-first search interface with glassmorphic Electric Harmony design
+ * Optimized for Israeli shopping patterns and RTL layout
  */
 
-// Data classes for search functionality
+/**
+ * Search Filter Data Class
+ */
 data class SearchFilter(
     val id: String,
-    val name: String,
+    val nameEnglish: String,
     val nameHebrew: String,
     val icon: ImageVector? = null,
     val isSelected: Boolean = false,
     val count: Int? = null
 )
 
+/**
+ * Search Suggestion Data Class
+ */
 data class SearchSuggestion(
     val id: String,
     val text: String,
-    val textHebrew: String? = null,
-    val type: SuggestionType = SuggestionType.Product,
-    val category: String? = null,
-    val popularity: Int = 0
+    val type: SuggestionType = SuggestionType.SEARCH_HISTORY,
+    val icon: ImageVector? = null
 )
 
 enum class SuggestionType {
-    Product,
-    Category,
-    Brand,
-    Store,
-    Recent
+    SEARCH_HISTORY,
+    PRODUCT_SUGGESTION,
+    CATEGORY_SUGGESTION,
+    STORE_SUGGESTION
 }
 
 /**
- * Main Search Bar Component
+ * Glassmorphic Search Bar with Electric Harmony styling
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SearchBar(
+fun GlassmorphicSearchBar(
     query: String,
     onQueryChange: (String) -> Unit,
     onSearch: (String) -> Unit,
     modifier: Modifier = Modifier,
-    placeholder: String = "חפש מוצרים...",
     isActive: Boolean = false,
     onActiveChange: (Boolean) -> Unit = {},
+    placeholder: String = "חפש מוצרים...",
     showVoiceSearch: Boolean = true,
     showBarcode: Boolean = true,
-    leadingIcon: ImageVector? = Icons.Default.Search
+    focusRequester: FocusRequester = remember { FocusRequester() }
 ) {
-    val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
 
-    var isFocused by remember { mutableStateOf(false) }
-
     val backgroundColor by animateColorAsState(
-        targetValue = if (isActive || isFocused) {
+        targetValue = if (isActive) {
             MaterialTheme.colorScheme.surface
         } else {
-            MaterialTheme.colorScheme.surface.copy(alpha = 0.8f)
+            MaterialTheme.colorScheme.extended.surfaceGlass
         },
-        animationSpec = SpringSpecs.Smooth,
-        label = "searchBackground"
+        animationSpec = spring(
+            dampingRatio = SpringSpecs.DampingRatioLowBounce,
+            stiffness = SpringSpecs.StiffnessMedium
+        ),
+        label = "searchBarBackground"
     )
 
-    GlassSearchBar(
-        modifier = modifier.fillMaxWidth()
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(GlassmorphicShapes.SearchField),
+        colors = CardDefaults.cardColors(containerColor = backgroundColor),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isActive) 4.dp else 2.dp)
     ) {
         OutlinedTextField(
             value = query,
@@ -108,19 +111,17 @@ fun SearchBar(
             placeholder = {
                 Text(
                     text = placeholder,
-                    style = AppTextStyles.inputHint.withSmartHebrewSupport(placeholder),
+                    style = AppTextStyles.inputHint,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
             },
-            leadingIcon = leadingIcon?.let { icon ->
-                {
-                    Icon(
-                        icon,
-                        contentDescription = "Search",
-                        tint = MaterialTheme.colorScheme.extended.electricMint,
-                        modifier = Modifier.size(SizingTokens.IconM)
-                    )
-                }
+            leadingIcon = {
+                Icon(
+                    Icons.Default.Search,
+                    contentDescription = "Search",
+                    tint = MaterialTheme.colorScheme.extended.electricMint,
+                    modifier = Modifier.size(SizingTokens.IconS)
+                )
             },
             trailingIcon = {
                 SearchTrailingIcons(
@@ -132,10 +133,7 @@ fun SearchBar(
                     showBarcode = showBarcode
                 )
             },
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Text,
-                imeAction = ImeAction.Search
-            ),
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
             keyboardActions = KeyboardActions(
                 onSearch = {
                     onSearch(query)
@@ -278,7 +276,10 @@ private fun SearchFilterChip(
         } else {
             MaterialTheme.colorScheme.surface
         },
-        animationSpec = SpringSpecs.Smooth,
+        animationSpec = spring(
+            dampingRatio = SpringSpecs.DampingRatioLowBounce,
+            stiffness = SpringSpecs.StiffnessMedium
+        ),
         label = "chipBackground"
     )
 
@@ -288,13 +289,17 @@ private fun SearchFilterChip(
         } else {
             MaterialTheme.colorScheme.onSurface
         },
-        animationSpec = SpringSpecs.Smooth,
+        animationSpec = spring(
+            dampingRatio = SpringSpecs.DampingRatioLowBounce,
+            stiffness = SpringSpecs.StiffnessMedium
+        ),
         label = "chipContent"
     )
 
     FilterChip(
         selected = filter.isSelected,
         onClick = onClick,
+        enabled = true,
         label = {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -335,11 +340,17 @@ private fun SearchFilterChip(
         modifier = modifier.glassChip(),
         colors = FilterChipDefaults.filterChipColors(
             containerColor = backgroundColor,
-            selectedContainerColor = backgroundColor
+            selectedContainerColor = backgroundColor,
+            labelColor = contentColor,
+            selectedLabelColor = contentColor
         ),
         border = FilterChipDefaults.filterChipBorder(
-            borderColor = if (filter.isSelected) Color.Transparent else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
-            selectedBorderColor = Color.Transparent
+            borderColor = if (filter.isSelected) Color.Transparent else MaterialTheme.colorScheme.outline.copy(
+                alpha = 0.3f
+            ),
+            selectedBorderColor = Color.Transparent,
+            enabled = TODO(),
+            selected = TODO()
         )
     )
 }
@@ -356,6 +367,7 @@ private fun MoreFiltersChip(
     FilterChip(
         selected = false,
         onClick = onClick,
+        enabled = true,
         label = {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -377,7 +389,9 @@ private fun MoreFiltersChip(
             containerColor = MaterialTheme.colorScheme.extended.cosmicPurple.copy(alpha = 0.1f)
         ),
         border = FilterChipDefaults.filterChipBorder(
-            borderColor = MaterialTheme.colorScheme.extended.cosmicPurple.copy(alpha = 0.3f)
+            borderColor = MaterialTheme.colorScheme.extended.cosmicPurple.copy(alpha = 0.3f),
+            enabled = TODO(),
+            selected = TODO()
         )
     )
 }
@@ -403,15 +417,16 @@ fun SearchSuggestions(
             colors = CardDefaults.cardColors(
                 containerColor = Color.Transparent
             ),
-            shape = GlassmorphicShapes.GlassCard
+            shape = GlassmorphicShapes.GlassCard,
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
         ) {
-            LazyColumn(
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .glassCard(GlassIntensity.Heavy)
-                    .heightIn(max = 300.dp)
+                    .background(MaterialTheme.colorScheme.extended.surfaceGlass)
+                    .padding(SpacingTokens.S)
             ) {
-                items(suggestions) { suggestion ->
+                suggestions.forEach { suggestion ->
                     SearchSuggestionItem(
                         suggestion = suggestion,
                         onClick = { onSuggestionClick(suggestion) }
@@ -431,225 +446,163 @@ private fun SearchSuggestionItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val suggestionIcon = when (suggestion.type) {
-        SuggestionType.Product -> Icons.Default.ShoppingCart
-        SuggestionType.Category -> Icons.Default.Category
-        SuggestionType.Brand -> Icons.Default.BusinessCenter
-        SuggestionType.Store -> Icons.Default.Store
-        SuggestionType.Recent -> Icons.Default.History
-    }
-
-    val suggestionColor = when (suggestion.type) {
-        SuggestionType.Product -> MaterialTheme.colorScheme.extended.electricMint
-        SuggestionType.Category -> MaterialTheme.colorScheme.extended.cosmicPurple
-        SuggestionType.Brand -> MaterialTheme.colorScheme.primary
-        SuggestionType.Store -> MaterialTheme.colorScheme.secondary
-        SuggestionType.Recent -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-    }
-
     Row(
         modifier = modifier
             .fillMaxWidth()
             .clickable { onClick() }
-            .padding(horizontal = SpacingTokens.L, vertical = SpacingTokens.M),
+            .padding(SpacingTokens.M),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(SpacingTokens.M)
     ) {
+        // Icon based on suggestion type
         Icon(
-            suggestionIcon,
+            imageVector = suggestion.icon ?: when (suggestion.type) {
+                SuggestionType.SEARCH_HISTORY -> Icons.Default.History
+                SuggestionType.PRODUCT_SUGGESTION -> Icons.Default.ShoppingBag
+                SuggestionType.CATEGORY_SUGGESTION -> Icons.Default.Category
+                SuggestionType.STORE_SUGGESTION -> Icons.Default.Store
+            },
             contentDescription = null,
-            tint = suggestionColor,
+            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
             modifier = Modifier.size(SizingTokens.IconS)
         )
 
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = suggestion.textHebrew ?: suggestion.text,
-                style = AppTextStyles.inputText.withSmartHebrewSupport(suggestion.textHebrew ?: suggestion.text),
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+        // Suggestion text
+        Text(
+            text = suggestion.text,
+            style = AppTextStyles.hebrewBodyMedium.withSmartHebrewSupport(suggestion.text),
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f)
+        )
 
-            suggestion.category?.let { category ->
-                Text(
-                    text = category,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-        }
-
-        if (suggestion.type == SuggestionType.Recent) {
-            IconButton(
-                onClick = { /* TODO: Remove from recent */ },
-                modifier = Modifier.size(SizingTokens.IconS)
-            ) {
-                Icon(
-                    Icons.Default.Clear,
-                    contentDescription = "Remove from recent",
-                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
-                    modifier = Modifier.size(12.dp)
-                )
-            }
-        }
+        // Action icon
+        Icon(
+            Icons.Default.NorthWest,
+            contentDescription = "Apply suggestion",
+            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+            modifier = Modifier.size(SizingTokens.IconXS)
+        )
     }
 }
 
 /**
- * Search Results Header
+ * Quick Filters Section
  */
 @Composable
-fun SearchResultsHeader(
-    query: String,
-    resultCount: Int,
-    modifier: Modifier = Modifier,
-    onClearSearch: () -> Unit = {}
-) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = SpacingTokens.L, vertical = SpacingTokens.M),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = "תוצאות עבור \"$query\"",
-                style = AppTextStyles.hebrewHeadline,
-                color = MaterialTheme.colorScheme.onSurface,
-                fontWeight = FontWeight.SemiBold
-            )
-            Text(
-                text = "$resultCount מוצרים נמצאו",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-            )
-        }
-
-        TextButton(
-            onClick = onClearSearch,
-            colors = ButtonDefaults.textButtonColors(
-                contentColor = MaterialTheme.colorScheme.extended.electricMint
-            )
-        ) {
-            Text("נקה חיפוש")
-        }
-    }
-}
-
-/**
- * Empty Search State
- */
-@Composable
-fun EmptySearchState(
-    message: String = "לא נמצאו תוצאות",
-    subtitle: String = "נסה לחפש במילות מפתח אחרות",
-    modifier: Modifier = Modifier,
-    onSuggestedAction: (() -> Unit)? = null,
-    actionText: String = "חפש קטגוריות"
+fun QuickFilters(
+    onCategoryClick: (String) -> Unit,
+    onPriceRangeClick: () -> Unit,
+    onStoreClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(SpacingTokens.XXL),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(SpacingTokens.L)
+        modifier = modifier.padding(SpacingTokens.L),
+        verticalArrangement = Arrangement.spacedBy(SpacingTokens.M)
     ) {
-        Icon(
-            Icons.Default.SearchOff,
-            contentDescription = null,
-            modifier = Modifier.size(SizingTokens.IconHuge),
-            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
-        )
-
         Text(
-            text = message,
-            style = AppTextStyles.hebrewHeadline,
+            text = "חיפוש מהיר",
+            style = MaterialTheme.typography.titleMedium.withSmartHebrewSupport("חיפוש מהיר"),
             color = MaterialTheme.colorScheme.onSurface,
-            textAlign = TextAlign.Center
+            fontWeight = FontWeight.SemiBold
         )
 
-        Text(
-            text = subtitle,
-            style = AppTextStyles.hebrewBodyMedium,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-            textAlign = TextAlign.Center
-        )
-
-        onSuggestedAction?.let { action ->
-            Button(
-                onClick = action,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.extended.electricMint
-                ),
-                shape = GlassmorphicShapes.Button
-            ) {
-                Text(actionText)
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(SpacingTokens.S)
+        ) {
+            item {
+                QuickFilterChip(
+                    text = "טחינה",
+                    icon = Icons.Default.LocalGroceryStore,
+                    onClick = { onCategoryClick("tahini") }
+                )
             }
-        }
-    }
-}
-
-// Preview Data
-private val sampleFilters = listOf(
-    SearchFilter("all", "All", "הכל", Icons.Default.SelectAll, true, 1250),
-    SearchFilter("dairy", "Dairy", "חלב", Icons.Default.LocalDrink, false, 85),
-    SearchFilter("meat", "Meat", "בשר", Icons.Default.Restaurant, false, 120),
-    SearchFilter("kosher", "Kosher", "כשר", Icons.Default.VerifiedUser, false, 950),
-    SearchFilter("organic", "Organic", "אורגני", Icons.Default.Eco, false, 45),
-    SearchFilter("sale", "On Sale", "במבצע", Icons.Default.LocalOffer, false, 200)
-)
-
-private val sampleSuggestions = listOf(
-    SearchSuggestion("1", "Milk", "חלב", SuggestionType.Product, "מוצרי חלב"),
-    SearchSuggestion("2", "Dairy", "מוצרי חלב", SuggestionType.Category),
-    SearchSuggestion("3", "Tnuva", "תנובה", SuggestionType.Brand),
-    SearchSuggestion("4", "Bread", "לחם", SuggestionType.Recent, "אפייה")
-)
-
-@Preview(name = "Search Bar")
-@Composable
-private fun SearchBarPreview() {
-    ChampionCartTheme {
-        Surface {
-            Column(modifier = Modifier.padding(16.dp)) {
-                SearchBar(
-                    query = "",
-                    onQueryChange = {},
-                    onSearch = {}
+            item {
+                QuickFilterChip(
+                    text = "מוצרי חלב",
+                    icon = Icons.Default.LocalDrink,
+                    onClick = { onCategoryClick("dairy") }
+                )
+            }
+            item {
+                QuickFilterChip(
+                    text = "פירות וירקות",
+                    icon = Icons.Default.Eco,
+                    onClick = { onCategoryClick("produce") }
+                )
+            }
+            item {
+                QuickFilterChip(
+                    text = "טווח מחירים",
+                    icon = Icons.Default.MonetizationOn,
+                    onClick = onPriceRangeClick
+                )
+            }
+            item {
+                QuickFilterChip(
+                    text = "חנויות",
+                    icon = Icons.Default.Store,
+                    onClick = onStoreClick
                 )
             }
         }
     }
 }
 
-@Preview(name = "Search Filters")
+/**
+ * Quick Filter Chip
+ */
 @Composable
-private fun SearchFiltersPreview() {
-    ChampionCartTheme {
-        Surface {
-            SearchFilters(
-                filters = sampleFilters,
-                onFilterToggle = {},
-                modifier = Modifier.padding(vertical = 16.dp)
+private fun QuickFilterChip(
+    text: String,
+    icon: ImageVector,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        onClick = onClick,
+        modifier = modifier,
+        shape = GlassmorphicShapes.ButtonSmall,
+        color = MaterialTheme.colorScheme.extended.surfaceGlass,
+        contentColor = MaterialTheme.colorScheme.onSurface
+    ) {
+        Row(
+            modifier = Modifier.padding(
+                horizontal = SpacingTokens.M,
+                vertical = SpacingTokens.S
+            ),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(SpacingTokens.XS)
+        ) {
+            Icon(
+                icon,
+                contentDescription = null,
+                modifier = Modifier.size(SizingTokens.IconXS)
+            )
+            Text(
+                text = text,
+                style = AppTextStyles.chipText.withSmartHebrewSupport(text)
             )
         }
     }
 }
 
-@Preview(name = "Search Suggestions")
+/**
+ * Search Result Stats
+ */
 @Composable
-private fun SearchSuggestionsPreview() {
-    ChampionCartTheme {
-        Surface {
-            SearchSuggestions(
-                suggestions = sampleSuggestions,
-                onSuggestionClick = {},
-                modifier = Modifier.padding(16.dp)
-            )
-        }
-    }
+fun SearchResultStats(
+    resultCount: Int,
+    searchQuery: String,
+    modifier: Modifier = Modifier
+) {
+    Text(
+        text = if (resultCount > 0) {
+            "נמצאו $resultCount תוצאות עבור \"$searchQuery\""
+        } else {
+            "לא נמצאו תוצאות עבור \"$searchQuery\""
+        },
+        style = AppTextStyles.hebrewBodyMedium.withSmartHebrewSupport("נמצאו $resultCount תוצאות"),
+        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+        modifier = modifier.padding(horizontal = SpacingTokens.L)
+    )
 }

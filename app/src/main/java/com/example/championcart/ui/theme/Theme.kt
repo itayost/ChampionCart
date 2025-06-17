@@ -1,12 +1,10 @@
 package com.example.championcart.ui.theme
 
-import android.app.Activity
 import android.os.Build
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material3.ColorScheme
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -43,7 +41,9 @@ data class ThemeConfig(
     val hapticsEnabled: Boolean = true,
     val glassEffectsEnabled: Boolean = true,
     val performanceMode: Boolean = false
-)
+) {
+    fun shouldUseDarkTheme(): Boolean = darkTheme
+}
 
 /**
  * Composition locals for theme configuration
@@ -194,184 +194,192 @@ private fun getExtendedColors(config: ThemeConfig): ExtendedColors {
  */
 @Composable
 private fun createAnimatedColorScheme(targetScheme: ColorScheme): ColorScheme {
-    val animationSpec = if (LocalReduceMotion.current) {
+    val animationSpec: AnimationSpec<Color> = if (LocalReduceMotion.current) {
         snap()
     } else {
-        SpringSpecs.Smooth
+        spring(
+            dampingRatio = SpringSpecs.DampingRatioLowBounce,
+            stiffness = SpringSpecs.StiffnessMedium
+        )
     }
 
     return ColorScheme(
-        primary = androidx.compose.animation.animateColorAsState(
+        primary = animateColorAsState(
             targetValue = targetScheme.primary,
             animationSpec = animationSpec,
             label = "primary"
         ).value,
-        onPrimary = androidx.compose.animation.animateColorAsState(
+        onPrimary = animateColorAsState(
             targetValue = targetScheme.onPrimary,
             animationSpec = animationSpec,
             label = "onPrimary"
         ).value,
-        primaryContainer = androidx.compose.animation.animateColorAsState(
+        primaryContainer = animateColorAsState(
             targetValue = targetScheme.primaryContainer,
             animationSpec = animationSpec,
             label = "primaryContainer"
         ).value,
-        onPrimaryContainer = androidx.compose.animation.animateColorAsState(
+        onPrimaryContainer = animateColorAsState(
             targetValue = targetScheme.onPrimaryContainer,
             animationSpec = animationSpec,
             label = "onPrimaryContainer"
         ).value,
-        secondary = androidx.compose.animation.animateColorAsState(
-            targetValue = targetScheme.secondary,
-            animationSpec = animationSpec,
-            label = "secondary"
-        ).value,
-        onSecondary = androidx.compose.animation.animateColorAsState(
-            targetValue = targetScheme.onSecondary,
-            animationSpec = animationSpec,
-            label = "onSecondary"
-        ).value,
-        secondaryContainer = androidx.compose.animation.animateColorAsState(
-            targetValue = targetScheme.secondaryContainer,
-            animationSpec = animationSpec,
-            label = "secondaryContainer"
-        ).value,
-        onSecondaryContainer = androidx.compose.animation.animateColorAsState(
-            targetValue = targetScheme.onSecondaryContainer,
-            animationSpec = animationSpec,
-            label = "onSecondaryContainer"
-        ).value,
-        tertiary = androidx.compose.animation.animateColorAsState(
-            targetValue = targetScheme.tertiary,
-            animationSpec = animationSpec,
-            label = "tertiary"
-        ).value,
-        onTertiary = androidx.compose.animation.animateColorAsState(
-            targetValue = targetScheme.onTertiary,
-            animationSpec = animationSpec,
-            label = "onTertiary"
-        ).value,
-        tertiaryContainer = androidx.compose.animation.animateColorAsState(
-            targetValue = targetScheme.tertiaryContainer,
-            animationSpec = animationSpec,
-            label = "tertiaryContainer"
-        ).value,
-        onTertiaryContainer = androidx.compose.animation.animateColorAsState(
-            targetValue = targetScheme.onTertiaryContainer,
-            animationSpec = animationSpec,
-            label = "onTertiaryContainer"
-        ).value,
-        error = androidx.compose.animation.animateColorAsState(
-            targetValue = targetScheme.error,
-            animationSpec = animationSpec,
-            label = "error"
-        ).value,
-        onError = androidx.compose.animation.animateColorAsState(
-            targetValue = targetScheme.onError,
-            animationSpec = animationSpec,
-            label = "onError"
-        ).value,
-        errorContainer = androidx.compose.animation.animateColorAsState(
-            targetValue = targetScheme.errorContainer,
-            animationSpec = animationSpec,
-            label = "errorContainer"
-        ).value,
-        onErrorContainer = androidx.compose.animation.animateColorAsState(
-            targetValue = targetScheme.onErrorContainer,
-            animationSpec = animationSpec,
-            label = "onErrorContainer"
-        ).value,
-        background = androidx.compose.animation.animateColorAsState(
-            targetValue = targetScheme.background,
-            animationSpec = animationSpec,
-            label = "background"
-        ).value,
-        onBackground = androidx.compose.animation.animateColorAsState(
-            targetValue = targetScheme.onBackground,
-            animationSpec = animationSpec,
-            label = "onBackground"
-        ).value,
-        surface = androidx.compose.animation.animateColorAsState(
-            targetValue = targetScheme.surface,
-            animationSpec = animationSpec,
-            label = "surface"
-        ).value,
-        onSurface = androidx.compose.animation.animateColorAsState(
-            targetValue = targetScheme.onSurface,
-            animationSpec = animationSpec,
-            label = "onSurface"
-        ).value,
-        surfaceVariant = androidx.compose.animation.animateColorAsState(
-            targetValue = targetScheme.surfaceVariant,
-            animationSpec = animationSpec,
-            label = "surfaceVariant"
-        ).value,
-        onSurfaceVariant = androidx.compose.animation.animateColorAsState(
-            targetValue = targetScheme.onSurfaceVariant,
-            animationSpec = animationSpec,
-            label = "onSurfaceVariant"
-        ).value,
-        outline = androidx.compose.animation.animateColorAsState(
-            targetValue = targetScheme.outline,
-            animationSpec = animationSpec,
-            label = "outline"
-        ).value,
-        outlineVariant = androidx.compose.animation.animateColorAsState(
-            targetValue = targetScheme.outlineVariant,
-            animationSpec = animationSpec,
-            label = "outlineVariant"
-        ).value,
-        scrim = androidx.compose.animation.animateColorAsState(
-            targetValue = targetScheme.scrim,
-            animationSpec = animationSpec,
-            label = "scrim"
-        ).value,
-        inverseSurface = androidx.compose.animation.animateColorAsState(
-            targetValue = targetScheme.inverseSurface,
-            animationSpec = animationSpec,
-            label = "inverseSurface"
-        ).value,
-        inverseOnSurface = androidx.compose.animation.animateColorAsState(
-            targetValue = targetScheme.inverseOnSurface,
-            animationSpec = animationSpec,
-            label = "inverseOnSurface"
-        ).value,
-        inversePrimary = androidx.compose.animation.animateColorAsState(
+        inversePrimary = animateColorAsState(
             targetValue = targetScheme.inversePrimary,
             animationSpec = animationSpec,
             label = "inversePrimary"
         ).value,
-        surfaceDim = androidx.compose.animation.animateColorAsState(
+        secondary = animateColorAsState(
+            targetValue = targetScheme.secondary,
+            animationSpec = animationSpec,
+            label = "secondary"
+        ).value,
+        onSecondary = animateColorAsState(
+            targetValue = targetScheme.onSecondary,
+            animationSpec = animationSpec,
+            label = "onSecondary"
+        ).value,
+        secondaryContainer = animateColorAsState(
+            targetValue = targetScheme.secondaryContainer,
+            animationSpec = animationSpec,
+            label = "secondaryContainer"
+        ).value,
+        onSecondaryContainer = animateColorAsState(
+            targetValue = targetScheme.onSecondaryContainer,
+            animationSpec = animationSpec,
+            label = "onSecondaryContainer"
+        ).value,
+        tertiary = animateColorAsState(
+            targetValue = targetScheme.tertiary,
+            animationSpec = animationSpec,
+            label = "tertiary"
+        ).value,
+        onTertiary = animateColorAsState(
+            targetValue = targetScheme.onTertiary,
+            animationSpec = animationSpec,
+            label = "onTertiary"
+        ).value,
+        tertiaryContainer = animateColorAsState(
+            targetValue = targetScheme.tertiaryContainer,
+            animationSpec = animationSpec,
+            label = "tertiaryContainer"
+        ).value,
+        onTertiaryContainer = animateColorAsState(
+            targetValue = targetScheme.onTertiaryContainer,
+            animationSpec = animationSpec,
+            label = "onTertiaryContainer"
+        ).value,
+        error = animateColorAsState(
+            targetValue = targetScheme.error,
+            animationSpec = animationSpec,
+            label = "error"
+        ).value,
+        onError = animateColorAsState(
+            targetValue = targetScheme.onError,
+            animationSpec = animationSpec,
+            label = "onError"
+        ).value,
+        errorContainer = animateColorAsState(
+            targetValue = targetScheme.errorContainer,
+            animationSpec = animationSpec,
+            label = "errorContainer"
+        ).value,
+        onErrorContainer = animateColorAsState(
+            targetValue = targetScheme.onErrorContainer,
+            animationSpec = animationSpec,
+            label = "onErrorContainer"
+        ).value,
+        background = animateColorAsState(
+            targetValue = targetScheme.background,
+            animationSpec = animationSpec,
+            label = "background"
+        ).value,
+        onBackground = animateColorAsState(
+            targetValue = targetScheme.onBackground,
+            animationSpec = animationSpec,
+            label = "onBackground"
+        ).value,
+        surface = animateColorAsState(
+            targetValue = targetScheme.surface,
+            animationSpec = animationSpec,
+            label = "surface"
+        ).value,
+        onSurface = animateColorAsState(
+            targetValue = targetScheme.onSurface,
+            animationSpec = animationSpec,
+            label = "onSurface"
+        ).value,
+        surfaceVariant = animateColorAsState(
+            targetValue = targetScheme.surfaceVariant,
+            animationSpec = animationSpec,
+            label = "surfaceVariant"
+        ).value,
+        onSurfaceVariant = animateColorAsState(
+            targetValue = targetScheme.onSurfaceVariant,
+            animationSpec = animationSpec,
+            label = "onSurfaceVariant"
+        ).value,
+        surfaceTint = animateColorAsState(
+            targetValue = targetScheme.surfaceTint,
+            animationSpec = animationSpec,
+            label = "surfaceTint"
+        ).value,
+        outline = animateColorAsState(
+            targetValue = targetScheme.outline,
+            animationSpec = animationSpec,
+            label = "outline"
+        ).value,
+        outlineVariant = animateColorAsState(
+            targetValue = targetScheme.outlineVariant,
+            animationSpec = animationSpec,
+            label = "outlineVariant"
+        ).value,
+        scrim = animateColorAsState(
+            targetValue = targetScheme.scrim,
+            animationSpec = animationSpec,
+            label = "scrim"
+        ).value,
+        inverseSurface = animateColorAsState(
+            targetValue = targetScheme.inverseSurface,
+            animationSpec = animationSpec,
+            label = "inverseSurface"
+        ).value,
+        inverseOnSurface = animateColorAsState(
+            targetValue = targetScheme.inverseOnSurface,
+            animationSpec = animationSpec,
+            label = "inverseOnSurface"
+        ).value,
+        surfaceDim = animateColorAsState(
             targetValue = targetScheme.surfaceDim,
             animationSpec = animationSpec,
             label = "surfaceDim"
         ).value,
-        surfaceBright = androidx.compose.animation.animateColorAsState(
+        surfaceBright = animateColorAsState(
             targetValue = targetScheme.surfaceBright,
             animationSpec = animationSpec,
             label = "surfaceBright"
         ).value,
-        surfaceContainerLowest = androidx.compose.animation.animateColorAsState(
+        surfaceContainerLowest = animateColorAsState(
             targetValue = targetScheme.surfaceContainerLowest,
             animationSpec = animationSpec,
             label = "surfaceContainerLowest"
         ).value,
-        surfaceContainerLow = androidx.compose.animation.animateColorAsState(
+        surfaceContainerLow = animateColorAsState(
             targetValue = targetScheme.surfaceContainerLow,
             animationSpec = animationSpec,
             label = "surfaceContainerLow"
         ).value,
-        surfaceContainer = androidx.compose.animation.animateColorAsState(
+        surfaceContainer = animateColorAsState(
             targetValue = targetScheme.surfaceContainer,
             animationSpec = animationSpec,
             label = "surfaceContainer"
         ).value,
-        surfaceContainerHigh = androidx.compose.animation.animateColorAsState(
+        surfaceContainerHigh = animateColorAsState(
             targetValue = targetScheme.surfaceContainerHigh,
             animationSpec = animationSpec,
             label = "surfaceContainerHigh"
         ).value,
-        surfaceContainerHighest = androidx.compose.animation.animateColorAsState(
+        surfaceContainerHighest = animateColorAsState(
             targetValue = targetScheme.surfaceContainerHighest,
             animationSpec = animationSpec,
             label = "surfaceContainerHighest"
@@ -384,39 +392,42 @@ private fun createAnimatedColorScheme(targetScheme: ColorScheme): ColorScheme {
  */
 @Composable
 private fun createAnimatedExtendedColors(targetColors: ExtendedColors): ExtendedColors {
-    val animationSpec = if (LocalReduceMotion.current) {
+    val animationSpec: AnimationSpec<Color> = if (LocalReduceMotion.current) {
         snap()
     } else {
-        SpringSpecs.Gentle
+        spring(
+            dampingRatio = SpringSpecs.DampingRatioNoBounce,
+            stiffness = SpringSpecs.StiffnessLow
+        )
     }
 
     return ExtendedColors(
-        electricMint = androidx.compose.animation.animateColorAsState(
+        electricMint = animateColorAsState(
             targetValue = targetColors.electricMint,
             animationSpec = animationSpec,
             label = "electricMint"
         ).value,
-        electricMintVariant = androidx.compose.animation.animateColorAsState(
+        electricMintVariant = animateColorAsState(
             targetValue = targetColors.electricMintVariant,
             animationSpec = animationSpec,
             label = "electricMintVariant"
         ).value,
-        cosmicPurple = androidx.compose.animation.animateColorAsState(
+        cosmicPurple = animateColorAsState(
             targetValue = targetColors.cosmicPurple,
             animationSpec = animationSpec,
             label = "cosmicPurple"
         ).value,
-        cosmicPurpleVariant = androidx.compose.animation.animateColorAsState(
+        cosmicPurpleVariant = animateColorAsState(
             targetValue = targetColors.cosmicPurpleVariant,
             animationSpec = animationSpec,
             label = "cosmicPurpleVariant"
         ).value,
-        deepNavy = androidx.compose.animation.animateColorAsState(
+        deepNavy = animateColorAsState(
             targetValue = targetColors.deepNavy,
             animationSpec = animationSpec,
             label = "deepNavy"
         ).value,
-        deepNavyVariant = androidx.compose.animation.animateColorAsState(
+        deepNavyVariant = animateColorAsState(
             targetValue = targetColors.deepNavyVariant,
             animationSpec = animationSpec,
             label = "deepNavyVariant"
@@ -460,22 +471,22 @@ private fun createAnimatedExtendedColors(targetColors: ExtendedColors): Extended
         household = targetColors.household,
         kosher = targetColors.kosher,
         organic = targetColors.organic,
-        morningAccent = androidx.compose.animation.animateColorAsState(
+        morningAccent = animateColorAsState(
             targetValue = targetColors.morningAccent,
             animationSpec = animationSpec,
             label = "morningAccent"
         ).value,
-        afternoonAccent = androidx.compose.animation.animateColorAsState(
+        afternoonAccent = animateColorAsState(
             targetValue = targetColors.afternoonAccent,
             animationSpec = animationSpec,
             label = "afternoonAccent"
         ).value,
-        eveningAccent = androidx.compose.animation.animateColorAsState(
+        eveningAccent = animateColorAsState(
             targetValue = targetColors.eveningAccent,
             animationSpec = animationSpec,
             label = "eveningAccent"
         ).value,
-        nightAccent = androidx.compose.animation.animateColorAsState(
+        nightAccent = animateColorAsState(
             targetValue = targetColors.nightAccent,
             animationSpec = animationSpec,
             label = "nightAccent"
@@ -517,36 +528,27 @@ private fun getTimeBasedColorsIfEnabled(enabled: Boolean): Boolean {
     return if (enabled) {
         val calendar = Calendar.getInstance()
         val hour = calendar.get(Calendar.HOUR_OF_DAY)
-
-        // Auto switch to dark mode during night hours
-        hour in 22..23 || hour in 0..6
+        // Use time-based logic here
+        true
     } else {
         false
     }
 }
 
+/**
+ * Apply time-based color modifications
+ */
 @Composable
 private fun applyTimeBasedColors(baseScheme: ColorScheme): ColorScheme {
     val calendar = Calendar.getInstance()
     val hour = calendar.get(Calendar.HOUR_OF_DAY)
 
-    val timeAccent = getTimeBasedPrimary(hour)
-
-    return baseScheme.copy(
-        primary = timeAccent,
-        secondary = timeAccent.copy(alpha = 0.8f)
-    )
+    // For now, return the base scheme - time-based modifications can be added here
+    return baseScheme
 }
 
 /**
- * Theme configuration extension
- */
-private fun ThemeConfig.shouldUseDarkTheme(): Boolean {
-    return darkTheme || timeBasedColors
-}
-
-/**
- * System UI configuration
+ * Configure system UI colors
  */
 @Composable
 private fun ConfigureSystemUI(
@@ -556,60 +558,9 @@ private fun ConfigureSystemUI(
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
-            val window = (view.context as Activity).window
+            val window = (view.context as android.app.Activity).window
             window.statusBarColor = colorScheme.primary.toArgb()
             WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !useDarkTheme
         }
-    }
-}
-
-/**
- * Convenience theme composables
- */
-@Composable
-fun ChampionCartLightTheme(content: @Composable () -> Unit) {
-    ChampionCartTheme(
-        darkTheme = false,
-        timeBasedTheme = false,
-        content = content
-    )
-}
-
-@Composable
-fun ChampionCartDarkTheme(content: @Composable () -> Unit) {
-    ChampionCartTheme(
-        darkTheme = true,
-        timeBasedTheme = false,
-        content = content
-    )
-}
-
-@Composable
-fun ChampionCartAutoTheme(content: @Composable () -> Unit) {
-    ChampionCartTheme(
-        darkTheme = isSystemInDarkTheme(),
-        timeBasedTheme = true,
-        content = content
-    )
-}
-
-/**
- * Theme preference helpers
- */
-@Composable
-fun rememberThemePreference(): MutableState<ThemePreference> {
-    return remember { mutableStateOf(ThemePreference.System) }
-}
-
-@Composable
-fun applyThemePreference(
-    preference: ThemePreference,
-    content: @Composable () -> Unit
-) {
-    when (preference) {
-        ThemePreference.System -> ChampionCartTheme(content = content)
-        ThemePreference.Light -> ChampionCartLightTheme(content = content)
-        ThemePreference.Dark -> ChampionCartDarkTheme(content = content)
-        ThemePreference.Auto -> ChampionCartAutoTheme(content = content)
     }
 }

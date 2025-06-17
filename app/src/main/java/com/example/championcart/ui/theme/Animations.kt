@@ -46,7 +46,7 @@ object SpringSpecs {
     const val StiffnessMedium = Spring.StiffnessMedium          // 400f - Balanced
     const val StiffnessMediumHigh = 600f                        // Custom - Snappy
     const val StiffnessHigh = Spring.StiffnessHigh              // 1400f - Quick
-    const val StiffnessVeryHigh = Spring.StiffnessVeryHigh      // 10000f - Instant
+    const val StiffnessVeryHigh = 2000f                         // Custom - Instant (was Spring.StiffnessVeryHigh)
 
     // Standard spring configurations
     val Gentle = spring<Float>(
@@ -106,312 +106,40 @@ object DurationSpecs {
  * Glassmorphic Enter/Exit Transitions
  */
 object GlassmorphicTransitions {
-    // Scale + Fade for glass appearance
-    fun scaleIn(
-        initialScale: Float = 0.8f,
-        animationSpec: FiniteAnimationSpec<Float> = SpringSpecs.Bouncy
-    ): EnterTransition = scaleIn(
-        initialScale = initialScale,
-        animationSpec = animationSpec
-    ) + fadeIn(animationSpec = tween(DurationSpecs.Standard))
-
-    fun scaleOut(
-        targetScale: Float = 0.8f,
-        animationSpec: FiniteAnimationSpec<Float> = SpringSpecs.Smooth
-    ): ExitTransition = scaleOut(
-        targetScale = targetScale,
-        animationSpec = animationSpec
-    ) + fadeOut(animationSpec = tween(DurationSpecs.Fast))
-
-    // Slide + Glassmorphic glow
-    fun slideInFromBottom(
-        initialOffsetY: Int = 100,
-        animationSpec: FiniteAnimationSpec<IntOffset> = spring(
+    // Slide from edge with glass effect
+    @OptIn(ExperimentalAnimationApi::class)
+    val SlideFromRight = slideInHorizontally(
+        initialOffsetX = { it },
+        animationSpec = spring(
             dampingRatio = SpringSpecs.DampingRatioLowBounce,
             stiffness = SpringSpecs.StiffnessMedium
         )
-    ): EnterTransition = slideInVertically(
-        initialOffsetY = { initialOffsetY },
-        animationSpec = animationSpec
-    ) + fadeIn(animationSpec = tween(DurationSpecs.Standard))
+    ) + fadeIn() with
+            slideOutHorizontally(
+                targetOffsetX = { it },
+                animationSpec = spring(
+                    dampingRatio = SpringSpecs.DampingRatioLowBounce,
+                    stiffness = SpringSpecs.StiffnessMedium
+                )
+            ) + fadeOut()
 
-    fun slideOutToBottom(
-        targetOffsetY: Int = 100,
-        animationSpec: FiniteAnimationSpec<IntOffset> = spring(
-            dampingRatio = SpringSpecs.DampingRatioNoBounce,
-            stiffness = SpringSpecs.StiffnessHigh
+    @OptIn(ExperimentalAnimationApi::class)
+    val SlideFromLeft = slideInHorizontally(
+        initialOffsetX = { -it },
+        animationSpec = spring(
+            dampingRatio = SpringSpecs.DampingRatioLowBounce,
+            stiffness = SpringSpecs.StiffnessMedium
         )
-    ): ExitTransition = slideOutVertically(
-        targetOffsetY = { targetOffsetY },
-        animationSpec = animationSpec
-    ) + fadeOut(animationSpec = tween(DurationSpecs.Fast))
-
-    // Expand from center (good for FABs)
-    fun expandIn(
-        animationSpec: FiniteAnimationSpec<Float> = SpringSpecs.Playful
-    ): EnterTransition = scaleIn(
-        initialScale = 0.0f,
-        animationSpec = animationSpec
-    ) + fadeIn(animationSpec = tween(DurationSpecs.Medium))
-
-    fun shrinkOut(
-        animationSpec: FiniteAnimationSpec<Float> = SpringSpecs.Snappy
-    ): ExitTransition = scaleOut(
-        targetScale = 0.0f,
-        animationSpec = animationSpec
-    ) + fadeOut(animationSpec = tween(DurationSpecs.Fast))
-}
-
-/**
- * Interactive Animation Modifiers
- */
-
-// Bouncy button press animation with haptic feedback
-fun Modifier.bouncyClickable(
-    enabled: Boolean = true,
-    scaleDown: Float = 0.95f,
-    onClick: () -> Unit
-): Modifier = composed {
-    val haptic = LocalHapticFeedback.current
-    val scope = rememberCoroutineScope()
-    val scale = remember { Animatable(1f) }
-
-    this
-        .scale(scale.value)
-        .pointerInput(enabled) {
-            if (enabled) {
-                detectTapGestures(
-                    onPress = {
-                        scope.launch {
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            scale.animateTo(
-                                scaleDown,
-                                SpringSpecs.Playful
-                            )
-                        }
-                        tryAwaitRelease()
-                        scope.launch {
-                            scale.animateTo(
-                                1f,
-                                SpringSpecs.Bouncy
-                            )
-                        }
-                    },
-                    onTap = { onClick() }
+    ) + fadeIn() with
+            slideOutHorizontally(
+                targetOffsetX = { -it },
+                animationSpec = spring(
+                    dampingRatio = SpringSpecs.DampingRatioLowBounce,
+                    stiffness = SpringSpecs.StiffnessMedium
                 )
-            }
-        }
-}
+            ) + fadeOut()
 
-// Gentle hover/press effect for cards
-fun Modifier.gentlePress(
-    enabled: Boolean = true,
-    scaleDown: Float = 0.98f,
-    elevationIncrease: Dp = 4.dp,
-    onPress: (() -> Unit)? = null
-): Modifier = composed {
-    val haptic = LocalHapticFeedback.current
-    val scope = rememberCoroutineScope()
-    val scale = remember { Animatable(1f) }
-    val elevation = remember { Animatable(0f) }
-    val density = LocalDensity.current
-
-    this
-        .scale(scale.value)
-        .shadow(elevation.value.dp, shape = MaterialTheme.shapes.medium)
-        .pointerInput(enabled) {
-            if (enabled) {
-                detectTapGestures(
-                    onPress = {
-                        scope.launch {
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            launch {
-                                scale.animateTo(scaleDown, SpringSpecs.Smooth)
-                            }
-                            launch {
-                                elevation.animateTo(
-                                    with(density) { elevationIncrease.toPx() },
-                                    SpringSpecs.Smooth
-                                )
-                            }
-                        }
-                        onPress?.invoke()
-                        tryAwaitRelease()
-                        scope.launch {
-                            launch {
-                                scale.animateTo(1f, SpringSpecs.Gentle)
-                            }
-                            launch {
-                                elevation.animateTo(0f, SpringSpecs.Gentle)
-                            }
-                        }
-                    }
-                )
-            }
-        }
-}
-
-// Magnetic swipe gesture (for dismissing cards)
-fun Modifier.magneticSwipe(
-    enabled: Boolean = true,
-    threshold: Float = 200f,
-    onSwipeComplete: (direction: SwipeDirection) -> Unit
-): Modifier = composed {
-    val scope = rememberCoroutineScope()
-    val offsetX = remember { Animatable(0f) }
-    val haptic = LocalHapticFeedback.current
-
-    this
-        .offset { IntOffset(offsetX.value.roundToInt(), 0) }
-        .pointerInput(enabled) {
-            if (enabled) {
-                detectHorizontalDragGestures(
-                    onDragEnd = {
-                        scope.launch {
-                            if (kotlin.math.abs(offsetX.value) > threshold) {
-                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                val direction = if (offsetX.value > 0) {
-                                    SwipeDirection.Right
-                                } else {
-                                    SwipeDirection.Left
-                                }
-                                onSwipeComplete(direction)
-                            } else {
-                                offsetX.animateTo(0f, SpringSpecs.Bouncy)
-                            }
-                        }
-                    }
-                ) { _, dragAmount ->
-                    scope.launch {
-                        val newValue = offsetX.value + dragAmount
-                        offsetX.snapTo(newValue)
-                    }
-                }
-            }
-        }
-}
-
-// Pulsing animation for notifications/badges
-fun Modifier.pulsingEffect(
-    enabled: Boolean = true,
-    minScale: Float = 1f,
-    maxScale: Float = 1.1f,
-    duration: Int = 1000
-): Modifier = composed {
-    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
-
-    val scale by infiniteTransition.animateFloat(
-        initialValue = minScale,
-        targetValue = maxScale,
-        animationSpec = infiniteRepeatable(
-            animation = tween(duration, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "pulseScale"
-    )
-
-    if (enabled) {
-        this.scale(scale)
-    } else {
-        this
-    }
-}
-
-// Shimmer loading effect
-fun Modifier.shimmerEffect(
-    enabled: Boolean = true,
-    color: Color = Color.White.copy(alpha = 0.6f),
-    duration: Int = 1000
-): Modifier = composed {
-    if (!enabled) return@composed this
-
-    val infiniteTransition = rememberInfiniteTransition(label = "shimmer")
-    val alpha by infiniteTransition.animateFloat(
-        initialValue = 0.2f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(duration, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "shimmerAlpha"
-    )
-
-    this.graphicsLayer {
-        this.alpha = alpha
-    }
-}
-
-// Floating animation for FABs and cards
-fun Modifier.floatingEffect(
-    enabled: Boolean = true,
-    amplitude: Float = 10f,
-    duration: Int = 2000
-): Modifier = composed {
-    if (!enabled) return@composed this
-
-    val infiniteTransition = rememberInfiniteTransition(label = "floating")
-    val offsetY by infiniteTransition.animateFloat(
-        initialValue = -amplitude,
-        targetValue = amplitude,
-        animationSpec = infiniteRepeatable(
-            animation = tween(duration, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "floatingOffset"
-    )
-
-    this.offset(y = offsetY.dp)
-}
-
-// Glow effect for glassmorphic elements
-fun Modifier.glowEffect(
-    enabled: Boolean = true,
-    color: Color = Color.White,
-    radius: Dp = 20.dp
-): Modifier = composed {
-    if (!enabled) return@composed this
-
-    val infiniteTransition = rememberInfiniteTransition(label = "glow")
-    val glowAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.3f,
-        targetValue = 0.8f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1500, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "glowAlpha"
-    )
-
-    this.shadow(
-        elevation = radius,
-        shape = MaterialTheme.shapes.medium,
-        ambientColor = color.copy(alpha = glowAlpha),
-        spotColor = color.copy(alpha = glowAlpha)
-    )
-}
-
-/**
- * Content transitions for navigation
- */
-object ContentTransitions {
-    // Slide transitions for navigation
-    @OptIn(ExperimentalAnimationApi::class)
-    val SlideLeft = slideInHorizontally { it } + fadeIn() with
-            slideOutHorizontally { -it } + fadeOut()
-
-    @OptIn(ExperimentalAnimationApi::class)
-    val SlideRight = slideInHorizontally { -it } + fadeIn() with
-            slideOutHorizontally { it } + fadeOut()
-
-    @OptIn(ExperimentalAnimationApi::class)
-    val SlideUp = slideInVertically { it } + fadeIn() with
-            slideOutVertically { -it } + fadeOut()
-
-    @OptIn(ExperimentalAnimationApi::class)
-    val SlideDown = slideInVertically { -it } + fadeIn() with
-            slideOutVertically { it } + fadeOut()
-
-    // Fade transition for simple content changes
+    // Glassmorphic fade for simple content changes
     @OptIn(ExperimentalAnimationApi::class)
     val Fade = fadeIn(animationSpec = tween(DurationSpecs.Standard)) with
             fadeOut(animationSpec = tween(DurationSpecs.Fast))
@@ -420,23 +148,143 @@ object ContentTransitions {
     @OptIn(ExperimentalAnimationApi::class)
     val Scale = scaleIn(
         initialScale = 0.8f,
-        animationSpec = SpringSpecs.Bouncy
+        animationSpec = spring(
+            dampingRatio = SpringSpecs.DampingRatioMediumBounce,
+            stiffness = SpringSpecs.StiffnessMediumHigh
+        )
     ) + fadeIn() with
             scaleOut(
                 targetScale = 0.8f,
-                animationSpec = SpringSpecs.Smooth
+                animationSpec = spring(
+                    dampingRatio = SpringSpecs.DampingRatioLowBounce,
+                    stiffness = SpringSpecs.StiffnessMedium
+                )
             ) + fadeOut()
 
     // Shared element-like transition
     @OptIn(ExperimentalAnimationApi::class)
     val SharedElement = scaleIn(
         initialScale = 0.9f,
-        animationSpec = SpringSpecs.Smooth
+        animationSpec = spring(
+            dampingRatio = SpringSpecs.DampingRatioLowBounce,
+            stiffness = SpringSpecs.StiffnessMedium
+        )
     ) + fadeIn() with
             scaleOut(
                 targetScale = 1.1f,
-                animationSpec = SpringSpecs.Smooth
+                animationSpec = spring(
+                    dampingRatio = SpringSpecs.DampingRatioLowBounce,
+                    stiffness = SpringSpecs.StiffnessMedium
+                )
             ) + fadeOut()
+}
+
+/**
+ * Gesture-Based Animations
+ */
+fun Modifier.glassCardPress(): Modifier = composed {
+    var isPressed by remember { mutableStateOf(false) }
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.98f else 1f,
+        animationSpec = SpringSpecs.Bouncy,
+        label = "glass_card_press"
+    )
+
+    this
+        .scale(scale)
+        .pointerInput(Unit) {
+            detectTapGestures(
+                onPress = {
+                    isPressed = true
+                    tryAwaitRelease()
+                    isPressed = false
+                }
+            )
+        }
+}
+
+fun Modifier.swipeToReveal(
+    onSwipeLeft: () -> Unit = {},
+    onSwipeRight: () -> Unit = {}
+): Modifier = composed {
+    var offsetX by remember { mutableStateOf(0f) }
+    val animatedOffsetX by animateFloatAsState(
+        targetValue = offsetX,
+        animationSpec = SpringSpecs.Smooth,
+        label = "swipe_reveal"
+    )
+
+    this
+        .offset { IntOffset(animatedOffsetX.roundToInt(), 0) }
+        .pointerInput(Unit) {
+            detectHorizontalDragGestures(
+                onDragEnd = {
+                    when {
+                        offsetX > 200 -> onSwipeRight()
+                        offsetX < -200 -> onSwipeLeft()
+                    }
+                    offsetX = 0f
+                },
+                onHorizontalDrag = { _, dragAmount ->
+                    offsetX += dragAmount
+                }
+            )
+        }
+}
+
+fun Modifier.pressEffect(): Modifier = composed {
+    val haptic = LocalHapticFeedback.current
+    var isPressed by remember { mutableStateOf(false) }
+
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.96f else 1f,
+        animationSpec = SpringSpecs.Snappy,
+        label = "press_effect"
+    )
+
+    this
+        .scale(scale)
+        .pointerInput(Unit) {
+            detectTapGestures(
+                onPress = {
+                    isPressed = true
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    tryAwaitRelease()
+                    isPressed = false
+                }
+            )
+        }
+}
+
+fun Modifier.bounceOnLoad(): Modifier = composed {
+    var isVisible by remember { mutableStateOf(false) }
+    val scale by animateFloatAsState(
+        targetValue = if (isVisible) 1f else 0f,
+        animationSpec = SpringSpecs.Playful,
+        label = "bounce_on_load"
+    )
+
+    LaunchedEffect(Unit) {
+        isVisible = true
+    }
+
+    this.scale(scale)
+}
+
+fun Modifier.glassmorphicHover(): Modifier = composed {
+    var isHovered by remember { mutableStateOf(false) }
+    val elevation by animateDpAsState(
+        targetValue = if (isHovered) 8.dp else 2.dp,
+        animationSpec = tween(DurationSpecs.Fast),
+        label = "glassmorphic_hover"
+    )
+
+    this
+        .shadow(elevation, shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp))
+        .pointerInput(Unit) {
+            // Note: Hover detection would require desktop platform
+            // This is a placeholder for touch-based hover simulation
+        }
 }
 
 /**

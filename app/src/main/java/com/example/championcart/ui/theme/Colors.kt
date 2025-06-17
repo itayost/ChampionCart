@@ -3,8 +3,6 @@ package com.example.championcart.ui.theme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.Immutable
-import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 
 /**
@@ -69,76 +67,6 @@ object TimeBasedColors {
     val NightSecondary = Color(0xFF607D8B)
     val NightTertiary = Color(0xFF78909C)
 }
-
-// Extended Colors for Brand-Specific Usage
-@Immutable
-data class ExtendedColors(
-    val electricMint: Color,
-    val cosmicPurple: Color,
-    val deepNavy: Color,
-    val glassLight: Color,
-    val glassMedium: Color,
-    val glassHeavy: Color,
-    val success: Color,
-    val warning: Color,
-    val error: Color,
-    val info: Color,
-    val bestPrice: Color,
-    val midPrice: Color,
-    val highPrice: Color,
-    val gradientStart: Color,
-    val gradientEnd: Color,
-    val morningAccent: Color,
-    val afternoonAccent: Color,
-    val eveningAccent: Color,
-    val nightAccent: Color
-)
-
-// Light Theme Extended Colors
-val lightExtendedColors = ExtendedColors(
-    electricMint = BrandColors.ElectricMint,
-    cosmicPurple = BrandColors.CosmicPurple,
-    deepNavy = BrandColors.DeepNavy,
-    glassLight = BrandColors.GlassLight,
-    glassMedium = BrandColors.GlassMedium,
-    glassHeavy = BrandColors.GlassHeavy,
-    success = BrandColors.Success,
-    warning = BrandColors.Warning,
-    error = BrandColors.Error,
-    info = BrandColors.Info,
-    bestPrice = BrandColors.BestPrice,
-    midPrice = BrandColors.MidPrice,
-    highPrice = BrandColors.HighPrice,
-    gradientStart = BrandColors.GradientStart,
-    gradientEnd = BrandColors.GradientEnd,
-    morningAccent = TimeBasedColors.MorningPrimary,
-    afternoonAccent = TimeBasedColors.AfternoonPrimary,
-    eveningAccent = TimeBasedColors.EveningPrimary,
-    nightAccent = TimeBasedColors.NightPrimary
-)
-
-// Dark Theme Extended Colors
-val darkExtendedColors = ExtendedColors(
-    electricMint = BrandColors.ElectricMintVariant,
-    cosmicPurple = BrandColors.CosmicPurpleVariant,
-    deepNavy = Color(0xFF2A2F4A),
-    glassLight = BrandColors.GlassDark,
-    glassMedium = BrandColors.GlassDarkMedium,
-    glassHeavy = Color(0x26FFFFFF),
-    success = BrandColors.Success,
-    warning = BrandColors.Warning,
-    error = BrandColors.Error,
-    info = BrandColors.Info,
-    bestPrice = BrandColors.BestPrice,
-    midPrice = BrandColors.MidPrice,
-    highPrice = BrandColors.HighPrice,
-    gradientStart = BrandColors.ElectricMintVariant,
-    gradientEnd = BrandColors.DeepNavyVariant,
-    morningAccent = TimeBasedColors.MorningSecondary,
-    afternoonAccent = TimeBasedColors.AfternoonSecondary,
-    eveningAccent = TimeBasedColors.EveningSecondary,
-    nightAccent = TimeBasedColors.NightSecondary
-)
 
 // Material3 Light Color Scheme - Electric Harmony
 val LightColorScheme = lightColorScheme(
@@ -295,13 +223,6 @@ val HighContrastDarkColorScheme = darkColorScheme(
     error = Color(0xFFFF8A80),
     onError = Color.Black
 )
-
-// Composition Local for Extended Colors
-val LocalExtendedColors = staticCompositionLocalOf { lightExtendedColors }
-
-// Extension property for easy access
-val androidx.compose.material3.ColorScheme.extended: ExtendedColors
-    @Composable get() = LocalExtendedColors.current
 
 // Helper functions for color generation
 @Composable
