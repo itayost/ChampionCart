@@ -25,15 +25,6 @@ object RepositoryModule {
 
     @Provides
     @Singleton
-    fun provideChampionCartApi(
-        @ApplicationContext context: Context
-    ): ChampionCartApi {
-        NetworkModule.initialize(context)
-        return NetworkModule.api
-    }
-
-    @Provides
-    @Singleton
     fun provideTokenManager(
         @ApplicationContext context: Context
     ): TokenManager {

@@ -82,13 +82,13 @@ dependencies {
 
     // Dependency Injection - Hilt
     implementation("com.google.dagger:hilt-android:2.48.1")
-    ksp("com.google.dagger:hilt-compiler:2.48.1") // MISSING - IMPORTANT!
+    ksp("com.google.dagger:hilt-compiler:2.48.1") // FIXED: Added missing Hilt compiler
     implementation("androidx.hilt:hilt-navigation-compose:1.1.0")
 
     // Room Database
     implementation("androidx.room:room-runtime:2.6.1")
     implementation("androidx.room:room-ktx:2.6.1")
-    ksp("androidx.room:room-compiler:2.6.1") // MISSING - IMPORTANT!
+    ksp("androidx.room:room-compiler:2.6.1") // FIXED: Added missing Room compiler
 
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
@@ -106,8 +106,6 @@ dependencies {
     implementation("com.google.accompanist:accompanist-permissions:0.32.0")
     implementation("com.google.accompanist:accompanist-systemuicontroller:0.32.0")
     implementation("com.google.accompanist:accompanist-swiperefresh:0.32.0")
-
-    // ADDITIONAL MISSING DEPENDENCIES:
 
     // Lifecycle runtime compose (for collectAsStateWithLifecycle)
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.7.0")
@@ -135,9 +133,6 @@ dependencies {
 
     // ML Kit Barcode Scanning
     implementation("com.google.mlkit:barcode-scanning:17.2.0")
-
-    // Permissions handling
-    implementation("com.google.accompanist:accompanist-permissions:0.32.0")
 
     // Pull to refresh
     implementation("androidx.compose.material:material:1.5.4")

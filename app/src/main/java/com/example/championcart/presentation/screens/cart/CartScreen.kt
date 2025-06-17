@@ -51,7 +51,7 @@ fun CartScreen(
                 brush = Brush.verticalGradient(
                     colors = listOf(
                         MaterialTheme.colorScheme.background,
-                        MaterialTheme.extendedColors.backgroundGradient.colors.last()
+                        MaterialTheme.extendedColors.glass
                     )
                 )
             )

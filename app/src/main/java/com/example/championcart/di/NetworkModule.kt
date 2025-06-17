@@ -1,37 +1,46 @@
 package com.example.championcart.di
 
-import android.content.Context
 import com.example.championcart.data.api.ChampionCartApi
 import com.example.championcart.data.local.preferences.TokenManager
 import com.example.championcart.utils.Constants
+import dagger.Module
+import dagger.Provides
+import dagger.hilt.InstallIn
+import dagger.hilt.components.SingletonComponent
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
+import javax.inject.Qualifier
+import javax.inject.Singleton
 
+// Qualifiers to distinguish different interceptors
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
+annotation class AuthInterceptor
+
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
+annotation class DebugInterceptor
+
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
+annotation class LoggingInterceptor
+
+@Module
+@InstallIn(SingletonComponent::class)
 object NetworkModule {
 
-    private var tokenManager: TokenManager? = null
-    private var isInitialized = false
-
-    fun initialize(context: Context) {
-        if (!isInitialized) {
-            tokenManager = TokenManager(context.applicationContext)
-            isInitialized = true
-        }
-    }
-
-    private fun getTokenManager(): TokenManager {
-        return tokenManager ?: throw IllegalStateException("NetworkModule not initialized. Call initialize() first.")
-    }
-
-    private val authInterceptor by lazy {
-        Interceptor { chain ->
+    @Provides
+    @Singleton
+    @AuthInterceptor
+    fun provideAuthInterceptor(tokenManager: TokenManager): Interceptor {
+        return Interceptor { chain ->
             val original = chain.request()
             val token = try {
-                getTokenManager().getToken()
+                tokenManager.getToken()
             } catch (e: Exception) {
                 null
             }
@@ -53,14 +62,20 @@ object NetworkModule {
         }
     }
 
-    private val loggingInterceptor by lazy {
-        HttpLoggingInterceptor().apply {
+    @Provides
+    @Singleton
+    @LoggingInterceptor
+    fun provideLoggingInterceptor(): HttpLoggingInterceptor {
+        return HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BODY
         }
     }
 
-    private val debugInterceptor by lazy {
-        Interceptor { chain ->
+    @Provides
+    @Singleton
+    @DebugInterceptor
+    fun provideDebugInterceptor(): Interceptor {
+        return Interceptor { chain ->
             val request = chain.request()
             val response = chain.proceed(request)
 
@@ -72,8 +87,14 @@ object NetworkModule {
         }
     }
 
-    private val okHttpClient by lazy {
-        OkHttpClient.Builder()
+    @Provides
+    @Singleton
+    fun provideOkHttpClient(
+        @AuthInterceptor authInterceptor: Interceptor,
+        @LoggingInterceptor loggingInterceptor: HttpLoggingInterceptor,
+        @DebugInterceptor debugInterceptor: Interceptor
+    ): OkHttpClient {
+        return OkHttpClient.Builder()
             .addInterceptor(authInterceptor)
             .addInterceptor(debugInterceptor)
             .addInterceptor(loggingInterceptor)
@@ -83,16 +104,19 @@ object NetworkModule {
             .build()
     }
 
-    private val retrofit by lazy {
-        Retrofit.Builder()
+    @Provides
+    @Singleton
+    fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit {
+        return Retrofit.Builder()
             .baseUrl(Constants.BASE_URL)
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
     }
 
-    // ============ SINGLE API INTERFACE ============
-    val api: ChampionCartApi by lazy {
-        retrofit.create(ChampionCartApi::class.java)
+    @Provides
+    @Singleton
+    fun provideChampionCartApi(retrofit: Retrofit): ChampionCartApi {
+        return retrofit.create(ChampionCartApi::class.java)
     }
 }

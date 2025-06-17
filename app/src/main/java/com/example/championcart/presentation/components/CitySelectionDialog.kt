@@ -29,15 +29,16 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.championcart.data.api.ChampionCartApi
 import com.example.championcart.data.local.preferences.TokenManager
-import com.example.championcart.di.NetworkModule
 import com.example.championcart.ui.theme.*
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 data class CitySelectionUiState(
     val cities: List<String> = emptyList(),
@@ -48,7 +49,8 @@ data class CitySelectionUiState(
     val error: String? = null
 )
 
-class CitySelectionViewModel(
+@HiltViewModel
+class CitySelectionViewModel @Inject constructor(
     private val api: ChampionCartApi,
     private val tokenManager: TokenManager
 ) : ViewModel() {
@@ -117,13 +119,7 @@ fun CitySelectionBottomSheet(
     onDismiss: () -> Unit,
     tokenManager: TokenManager
 ) {
-    val viewModel = viewModel<CitySelectionViewModel> {
-        CitySelectionViewModel(
-            api = NetworkModule.api,
-            tokenManager = tokenManager
-        )
-    }
-
+    val viewModel: CitySelectionViewModel = hiltViewModel()
     val uiState by viewModel.uiState.collectAsState()
     val haptics = LocalHapticFeedback.current
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -159,104 +155,102 @@ fun CitySelectionBottomSheet(
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
-                            text = "Choose your location for accurate prices",
-                            style = MaterialTheme.typography.bodyLarge,
+                            text = "Current: $currentCity",
+                            style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
+
+                    IconButton(onClick = onDismiss) {
+                        Icon(
+                            Icons.Default.Close,
+                            contentDescription = "Close",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
+
+                Spacer(modifier = Modifier.height(Dimensions.spacingLarge))
+
+                // Search field
+                OutlinedTextField(
+                    value = uiState.searchQuery,
+                    onValueChange = viewModel::onSearchQueryChanged,
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text("Search cities...") },
+                    leadingIcon = {
+                        Icon(
+                            Icons.Default.Search,
+                            contentDescription = "Search"
+                        )
+                    },
+                    trailingIcon = {
+                        if (uiState.searchQuery.isNotEmpty()) {
+                            IconButton(
+                                onClick = { viewModel.onSearchQueryChanged("") }
+                            ) {
+                                Icon(
+                                    Icons.Default.Clear,
+                                    contentDescription = "Clear"
+                                )
+                            }
+                        }
+                    },
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                    keyboardActions = KeyboardActions(
+                        onSearch = { keyboardController?.hide() }
+                    ),
+                    singleLine = true,
+                    shape = ComponentShapes.TextField
+                )
             }
 
             Spacer(modifier = Modifier.height(Dimensions.spacingLarge))
 
-            // Search field
-            OutlinedTextField(
-                value = uiState.searchQuery,
-                onValueChange = viewModel::onSearchQueryChanged,
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = {
-                    Text(
-                        text = "Search cities...",
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                },
-                leadingIcon = {
-                    Icon(
-                        Icons.Default.Search,
-                        contentDescription = "Search",
-                        tint = MaterialTheme.extendedColors.electricMint
-                    )
-                },
-                shape = ComponentShapes.TextField,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaterialTheme.extendedColors.electricMint,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
-                ),
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                keyboardActions = KeyboardActions(
-                    onSearch = { keyboardController?.hide() }
-                )
-            )
-
-            Spacer(modifier = Modifier.height(Dimensions.spacingMedium))
-
-            // Error message with glass styling
-            uiState.error?.let { error ->
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = ComponentShapes.Card,
-                    color = MaterialTheme.extendedColors.error.copy(alpha = 0.1f)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(Dimensions.paddingMedium),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingSmall)
-                    ) {
-                        Icon(
-                            Icons.Default.Warning,
-                            contentDescription = null,
-                            tint = MaterialTheme.extendedColors.error,
-                            modifier = Modifier.size(Dimensions.iconSizeSmall)
-                        )
-                        Text(
-                            text = error,
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.extendedColors.error
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.height(Dimensions.spacingSmall))
-            }
-
-            // Cities list with loading state
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f, fill = false)
-                    .heightIn(max = 400.dp)
-            ) {
+            // Content based on state
+            Box(modifier = Modifier.weight(1f)) {
                 when {
                     uiState.isLoading -> {
-                        // Modern loading state
+                        // Loading state
                         Column(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(Dimensions.spacingMedium)
+                            verticalArrangement = Arrangement.Center
                         ) {
                             CircularProgressIndicator(
-                                color = MaterialTheme.extendedColors.electricMint,
-                                strokeWidth = 3.dp,
-                                modifier = Modifier.size(48.dp)
+                                color = MaterialTheme.extendedColors.electricMint
                             )
+                            Spacer(modifier = Modifier.height(Dimensions.spacingMedium))
                             Text(
                                 text = "Loading cities...",
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    uiState.error != null -> {
+                        // Error state
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Icon(
+                                Icons.Default.Error,
+                                contentDescription = null,
+                                modifier = Modifier.size(48.dp),
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                            Spacer(modifier = Modifier.height(Dimensions.spacingMedium))
+                            Text(
+                                text = uiState.error!!,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.error,
                                 textAlign = TextAlign.Center
                             )
                         }
                     }
-                    uiState.filteredCities.isEmpty() && !uiState.isLoading -> {
+                    uiState.filteredCities.isEmpty() -> {
                         // Empty state
                         Column(
                             modifier = Modifier.fillMaxWidth(),
@@ -306,18 +300,28 @@ fun CitySelectionBottomSheet(
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
+                    horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingMedium)
                 ) {
-                    TextButton(
+                    OutlinedButton(
                         onClick = onDismiss,
-                        colors = ButtonDefaults.textButtonColors(
-                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        modifier = Modifier.weight(1f),
+                        shape = ComponentShapes.Button
                     ) {
-                        Text(
-                            "Cancel",
-                            style = AppTextStyles.buttonMedium
-                        )
+                        Text("Cancel")
+                    }
+
+                    Button(
+                        onClick = {
+                            onCitySelected(uiState.selectedCity)
+                            onDismiss()
+                        },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.extendedColors.electricMint
+                        ),
+                        shape = ComponentShapes.Button
+                    ) {
+                        Text("Confirm")
                     }
                 }
             }
@@ -327,41 +331,25 @@ fun CitySelectionBottomSheet(
 
 @Composable
 private fun AnimatedLocationIcon() {
-    val infiniteTransition = rememberInfiniteTransition(label = "location_animation")
-
-    val iconScale by infiniteTransition.animateFloat(
+    val infiniteTransition = rememberInfiniteTransition(label = "location_icon")
+    val scale by infiniteTransition.animateFloat(
         initialValue = 1f,
         targetValue = 1.1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(2000, easing = FastOutSlowInEasing),
+            animation = tween(1000, easing = EaseInOutSine),
             repeatMode = RepeatMode.Reverse
         ),
         label = "scale"
     )
 
-    Box(
+    Icon(
+        Icons.Default.LocationOn,
+        contentDescription = null,
         modifier = Modifier
-            .size(48.dp)
-            .clip(CircleShape)
-            .background(
-                brush = Brush.radialGradient(
-                    colors = listOf(
-                        MaterialTheme.extendedColors.electricMint.copy(alpha = 0.2f),
-                        MaterialTheme.extendedColors.electricMint.copy(alpha = 0.05f)
-                    )
-                )
-            ),
-        contentAlignment = Alignment.Center
-    ) {
-        Icon(
-            imageVector = Icons.Default.LocationOn,
-            contentDescription = null,
-            tint = MaterialTheme.extendedColors.electricMint,
-            modifier = Modifier
-                .size(Dimensions.iconSizeMedium)
-                .scale(iconScale)
-        )
-    }
+            .size(32.dp)
+            .scale(scale),
+        tint = MaterialTheme.extendedColors.electricMint
+    )
 }
 
 @Composable
@@ -372,7 +360,7 @@ private fun CityItem(
 ) {
     val animatedBackgroundColor by animateColorAsState(
         targetValue = if (isSelected) {
-            MaterialTheme.extendedColors.electricMint.copy(alpha = 0.15f)
+            MaterialTheme.extendedColors.electricMint.copy(alpha = 0.1f)
         } else {
             Color.Transparent
         },

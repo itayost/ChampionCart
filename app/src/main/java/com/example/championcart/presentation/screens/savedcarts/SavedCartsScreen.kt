@@ -102,8 +102,8 @@ fun SavedCartsScreen(
             .background(
                 brush = Brush.linearGradient(
                     colors = listOf(
-                        MaterialTheme.extendedColors.backgroundGradient.colors[0],
-                        MaterialTheme.extendedColors.backgroundGradient.colors[1]
+                        MaterialTheme.extendedColors.glassFrosted,
+                        MaterialTheme.extendedColors.cosmicPurple
                     )
                 )
             )

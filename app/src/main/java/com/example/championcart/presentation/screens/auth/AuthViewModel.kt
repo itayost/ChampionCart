@@ -3,8 +3,7 @@ package com.example.championcart.presentation.screens.auth
 import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.championcart.domain.usecase.LoginUseCase
-import com.example.championcart.domain.usecase.RegisterUseCase
+import com.example.championcart.domain.repository.AuthRepository
 import com.example.championcart.domain.models.AuthResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,27 +13,44 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+/**
+ * Authentication State
+ * Comprehensive state management for login/register flows
+ */
 data class AuthState(
+    // Form data
     val email: String = "",
     val password: String = "",
     val confirmPassword: String = "",
+
+    // UI state
     val isLoginMode: Boolean = true,
     val isLoading: Boolean = false,
     val isAuthenticated: Boolean = false,
+    val showPassword: Boolean = false,
+    val showConfirmPassword: Boolean = false,
+
+    // Error handling
     val error: String? = null,
     val emailError: String? = null,
     val passwordError: String? = null,
-    val confirmPasswordError: String? = null
+    val confirmPasswordError: String? = null,
+
+    // Additional features
+    val rememberMe: Boolean = false,
+    val agreedToTerms: Boolean = false,
+    val enableBiometrics: Boolean = false
 )
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
-    private val loginUseCase: LoginUseCase,
-    private val registerUseCase: RegisterUseCase
+    private val authRepository: AuthRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(AuthState())
     val state: StateFlow<AuthState> = _state.asStateFlow()
+
+    // ============ PUBLIC METHODS ============
 
     fun updateEmail(email: String) {
         _state.update {
@@ -60,8 +76,9 @@ class AuthViewModel @Inject constructor(
         _state.update {
             it.copy(
                 confirmPassword = confirmPassword,
-                confirmPasswordError = if (confirmPassword.isNotBlank())
-                    validateConfirmPassword(confirmPassword, _state.value.password) else null,
+                confirmPasswordError = if (confirmPassword.isNotBlank()) {
+                    validateConfirmPassword(confirmPassword, _state.value.password)
+                } else null,
                 error = null
             )
         }
@@ -74,9 +91,31 @@ class AuthViewModel @Inject constructor(
                 error = null,
                 emailError = null,
                 passwordError = null,
-                confirmPasswordError = null
+                confirmPasswordError = null,
+                confirmPassword = "", // Clear confirm password when switching modes
+                agreedToTerms = false // Reset terms agreement
             )
         }
+    }
+
+    fun togglePasswordVisibility() {
+        _state.update { it.copy(showPassword = !it.showPassword) }
+    }
+
+    fun toggleConfirmPasswordVisibility() {
+        _state.update { it.copy(showConfirmPassword = !it.showConfirmPassword) }
+    }
+
+    fun toggleRememberMe() {
+        _state.update { it.copy(rememberMe = !it.rememberMe) }
+    }
+
+    fun toggleTermsAgreement() {
+        _state.update { it.copy(agreedToTerms = !it.agreedToTerms) }
+    }
+
+    fun toggleBiometrics() {
+        _state.update { it.copy(enableBiometrics = !it.enableBiometrics) }
     }
 
     fun login() {
@@ -96,14 +135,19 @@ class AuthViewModel @Inject constructor(
             return
         }
 
+        // Perform login
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
 
             try {
-                val result = loginUseCase(currentState.email, currentState.password)
+                val result = authRepository.login(
+                    email = currentState.email.trim(),
+                    password = currentState.password,
+                    //rememberMe = currentState.rememberMe
+                )
 
-                when (result) {
-                    is AuthResult.Success -> {
+                result.fold(
+                    onSuccess = { user ->
                         _state.update {
                             it.copy(
                                 isLoading = false,
@@ -111,24 +155,21 @@ class AuthViewModel @Inject constructor(
                                 error = null
                             )
                         }
-                    }
-                    is AuthResult.Error -> {
+                    },
+                    onFailure = { exception ->
                         _state.update {
                             it.copy(
                                 isLoading = false,
-                                error = result.message
+                                error = getErrorMessage(exception)
                             )
                         }
                     }
-                    is AuthResult.Loading -> {
-                        // Already in loading state
-                    }
-                }
+                )
             } catch (e: Exception) {
                 _state.update {
                     it.copy(
                         isLoading = false,
-                        error = "Login failed: ${e.message}"
+                        error = "Login failed. Please check your connection and try again."
                     )
                 }
             }
@@ -157,18 +198,27 @@ class AuthViewModel @Inject constructor(
             return
         }
 
+        // Check terms agreement
+        if (!currentState.agreedToTerms) {
+            _state.update {
+                it.copy(error = "Please agree to the terms and conditions to continue")
+            }
+            return
+        }
+
+        // Perform registration
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
 
             try {
-                val result = registerUseCase(
-                    email = currentState.email,
+                val result = authRepository.register(
+                    email = currentState.email.trim(),
                     password = currentState.password,
-                    confirmPassword = currentState.confirmPassword
+                    //enableBiometrics = currentState.enableBiometrics
                 )
 
-                when (result) {
-                    is AuthResult.Success -> {
+                result.fold(
+                    onSuccess = { user ->
                         _state.update {
                             it.copy(
                                 isLoading = false,
@@ -176,24 +226,21 @@ class AuthViewModel @Inject constructor(
                                 error = null
                             )
                         }
-                    }
-                    is AuthResult.Error -> {
+                    },
+                    onFailure = { exception ->
                         _state.update {
                             it.copy(
                                 isLoading = false,
-                                error = result.message
+                                error = getErrorMessage(exception)
                             )
                         }
                     }
-                    is AuthResult.Loading -> {
-                        // Already in loading state
-                    }
-                }
+                )
             } catch (e: Exception) {
                 _state.update {
                     it.copy(
                         isLoading = false,
-                        error = "Registration failed: ${e.message}"
+                        error = "Registration failed. Please check your connection and try again."
                     )
                 }
             }
@@ -205,13 +252,15 @@ class AuthViewModel @Inject constructor(
     }
 
     fun resetState() {
-        _state.update { AuthState() }
+        _state.value = AuthState()
     }
+
+    // ============ VALIDATION METHODS ============
 
     private fun validateEmail(email: String): String? {
         return when {
             email.isBlank() -> "Email is required"
-            !Patterns.EMAIL_ADDRESS.matcher(email).matches() -> "Invalid email format"
+            !Patterns.EMAIL_ADDRESS.matcher(email).matches() -> "Please enter a valid email address"
             else -> null
         }
     }
@@ -220,6 +269,8 @@ class AuthViewModel @Inject constructor(
         return when {
             password.isBlank() -> "Password is required"
             password.length < 6 -> "Password must be at least 6 characters"
+            !password.any { it.isDigit() } -> "Password must contain at least one number"
+            !password.any { it.isLetter() } -> "Password must contain at least one letter"
             else -> null
         }
     }
@@ -227,8 +278,59 @@ class AuthViewModel @Inject constructor(
     private fun validateConfirmPassword(confirmPassword: String, password: String): String? {
         return when {
             confirmPassword.isBlank() -> "Please confirm your password"
-            confirmPassword != password -> "Passwords don't match"
+            confirmPassword != password -> "Passwords do not match"
             else -> null
         }
     }
+
+    private fun getErrorMessage(exception: Throwable): String {
+        return when (exception.message?.lowercase()) {
+            "user not found", "invalid credentials" -> "Invalid email or password"
+            "user already exists", "email already registered" -> "An account with this email already exists"
+            "weak password" -> "Password is too weak. Please choose a stronger password"
+            "network error", "timeout" -> "Network error. Please check your connection"
+            "server error" -> "Server error. Please try again later"
+            else -> exception.message ?: "An unexpected error occurred. Please try again"
+        }
+    }
+
+    // ============ UTILITY METHODS ============
+
+    fun isFormValid(): Boolean {
+        val currentState = _state.value
+        return if (currentState.isLoginMode) {
+            currentState.email.isNotBlank() &&
+                    currentState.password.isNotBlank() &&
+                    currentState.emailError == null &&
+                    currentState.passwordError == null
+        } else {
+            currentState.email.isNotBlank() &&
+                    currentState.password.isNotBlank() &&
+                    currentState.confirmPassword.isNotBlank() &&
+                    currentState.emailError == null &&
+                    currentState.passwordError == null &&
+                    currentState.confirmPasswordError == null &&
+                    currentState.agreedToTerms
+        }
+    }
+
+    fun getPasswordStrength(): PasswordStrength {
+        val password = _state.value.password
+        return when {
+            password.length < 6 -> PasswordStrength.WEAK
+            password.length < 8 -> PasswordStrength.MEDIUM
+            password.length >= 8 &&
+                    password.any { it.isDigit() } &&
+                    password.any { it.isLetter() } &&
+                    password.any { it.isUpperCase() } -> PasswordStrength.STRONG
+            else -> PasswordStrength.MEDIUM
+        }
+    }
+}
+
+/**
+ * Password strength indicator
+ */
+enum class PasswordStrength {
+    WEAK, MEDIUM, STRONG
 }
