@@ -73,7 +73,7 @@ fun ChampionCartBottomBar(
                     .shadow(
                         elevation = Dimensions.elevationMedium,
                         shape = ComponentShapes.BottomSheet,
-                        spotColor = MaterialTheme.extendedColors.shadowLight
+                        spotColor = MaterialTheme.extendedColors.electricMintGlow
                     )
             )
 

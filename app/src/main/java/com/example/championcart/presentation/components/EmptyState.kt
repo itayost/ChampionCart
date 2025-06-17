@@ -14,12 +14,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.championcart.presentation.utils.shimmerEffect
 import com.example.championcart.ui.theme.*
 
@@ -33,7 +31,8 @@ fun EmptyState(
     icon: ImageVector = Icons.Default.Inbox,
     actionLabel: String? = null,
     onAction: (() -> Unit)? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    message: String
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "empty")
     val scale by infiniteTransition.animateFloat(
@@ -243,6 +242,7 @@ fun NoConnectionState(
         icon = Icons.Default.WifiOff,
         actionLabel = "Retry",
         onAction = onRetry,
-        modifier = modifier
+        modifier = modifier,
+        message = "You haven't saved any shopping carts yet. Start shopping and save your carts for later!"
     )
 }

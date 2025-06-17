@@ -101,7 +101,7 @@ fun SplashScreen(
                         brush = Brush.linearGradient(
                             colors = listOf(
                                 MaterialTheme.extendedColors.electricMint,
-                                MaterialTheme.extendedColors.successGreen
+                                MaterialTheme.extendedColors.success
                             )
                         )
                     ),

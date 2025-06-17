@@ -128,100 +128,83 @@ fun LoginRegisterScreen(
                     onEmailChange = viewModel::updateEmail,
                     onPasswordChange = viewModel::updatePassword,
                     onConfirmPasswordChange = viewModel::updateConfirmPassword,
-                    onToggleMode = {
-                        haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        viewModel.toggleMode()
-                    },
+                    onToggleMode = viewModel::toggleMode,
                     onLogin = {
                         haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                        keyboardController?.hide()
                         viewModel.login()
                     },
                     onRegister = {
                         haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                        keyboardController?.hide()
                         viewModel.register()
                     },
                     onGuestMode = {
                         haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                         onGuestMode()
-                    },
-                    focusManager = focusManager,
-                    keyboardController = keyboardController
+                    }
                 )
 
-                Spacer(modifier = Modifier.height(Dimensions.spacingLarge))
-
-                // Terms text
-                Text(
-                    text = "By continuing, you agree to our Terms and Privacy Policy",
-                    style = ChampionCartTypography.caption,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(horizontal = Dimensions.paddingMedium)
-                )
-
-                Spacer(modifier = Modifier.height(Dimensions.spacingLarge))
+                Spacer(modifier = Modifier.height(Dimensions.spacingExtraLarge))
             }
         }
     }
 }
 
 @Composable
-fun AuthHeader(greeting: String) {
+private fun AuthHeader(
+    greeting: String,
+    modifier: Modifier = Modifier
+) {
     Column(
-        horizontalAlignment = Alignment.CenterHorizontally
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(Dimensions.spacingMedium)
     ) {
-        // Animated logo
-        Box(
-            modifier = Modifier
-                .size(Dimensions.profileAvatarSize)
-                .clip(CircleShape)
-                .background(
-                    brush = Brush.radialGradient(
-                        colors = MaterialTheme.extendedColors.primaryGradient.colors
-                    )
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Default.ShoppingCart,
-                contentDescription = "Champion Cart",
-                tint = Color.White,
-                modifier = Modifier.size(Dimensions.iconSizeExtraLarge)
+        // App logo/icon placeholder
+        Card(
+            modifier = Modifier.size(80.dp),
+            shape = CircleShape,
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.extendedColors.electricMint
+            ),
+            elevation = CardDefaults.cardElevation(
+                defaultElevation = Dimensions.elevationLarge
             )
+        ) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ShoppingCart,
+                    contentDescription = "Champion Cart",
+                    modifier = Modifier.size(Dimensions.iconSizeLarge),
+                    tint = Color.White
+                )
+            }
         }
 
-        Spacer(modifier = Modifier.height(Dimensions.spacingLarge))
-
+        // App title
         Text(
             text = "Champion Cart",
-            style = AppTextStyles.heroDisplay.copy(
-                fontSize = MaterialTheme.typography.headlineLarge.fontSize
-            ),
-            color = MaterialTheme.colorScheme.onSurface
+            style = AppTextStyles.hebrewDisplay,
+            color = MaterialTheme.extendedColors.electricMint,
+            fontWeight = FontWeight.Bold
         )
 
-        Spacer(modifier = Modifier.height(Dimensions.spacingSmall))
-
+        // Greeting
         Text(
             text = greeting,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
-        )
-
-        Spacer(modifier = Modifier.height(Dimensions.spacingSmall))
-
-        Text(
-            text = "Find the best prices for your groceries",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+            style = AppTextStyles.hebrewHeadline,
+            color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center
         )
     }
 }
 
 @Composable
-fun AuthForm(
+private fun AuthForm(
     state: AuthState,
     onEmailChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
@@ -230,12 +213,13 @@ fun AuthForm(
     onLogin: () -> Unit,
     onRegister: () -> Unit,
     onGuestMode: () -> Unit,
-    focusManager: androidx.compose.ui.focus.FocusManager,
-    keyboardController: androidx.compose.ui.platform.SoftwareKeyboardController?
+    modifier: Modifier = Modifier
 ) {
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+
     Card(
-        modifier = Modifier
-            .fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         shape = ComponentShapes.CardLarge,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.extendedColors.glassFrosted
@@ -370,12 +354,13 @@ fun AuthForm(
 }
 
 @Composable
-fun AuthModeToggle(
+private fun AuthModeToggle(
     isLoginMode: Boolean,
-    onToggle: () -> Unit
+    onToggle: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Row(
-        modifier = Modifier
+        modifier = modifier
             .background(
                 color = MaterialTheme.extendedColors.glass,
                 shape = ComponentShapes.Button
@@ -401,49 +386,57 @@ fun AuthModeToggle(
 }
 
 @Composable
-fun ToggleButton(
+private fun ToggleButton(
     text: String,
     isSelected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val animatedBackground by animateColorAsState(
-        targetValue = if (isSelected) MaterialTheme.extendedColors.electricMint
-        else Color.Transparent,
-        animationSpec = tween(300)
-    )
-
-    val animatedTextColor by animateColorAsState(
-        targetValue = if (isSelected) Color.White
-        else MaterialTheme.colorScheme.onSurfaceVariant,
-        animationSpec = tween(300)
-    )
-
-    Button(
-        onClick = onClick,
-        modifier = modifier.height(Dimensions.buttonHeightSmall),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = animatedBackground,
-            contentColor = animatedTextColor
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.96f else 1f,
+        animationSpec = spring(
+            dampingRatio = SpringSpecs.dampingRatioLowBounce,
+            stiffness = SpringSpecs.stiffnessHigh
         ),
-        shape = ComponentShapes.ButtonSmall,
-        elevation = if (isSelected) ButtonDefaults.buttonElevation(
-            defaultElevation = Dimensions.elevationSmall
-        ) else ButtonDefaults.buttonElevation(
-            defaultElevation = 0.dp
-        )
+        label = "toggle_button_scale"
+    )
+
+    Box(
+        modifier = modifier
+            .scale(scale)
+            .clip(ComponentShapes.Button)
+            .background(
+                color = if (isSelected)
+                    MaterialTheme.extendedColors.electricMint
+                else
+                    Color.Transparent
+            )
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null
+            ) { onClick() }
+            .padding(
+                horizontal = Dimensions.paddingMedium,
+                vertical = Dimensions.paddingSmall
+            ),
+        contentAlignment = Alignment.Center
     ) {
         Text(
             text = text,
-            style = ChampionCartTypography.buttonMedium.copy(
-                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
-            )
+            style = MaterialTheme.typography.labelLarge,
+            color = if (isSelected)
+                Color.White
+            else
+                MaterialTheme.colorScheme.onSurface,
+            fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal
         )
     }
 }
 
 @Composable
-fun AuthTextField(
+private fun AuthTextField(
     value: String,
     onValueChange: (String) -> Unit,
     label: String,
@@ -462,17 +455,19 @@ fun AuthTextField(
             onValueChange = onValueChange,
             label = {
                 Text(
-                    label,
-                    style = ChampionCartTypography.inputLabel
+                    text = label,
+                    style = AppTextStyles.inputLabel
                 )
             },
             leadingIcon = {
                 Icon(
                     imageVector = leadingIcon,
                     contentDescription = null,
-                    tint = if (isError) MaterialTheme.colorScheme.error
-                    else MaterialTheme.extendedColors.electricMint,
-                    modifier = Modifier.size(Dimensions.iconSizeMedium)
+                    modifier = Modifier.size(Dimensions.iconSizeMedium),
+                    tint = if (isError)
+                        MaterialTheme.extendedColors.errorRed
+                    else
+                        MaterialTheme.extendedColors.electricMint
                 )
             },
             trailingIcon = trailingIcon,
@@ -484,55 +479,68 @@ fun AuthTextField(
             shape = ComponentShapes.TextField,
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = MaterialTheme.extendedColors.electricMint,
-                unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
-                focusedLabelColor = MaterialTheme.extendedColors.electricMint
+                unfocusedBorderColor = MaterialTheme.extendedColors.glassBorder,
+                errorBorderColor = MaterialTheme.extendedColors.errorRed,
+                focusedLabelColor = MaterialTheme.extendedColors.electricMint,
+                unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                cursorColor = MaterialTheme.extendedColors.electricMint
             ),
-            textStyle = ChampionCartTypography.inputText
+            textStyle = AppTextStyles.inputText
         )
 
+        // Error message
         AnimatedVisibility(
             visible = isError && errorMessage != null,
-            enter = expandVertically() + fadeIn(),
-            exit = shrinkVertically() + fadeOut()
+            enter = slideInVertically() + fadeIn(),
+            exit = slideOutVertically() + fadeOut()
         ) {
-            Text(
-                text = errorMessage ?: "",
-                style = ChampionCartTypography.caption,
-                color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.padding(
-                    start = Dimensions.paddingMedium,
-                    top = Dimensions.spacingExtraSmall
+            errorMessage?.let { message ->
+                Text(
+                    text = message,
+                    style = AppTextStyles.caption,
+                    color = MaterialTheme.extendedColors.errorRed,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = Dimensions.spacingExtraSmall)
+                        .padding(horizontal = Dimensions.paddingMedium)
                 )
-            )
+            }
         }
     }
 }
 
 @Composable
-fun PrimaryActionButton(
+private fun PrimaryActionButton(
     text: String,
     onClick: () -> Unit,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    modifier: Modifier = Modifier
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.98f else 1f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)
+        targetValue = if (isPressed && enabled) 0.96f else 1f,
+        animationSpec = spring(
+            dampingRatio = SpringSpecs.dampingRatioLowBounce,
+            stiffness = SpringSpecs.stiffnessHigh
+        ),
+        label = "primary_button_scale"
     )
 
     Button(
         onClick = onClick,
         enabled = enabled,
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .height(Dimensions.buttonHeight)
             .scale(scale),
+        shape = ComponentShapes.Button,
         colors = ButtonDefaults.buttonColors(
             containerColor = MaterialTheme.extendedColors.electricMint,
-            contentColor = Color.White
+            contentColor = Color.White,
+            disabledContainerColor = MaterialTheme.extendedColors.electricMint.copy(alpha = 0.5f),
+            disabledContentColor = Color.White.copy(alpha = 0.7f)
         ),
-        shape = ComponentShapes.Button,
         elevation = ButtonDefaults.buttonElevation(
             defaultElevation = Dimensions.elevationMedium,
             pressedElevation = Dimensions.elevationSmall
@@ -541,41 +549,62 @@ fun PrimaryActionButton(
     ) {
         Text(
             text = text,
-            style = ChampionCartTypography.buttonLarge
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.Medium
         )
     }
 }
 
 @Composable
-fun SecondaryActionButton(
+private fun SecondaryActionButton(
     text: String,
     icon: ImageVector,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.96f else 1f,
+        animationSpec = spring(
+            dampingRatio = SpringSpecs.dampingRatioLowBounce,
+            stiffness = SpringSpecs.stiffnessHigh
+        ),
+        label = "secondary_button_scale"
+    )
+
     OutlinedButton(
         onClick = onClick,
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .height(Dimensions.buttonHeightSmall),
+            .height(Dimensions.buttonHeight)
+            .scale(scale),
+        shape = ComponentShapes.Button,
+        border = BorderStroke(
+            width = Dimensions.borderThin,
+            color = MaterialTheme.extendedColors.glassBorder
+        ),
         colors = ButtonDefaults.outlinedButtonColors(
             containerColor = MaterialTheme.extendedColors.glass,
             contentColor = MaterialTheme.colorScheme.onSurface
         ),
-        border = BorderStroke(
-            Dimensions.borderThin,
-            MaterialTheme.extendedColors.glassBorder
-        ),
-        shape = ComponentShapes.Button
+        interactionSource = interactionSource
     ) {
         Icon(
             imageVector = icon,
             contentDescription = null,
-            modifier = Modifier.size(Dimensions.iconSizeMedium)
+            modifier = Modifier.size(Dimensions.iconSizeSmall)
         )
         Spacer(modifier = Modifier.width(Dimensions.spacingSmall))
         Text(
             text = text,
-            style = ChampionCartTypography.buttonMedium
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.Normal
         )
     }
 }
+
+/**
+ * Note: AuthState and AuthViewModel are defined in AuthViewModel.kt
+ * This screen uses the actual domain repositories and use cases
+ */

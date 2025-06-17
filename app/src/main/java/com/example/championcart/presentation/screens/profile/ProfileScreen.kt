@@ -136,7 +136,7 @@ fun ProfileScreen(
                     userEmail = state.userEmail,
                     isGuest = state.isGuest,
                     onAvatarClick = {
-                        haptics.performHapticFeedback(HapticFeedbackType.LightImpact)
+                        haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                     }
                 )
             }

@@ -33,7 +33,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import java.util.*
 import javax.inject.Inject
 
 data class SavedCartsUiState(
@@ -163,7 +162,7 @@ fun SavedCartsScreen(
                 }
                 uiState.error != null -> {
                     ErrorState(
-                        message = uiState.error,
+                        message = uiState.error!!,
                         onRetry = { viewModel.refresh() }
                     )
                 }
