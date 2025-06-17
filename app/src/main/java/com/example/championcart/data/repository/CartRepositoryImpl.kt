@@ -13,7 +13,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
-import java.time.LocalDateTime
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -194,8 +193,8 @@ class CartRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getCartTotalPrice(): Double {
-        return cartManager.cartItems.value.sumOf {
-            (it.selectedPrice ?: 0.0) * it.quantity
+        return cartManager.cartItems.value.sumOf { item ->
+            (item.selectedPrice ?: 0.0) * item.quantity.toDouble()
         }
     }
 
@@ -267,8 +266,7 @@ class CartRepositoryImpl @Inject constructor(
                 }
             }
 
-            // Update CartManager (this would require extending CartManager to support this)
-            // For now, we'll just emit the store selection event
+            // Emit the store selection event
             _cartChangeEvents.value = CartChangeEvent.StoreSelected(result.bestStore)
 
             Log.d("CartRepository", "Applied cheapest cart result: ${result.bestStore.name}")
@@ -284,7 +282,7 @@ class CartRepositoryImpl @Inject constructor(
         return CartSummary(
             totalItems = items.sumOf { it.quantity },
             uniqueProducts = items.size,
-            totalPrice = items.sumOf { it.getTotalPrice() },
+            totalPrice = items.sumOf { it.price * it.quantity.toDouble() },
             hasIncompleteItems = items.any { it.selectedStore == null },
             estimatedSavings = null // Would be calculated with cheapest cart API
         )
@@ -309,9 +307,8 @@ class CartRepositoryImpl @Inject constructor(
 
             val cheapestResult = priceRepository.findCheapestCart(city, cartProducts)
 
-            when (cheapestResult) {
-                is Result.Success -> {
-                    val result = cheapestResult.getOrNull()!!
+            cheapestResult.fold(
+                onSuccess = { result ->
                     val currentTotal = getCartTotalPrice()
 
                     val savings = CartSavings(
@@ -324,9 +321,11 @@ class CartRepositoryImpl @Inject constructor(
                         bestStore = result.bestStore
                     )
                     Result.success(savings)
+                },
+                onFailure = { exception ->
+                    Result.failure(exception)
                 }
-                is Result.Failure -> cheapestResult
-            }
+            )
         } catch (e: Exception) {
             Log.e("CartRepository", "Calculate potential savings error", e)
             Result.failure(e)
@@ -381,10 +380,9 @@ class CartRepositoryImpl @Inject constructor(
                         limit = 1
                     )
 
-                    when (searchResult) {
-                        is Result.Success -> {
-                            val products = searchResult.getOrNull()
-                            if (products.isNullOrEmpty()) {
+                    searchResult.fold(
+                        onSuccess = { products ->
+                            if (products.isEmpty()) {
                                 unavailableItems.add(cartItem)
                             } else {
                                 val currentBestPrice = products.first().lowestPrice
@@ -394,9 +392,11 @@ class CartRepositoryImpl @Inject constructor(
                                     validItems.add(cartItem)
                                 }
                             }
+                        },
+                        onFailure = {
+                            invalidItems.add(cartItem)
                         }
-                        is Result.Failure -> invalidItems.add(cartItem)
-                    }
+                    )
                 } catch (e: Exception) {
                     invalidItems.add(cartItem)
                 }
@@ -418,8 +418,8 @@ class CartRepositoryImpl @Inject constructor(
 
     override suspend fun createShoppingList(name: String): Result<SavedCart> {
         return try {
-            val cartItems = getCartItemsList()
-            val savedCartItems = cartItems.map { cartItem ->
+            val items = getCartItemsList()
+            val savedCartItems = items.map { cartItem ->
                 SavedCartItem(
                     itemName = cartItem.productName,
                     quantity = cartItem.quantity,
@@ -429,10 +429,8 @@ class CartRepositoryImpl @Inject constructor(
 
             val savedCart = SavedCart(
                 cartName = name,
-                city = "Tel Aviv", // Default city - should come from user preferences
-                items = savedCartItems,
-                createdAt = LocalDateTime.now(),
-                updatedAt = LocalDateTime.now()
+                city = "Tel Aviv", // Default city, could be passed as parameter
+                items = savedCartItems
             )
 
             Result.success(savedCart)
@@ -449,14 +447,16 @@ class CartRepositoryImpl @Inject constructor(
 
             // Add items from saved cart
             savedCart.items.forEach { savedItem ->
-                for (i in 0 until savedItem.quantity) {
-                    cartManager.addToCart(
-                        itemCode = savedItem.itemName.hashCode().toString(),
-                        itemName = savedItem.itemName,
-                        chain = null,
-                        price = savedItem.price
-                    )
-                }
+                val cartItem = CartItem(
+                    id = "${savedItem.itemName}-${System.currentTimeMillis()}",
+                    productId = savedItem.itemName, // Using name as ID since we don't have product ID
+                    productName = savedItem.itemName,
+                    price = savedItem.price,
+                    quantity = savedItem.quantity,
+                    imageUrl = null,
+                    selectedStore = null
+                )
+                addCartItem(cartItem)
             }
 
             Log.d("CartRepository", "Loaded shopping list: ${savedCart.cartName}")
@@ -466,4 +466,17 @@ class CartRepositoryImpl @Inject constructor(
             Result.failure(e)
         }
     }
+}
+
+// Extension function to convert Product to CartItem
+private fun Product.toCartItem(quantity: Int): CartItem {
+    return CartItem(
+        id = "${this.itemCode}-${System.currentTimeMillis()}",
+        productId = this.itemCode,
+        productName = this.itemName,
+        price = this.price ?: 0.0,
+        quantity = quantity,
+        imageUrl = null,
+        selectedStore = Store.fromChainAndStoreId(this.chain, this.storeId)
+    )
 }

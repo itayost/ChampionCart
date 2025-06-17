@@ -26,6 +26,11 @@ class TokenManager(context: Context) {
         return prefs.getString(Constants.KEY_USER_EMAIL, null)
     }
 
+    // ADDED: Missing method that AuthRepositoryImpl was trying to call
+    fun clearUserEmail() {
+        prefs.edit().remove(Constants.KEY_USER_EMAIL).apply()
+    }
+
     fun saveSelectedCity(city: String) {
         prefs.edit().putString(Constants.KEY_SELECTED_CITY, city).apply()
     }

@@ -1,78 +1,41 @@
 package com.example.championcart.domain.repository
 
 import com.example.championcart.domain.models.User
-import com.example.championcart.domain.models.UserPreferences
-import com.example.championcart.domain.models.UserStats
 import kotlinx.coroutines.flow.Flow
 
 interface UserRepository {
-    /**
-     * Get user statistics for analytics and profile display
-     */
-    suspend fun getUserStats(userId: String): Result<UserStats>
+    // REMOVED: All methods that require server endpoints that don't exist
+    //
+    // The Champion Cart server only provides:
+    // 1. Authentication (login/register) - handled by AuthRepository
+    // 2. Cart management (save/get saved carts) - handled by AuthRepository
+    // 3. Product search and pricing - handled by PriceRepository
+    //
+    // The server does NOT provide:
+    // - User statistics/analytics endpoints
+    // - User preferences storage endpoints
+    // - Profile management beyond email/password
+    // - Savings tracking, favorite stores, price alerts
+    //
+    // If these features are needed, they should be:
+    // 1. Implemented locally using SharedPreferences/Room
+    // 2. Added to the server by the backend team
+    // 3. This interface updated once server endpoints are available
 
     /**
-     * Update user preferences (theme, language, notifications, etc.)
+     * Placeholder method - UserRepository currently has no server-backed features
+     * All user management is handled by AuthRepository or should be local-only
      */
-    suspend fun updateUserPreferences(preferences: UserPreferences): Result<Unit>
-
-    /**
-     * Get current user preferences
-     */
-    suspend fun getUserPreferences(): Result<UserPreferences>
-
-    /**
-     * Observe user preferences changes
-     */
-    fun observeUserPreferences(): Flow<UserPreferences>
-
-    /**
-     * Update user profile information
-     */
-    suspend fun updateUserProfile(user: User): Result<User>
-
-    /**
-     * Get user profile by ID
-     */
-    suspend fun getUserProfile(userId: String): Result<User>
-
-    /**
-     * Update user statistics
-     */
-    suspend fun updateUserStats(userId: String, stats: UserStats): Result<Unit>
-
-    /**
-     * Track user actions for analytics
-     */
-    suspend fun incrementComparison(userId: String): Result<Unit>
-
-    /**
-     * Add savings amount to user's total
-     */
-    suspend fun addSavings(userId: String, amount: Double): Result<Unit>
-
-    /**
-     * Update user's favorite store based on usage patterns
-     */
-    suspend fun updateFavoriteStore(userId: String, storeChain: String): Result<Unit>
-
-    /**
-     * Increment saved carts count
-     */
-    suspend fun incrementSavedCarts(userId: String): Result<Unit>
-
-    /**
-     * Update active price alerts count
-     */
-    suspend fun updatePriceAlerts(userId: String, count: Int): Result<Unit>
-
-    /**
-     * Reset monthly statistics (called at month start)
-     */
-    suspend fun resetMonthlyStats(userId: String): Result<Unit>
-
-    /**
-     * Reset yearly statistics (called at year start)
-     */
-    suspend fun resetYearlyStats(userId: String): Result<Unit>
+    suspend fun isServerBacked(): Boolean = false
 }
+
+/**
+ * NOTE: This minimal interface reflects the actual server capabilities.
+ *
+ * The Champion Cart server does not provide user management endpoints
+ * beyond basic authentication. All user features should be either:
+ *
+ * 1. Handled by AuthRepository (login, register, saved carts)
+ * 2. Implemented locally in the app (preferences, stats, profile data)
+ * 3. Added to the server in future updates
+ */

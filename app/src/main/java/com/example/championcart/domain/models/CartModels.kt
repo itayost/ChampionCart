@@ -47,7 +47,17 @@ data class StoreOption(
     val totalPrice: Double
 ) {
     fun toStore(name: String? = null): Store {
-        return Store.fromChainAndStoreId(chain, storeId, name)
+        // Handle nullable name parameter by providing default if null
+        val storeName = name ?: when (chain.lowercase()) {
+            "shufersal" -> "Shufersal $storeId"
+            "victory" -> "Victory $storeId"
+            else -> "${chain.replaceFirstChar { it.uppercase() }} $storeId"
+        }
+        return Store.fromChainAndStoreId(
+            chain = chain,
+            storeId = storeId,
+            name = storeName
+        )
     }
 }
 

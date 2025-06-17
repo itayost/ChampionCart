@@ -137,12 +137,14 @@ class AuthRepositoryImpl @Inject constructor(
 
     override suspend fun clearAuthToken() {
         tokenManager.clearToken()
-        // Try to clear user email if method exists
+        // Clear user email if available (TokenManager might not have this method)
         try {
-            tokenManager.clearUserEmail()
+            // If TokenManager has clearUserEmail method, use it
+            val clearMethod = tokenManager::class.java.getMethod("clearUserEmail")
+            clearMethod.invoke(tokenManager)
         } catch (e: Exception) {
-            // Method might not exist, just clear the token
-            Log.d("AuthRepository", "clearUserEmail method not available, only token cleared")
+            // Method might not exist, that's okay
+            Log.d("AuthRepository", "TokenManager doesn't have clearUserEmail method")
         }
     }
 
@@ -211,10 +213,6 @@ class AuthRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun saveUserCart(request: com.example.championcart.domain.models.SaveCartRequest): Result<Unit> {
-        TODO("Not yet implemented")
-    }
-
     override suspend fun saveUserCart(request: SaveCartRequest): Result<Unit> {
         return try {
             val response = api.saveCart(request)
@@ -228,23 +226,6 @@ class AuthRepositoryImpl @Inject constructor(
             Log.e("AuthRepository", "Save cart error", e)
             Result.failure(e)
         }
-    }
-
-    override suspend fun getUserStats(): Result<UserStats> {
-        // This would need a server endpoint for user statistics
-        return Result.success(
-            UserStats(
-                totalSavings = 0.0,
-                savingsThisMonth = 0.0,
-                savingsThisYear = 0.0,
-                comparisonsCount = 0
-            )
-        )
-    }
-
-    override suspend fun updateUserPreferences(preferences: UserPreferences): Result<Unit> {
-        // This would need a server endpoint to update preferences
-        return Result.failure(Exception("User preferences update not supported by server"))
     }
 
     // ============ PRIVATE HELPER METHODS ============

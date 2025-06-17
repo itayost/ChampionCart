@@ -20,15 +20,14 @@ class LoginUseCase @Inject constructor(
 
         return try {
             // Attempt login with repository
-            val result = authRepository.login(email, password)
-            result.fold(
+            authRepository.login(email, password).fold(
                 onSuccess = { authResponse ->
-                    // Save token to local storage
-                    authRepository.saveAuthToken(authResponse)
-                    // Get user profile and return success
+                    // Save token to local storage (done by repository)
+                    // Create user from login info (server only provides email/password auth)
                     val user = User(
                         id = generateUserId(email),
-                        email = email
+                        email = email,
+                        isGuest = false
                     )
                     AuthResult.Success(user, authResponse)
                 },
@@ -52,33 +51,31 @@ class LoginUseCase @Inject constructor(
             }
 
             // Verify token is still valid by getting user profile
-            when (val userResult = authRepository.getUserProfile()) {
-                is Result.Success -> {
-                    val user = userResult.getOrNull()!!
+            authRepository.getUserProfile().fold(
+                onSuccess = { user ->
                     val authResponse = AuthResponse(accessToken = token)
                     AuthResult.Success(user, authResponse)
-                }
-                is Result.Failure -> {
+                },
+                onFailure = {
                     // Token might be expired, clear it
                     authRepository.clearAuthToken()
                     AuthResult.Error("Session expired, please login again")
                 }
-            }
+            )
         } catch (e: Exception) {
             AuthResult.Error("Auto-login failed: ${e.message}")
         }
     }
 
     /**
-     * Continue as guest user
+     * Continue as guest user (local session only)
      */
     suspend fun continueAsGuest(): AuthResult {
         return try {
             val guestUser = User(
                 id = "guest-${System.currentTimeMillis()}",
                 email = "guest@championcart.com",
-                isGuest = true,
-                preferences = UserPreferences()
+                isGuest = true
             )
 
             val guestToken = AuthResponse(accessToken = "guest-token")

@@ -42,7 +42,7 @@ fun CityIndicator(
                 text = city,
                 // Use appropriate font based on whether the city name is in Hebrew
                 style = if (isHebrewText(city)) {
-                    AppTextStyles.hebrewText.copy(
+                    AppTextStyles.hebrewDisplay.copy(
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Medium
                     )

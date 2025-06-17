@@ -5,6 +5,7 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -17,443 +18,390 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.championcart.R
 import com.example.championcart.domain.models.GroupedProduct
+import com.example.championcart.domain.models.SortOption
+import com.example.championcart.domain.models.StorePrice
 import com.example.championcart.presentation.components.EmptyState
 import com.example.championcart.presentation.components.ErrorState
-import com.example.championcart.presentation.utils.shimmerEffect
 import com.example.championcart.ui.theme.*
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchScreen(
-    onNavigateBack: () -> Unit,
-    onNavigateToProduct: (String) -> Unit,
-    onNavigateToCart: () -> Unit,
     viewModel: SearchViewModel = viewModel()
 ) {
     val state by viewModel.state.collectAsState()
     val haptics = LocalHapticFeedback.current
-    val focusRequester = remember { FocusRequester() }
-    val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
-    val scope = rememberCoroutineScope()
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val searchFocusRequester = remember { FocusRequester() }
 
-    // Request focus on search field when screen opens
     LaunchedEffect(Unit) {
-        delay(300) // Small delay for animation
-        focusRequester.requestFocus()
+        searchFocusRequester.requestFocus()
     }
 
-    Scaffold(
-        topBar = {
-            SearchTopBar(
-                searchQuery = state.searchQuery,
-                onSearchQueryChange = viewModel::updateSearchQuery,
-                onSearch = {
-                    keyboardController?.hide()
-                    viewModel.searchProducts()
-                },
-                onBack = onNavigateBack,
-                onVoiceSearch = { /* TODO: Implement voice search */ },
-                focusRequester = focusRequester,
-                isLoading = state.isLoading
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                brush = MaterialTheme.extendedColors.backgroundGradient
             )
-        },
-        containerColor = MaterialTheme.colorScheme.background
-    ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-            when {
-                state.isLoading && state.groupedProducts.isEmpty() -> {
-                    // Initial loading state
-                    LoadingContent()
-                }
-                state.error != null && state.groupedProducts.isEmpty() -> {
-                    // Error state
-                    ErrorState(
-                        message = state.error,
-                        onRetry = { viewModel.retry() }
-                    )
-                }
-                state.groupedProducts.isEmpty() && state.hasSearched -> {
-                    // Empty state after search
-                    EmptyState(
-                        title = "No products found",
-                        subtitle = "Try searching with different keywords\nor check your spelling",
-                        icon = Icons.Default.SearchOff
-                    )
-                }
-                state.groupedProducts.isEmpty() -> {
-                    // Initial state before search
-                    InitialSearchState(
-                        recentSearches = state.recentSearches,
-                        popularSearches = state.popularSearches,
-                        onSearchClick = { query ->
-                            viewModel.updateSearchQuery(query)
-                            viewModel.searchProducts()
-                        }
-                    )
-                }
-                else -> {
-                    // Results state
-                    SearchResultsContent(
-                        groupedProducts = state.groupedProducts,
-                        onProductClick = onNavigateToProduct,
-                        onAddToCart = { productId ->
-                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                            viewModel.addToCart(productId)
-                        },
-                        sortOption = state.sortOption,
-                        onSortChange = viewModel::updateSort,
-                        isRefreshing = state.isLoading
-                    )
-                }
+    ) {
+        // Search header with input and filters
+        SearchHeader(
+            searchQuery = state.searchQuery,
+            onSearchQueryChange = viewModel::updateSearchQuery,
+            onSearch = {
+                keyboardController?.hide()
+                focusManager.clearFocus()
+                viewModel.searchProducts()
+            },
+            selectedCity = state.selectedCity,
+            onCityChange = viewModel::selectCity,
+            showIdenticalOnly = state.showIdenticalOnly,
+            onToggleIdenticalOnly = viewModel::toggleIdenticalOnly,
+            isLoading = state.isLoading,
+            focusRequester = searchFocusRequester
+        )
+
+        // Content based on state
+        when {
+            state.isLoading -> {
+                LoadingContent()
+            }
+
+            state.error != null -> {
+                ErrorState(
+                    message = state.error,
+                    onRetry = viewModel::retry,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(Dimensions.paddingLarge)
+                )
+            }
+
+            state.hasSearched && state.groupedProducts.isEmpty() -> {
+                EmptySearchResults(
+                    searchQuery = state.searchQuery,
+                    onClearSearch = viewModel::clearResults
+                )
+            }
+
+            state.groupedProducts.isNotEmpty() -> {
+                SearchResults(
+                    products = state.groupedProducts,
+                    sortOption = state.sortOption,
+                    onSortChange = viewModel::updateSort,
+                    onAddToCart = { product ->
+                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                        viewModel.addToCart(product)
+                    }
+                )
+            }
+
+            else -> {
+                SearchSuggestions(
+                    recentSearches = state.recentSearches,
+                    popularSearches = state.popularSearches,
+                    onSearchSuggestion = { query ->
+                        haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        viewModel.searchFromSuggestion(query)
+                    }
+                )
             }
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SearchTopBar(
+fun SearchHeader(
     searchQuery: String,
     onSearchQueryChange: (String) -> Unit,
     onSearch: () -> Unit,
-    onBack: () -> Unit,
-    onVoiceSearch: () -> Unit,
-    focusRequester: FocusRequester,
-    isLoading: Boolean
+    selectedCity: String,
+    onCityChange: (String) -> Unit,
+    showIdenticalOnly: Boolean,
+    onToggleIdenticalOnly: () -> Unit,
+    isLoading: Boolean,
+    focusRequester: FocusRequester
 ) {
-    val haptics = LocalHapticFeedback.current
-
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shadowElevation = 4.dp,
-        color = MaterialTheme.colorScheme.surface
+    Column(
+        modifier = Modifier.padding(Dimensions.paddingMedium)
     ) {
-        Row(
+        // Search input
+        OutlinedTextField(
+            value = searchQuery,
+            onValueChange = onSearchQueryChange,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 8.dp),
+                .focusRequester(focusRequester),
+            placeholder = {
+                Text(
+                    "Search for products...",
+                    style = AppTextStyles.searchPlaceholder
+                )
+            },
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = null,
+                    tint = MaterialTheme.extendedColors.electricMint,
+                    modifier = Modifier.size(Dimensions.iconSizeMedium)
+                )
+            },
+            trailingIcon = {
+                if (searchQuery.isNotEmpty()) {
+                    IconButton(onClick = { onSearchQueryChange("") }) {
+                        Icon(
+                            imageVector = Icons.Default.Clear,
+                            contentDescription = "Clear search",
+                            modifier = Modifier.size(Dimensions.iconSizeMedium)
+                        )
+                    }
+                }
+            },
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+            keyboardActions = KeyboardActions(onSearch = { onSearch() }),
+            shape = ComponentShapes.SearchBar,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = MaterialTheme.extendedColors.electricMint,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+            ),
+            singleLine = true,
+            textStyle = AppTextStyles.searchInput
+        )
+
+        Spacer(modifier = Modifier.height(Dimensions.spacingMedium))
+
+        // Filter row
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingMedium),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Back button
-            IconButton(onClick = {
-                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                onBack()
-            }) {
-                Icon(
-                    imageVector = Icons.Default.ArrowBack,
-                    contentDescription = "Back"
+            // City selector chip
+            FilterChip(
+                onClick = { /* TODO: Implement city selection dialog */ },
+                label = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.LocationOn,
+                            contentDescription = null,
+                            modifier = Modifier.size(Dimensions.iconSizeSmall)
+                        )
+                        Spacer(modifier = Modifier.width(Dimensions.spacingExtraSmall))
+                        Text(
+                            selectedCity,
+                            style = AppTextStyles.chipText
+                        )
+                    }
+                },
+                selected = false,
+                shape = ComponentShapes.Chip,
+                colors = FilterChipDefaults.filterChipColors(
+                    containerColor = MaterialTheme.extendedColors.glass,
+                    labelColor = MaterialTheme.colorScheme.onSurface
+                ),
+                border = FilterChipDefaults.filterChipBorder(
+                    borderColor = MaterialTheme.extendedColors.glassBorder
                 )
-            }
+            )
 
-            // Search field
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = onSearchQueryChange,
-                modifier = Modifier
-                    .weight(1f)
-                    .focusRequester(focusRequester),
-                placeholder = {
+            // Identical products only toggle
+            FilterChip(
+                onClick = onToggleIdenticalOnly,
+                label = {
                     Text(
-                        text = "Search for products...",
-                        style = MaterialTheme.typography.bodyLarge
+                        "Cross-chain only",
+                        style = AppTextStyles.chipText
                     )
                 },
-                leadingIcon = {
-                    if (isLoading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(20.dp),
-                            strokeWidth = 2.dp,
-                            color = MaterialTheme.extendedColors.electricMint
-                        )
-                    } else {
+                selected = showIdenticalOnly,
+                shape = ComponentShapes.Chip,
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = MaterialTheme.extendedColors.electricMint,
+                    selectedLabelColor = Color.White,
+                    containerColor = MaterialTheme.extendedColors.glass,
+                    labelColor = MaterialTheme.colorScheme.onSurface
+                ),
+                leadingIcon = if (showIdenticalOnly) {
+                    {
                         Icon(
-                            imageVector = Icons.Default.Search,
+                            imageVector = Icons.Default.Check,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            modifier = Modifier.size(Dimensions.iconSizeSmall)
                         )
                     }
-                },
-                trailingIcon = {
-                    Row {
-                        // Clear button
-                        AnimatedVisibility(
-                            visible = searchQuery.isNotEmpty(),
-                            enter = fadeIn() + scaleIn(),
-                            exit = fadeOut() + scaleOut()
-                        ) {
-                            IconButton(
-                                onClick = {
-                                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    onSearchQueryChange("")
-                                }
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Clear,
-                                    contentDescription = "Clear"
-                                )
-                            }
-                        }
-                        // Voice search
-                        IconButton(onClick = onVoiceSearch) {
-                            Icon(
-                                imageVector = Icons.Default.Mic,
-                                contentDescription = "Voice search",
-                                tint = MaterialTheme.extendedColors.electricMint
-                            )
-                        }
-                    }
-                },
-                keyboardOptions = KeyboardOptions(
-                    imeAction = ImeAction.Search
-                ),
-                keyboardActions = KeyboardActions(
-                    onSearch = { onSearch() }
-                ),
-                singleLine = true,
-                shape = ComponentShapes.SearchBar,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaterialTheme.extendedColors.electricMint,
-                    unfocusedBorderColor = Color.Transparent,
-                    focusedContainerColor = MaterialTheme.extendedColors.glassFrosted,
-                    unfocusedContainerColor = MaterialTheme.extendedColors.glassFrosted
-                )
+                } else null
             )
+
+            Spacer(modifier = Modifier.weight(1f))
+
+            // Search button
+            Button(
+                onClick = onSearch,
+                enabled = searchQuery.isNotEmpty() && !isLoading,
+                modifier = Modifier.height(Dimensions.buttonHeightSmall),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.extendedColors.electricMint
+                ),
+                shape = ComponentShapes.ButtonSmall
+            ) {
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(Dimensions.iconSizeSmall),
+                        strokeWidth = Dimensions.borderThin,
+                        color = Color.White
+                    )
+                } else {
+                    Text(
+                        "Search",
+                        style = AppTextStyles.buttonTextSmall
+                    )
+                }
+            }
         }
     }
 }
 
 @Composable
-fun InitialSearchState(
+fun SearchSuggestions(
     recentSearches: List<String>,
     popularSearches: List<String>,
-    onSearchClick: (String) -> Unit
+    onSearchSuggestion: (String) -> Unit
 ) {
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(20.dp),
-        verticalArrangement = Arrangement.spacedBy(24.dp)
+        modifier = Modifier.padding(horizontal = Dimensions.paddingMedium),
+        verticalArrangement = Arrangement.spacedBy(Dimensions.spacingLarge)
     ) {
-        // Recent searches
         if (recentSearches.isNotEmpty()) {
             item {
-                SearchSection(
+                SuggestionSection(
                     title = "Recent Searches",
-                    icon = Icons.Default.History,
-                    items = recentSearches,
-                    onItemClick = onSearchClick
+                    suggestions = recentSearches,
+                    onSuggestionClick = onSearchSuggestion,
+                    icon = Icons.Default.History
                 )
             }
         }
 
-        // Popular searches
-        item {
-            SearchSection(
-                title = "Popular Right Now",
-                icon = Icons.Default.TrendingUp,
-                items = popularSearches,
-                onItemClick = onSearchClick,
-                highlightColor = MaterialTheme.extendedColors.neonCoral
-            )
-        }
-
-        // Search tips
-        item {
-            SearchTipsCard()
+        if (popularSearches.isNotEmpty()) {
+            item {
+                SuggestionSection(
+                    title = "Popular Searches",
+                    suggestions = popularSearches,
+                    onSuggestionClick = onSearchSuggestion,
+                    icon = Icons.Default.TrendingUp
+                )
+            }
         }
     }
 }
 
 @Composable
-fun SearchSection(
+fun SuggestionSection(
     title: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    items: List<String>,
-    onItemClick: (String) -> Unit,
-    highlightColor: Color = MaterialTheme.extendedColors.electricMint
+    suggestions: List<String>,
+    onSuggestionClick: (String) -> Unit,
+    icon: ImageVector
 ) {
     Column {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(bottom = 12.dp)
+            modifier = Modifier.padding(bottom = Dimensions.spacingMedium)
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = highlightColor,
-                modifier = Modifier.size(20.dp)
+                tint = MaterialTheme.extendedColors.electricMint,
+                modifier = Modifier.size(Dimensions.iconSizeMedium)
             )
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(Dimensions.spacingSmall))
             Text(
                 text = title,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
+                style = AppTextStyles.sectionHeader
             )
         }
 
-        items.forEach { item ->
-            SearchSuggestionItem(
-                text = item,
-                onClick = { onItemClick(item) }
-            )
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingSmall)
+        ) {
+            items(suggestions) { suggestion ->
+                SuggestionChip(
+                    text = suggestion,
+                    onClick = { onSuggestionClick(suggestion) }
+                )
+            }
         }
     }
 }
 
 @Composable
-fun SearchSuggestionItem(
+fun SuggestionChip(
     text: String,
     onClick: () -> Unit
 ) {
-    val haptics = LocalHapticFeedback.current
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp)
-            .clickable {
-                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                onClick()
-            },
-        shape = ComponentShapes.Card,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.extendedColors.glass
-        ),
-        border = BorderStroke(
-            1.dp,
-            MaterialTheme.extendedColors.glassBorder
-        )
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+    FilterChip(
+        onClick = onClick,
+        label = {
             Text(
-                text = text,
-                style = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier.weight(1f)
+                text,
+                style = AppTextStyles.chipText
             )
-            Icon(
-                imageVector = Icons.Default.NorthEast,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(16.dp)
-            )
-        }
-    }
-}
-
-@Composable
-fun SearchTipsCard() {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = ComponentShapes.CardLarge,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.extendedColors.electricMint.copy(alpha = 0.1f)
+        },
+        selected = false,
+        shape = ComponentShapes.Chip,
+        colors = FilterChipDefaults.filterChipColors(
+            containerColor = MaterialTheme.extendedColors.glass,
+            labelColor = MaterialTheme.colorScheme.onSurface
+        ),
+        border = FilterChipDefaults.filterChipBorder(
+            borderColor = MaterialTheme.extendedColors.glassBorder
         )
-    ) {
-        Column(
-            modifier = Modifier.padding(20.dp)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Lightbulb,
-                    contentDescription = null,
-                    tint = MaterialTheme.extendedColors.electricMint
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Search Tips",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            val tips = listOf(
-                "🔍 Use Hebrew for better results",
-                "📦 Try generic terms like \"חלב\" or \"לחם\"",
-                "🏷️ Brand names work too!",
-                "💡 We search across Shufersal & Victory"
-            )
-
-            tips.forEach { tip ->
-                Text(
-                    text = tip,
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(vertical = 4.dp)
-                )
-            }
-        }
-    }
+    )
 }
 
 @Composable
-fun SearchResultsContent(
-    groupedProducts: List<GroupedProduct>,
-    onProductClick: (String) -> Unit,
-    onAddToCart: (String) -> Unit,
+fun SearchResults(
+    products: List<GroupedProduct>,
     sortOption: SortOption,
     onSortChange: (SortOption) -> Unit,
-    isRefreshing: Boolean
+    onAddToCart: (GroupedProduct) -> Unit
 ) {
     Column {
         // Results header with sort
         ResultsHeader(
-            resultCount = groupedProducts.size,
+            resultCount = products.size,
             sortOption = sortOption,
             onSortChange = onSortChange
         )
 
-        // Product list
+        // Products list
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(
-                start = 20.dp,
-                end = 20.dp,
-                bottom = 80.dp
-            ),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(Dimensions.spacingMedium),
+            contentPadding = PaddingValues(Dimensions.paddingMedium)
         ) {
-            items(
-                items = groupedProducts,
-                key = { it.itemCode }
-            ) { groupedProduct ->
-                GroupedProductCard(
-                    groupedProduct = groupedProduct,
-                    onClick = { onProductClick(groupedProduct.itemCode) },
-                    onAddToCart = { onAddToCart(groupedProduct.itemCode) }
+            items(products) { product ->
+                ProductCard(
+                    product = product,
+                    onAddToCart = { onAddToCart(product) }
                 )
             }
         }
@@ -468,70 +416,70 @@ fun ResultsHeader(
 ) {
     var showSortMenu by remember { mutableStateOf(false) }
 
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        color = MaterialTheme.colorScheme.surface,
-        shadowElevation = 2.dp
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(
+                horizontal = Dimensions.paddingMedium,
+                vertical = Dimensions.paddingSmall
+            ),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "$resultCount products found",
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium
+        Text(
+            text = "$resultCount products found",
+            style = AppTextStyles.resultCount
+        )
+
+        Box {
+            FilterChip(
+                onClick = { showSortMenu = true },
+                label = {
+                    Text(
+                        "Sort: ${sortOption.displayName}",
+                        style = AppTextStyles.chipText
+                    )
+                },
+                selected = false,
+                trailingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.KeyboardArrowDown,
+                        contentDescription = null,
+                        modifier = Modifier.size(Dimensions.iconSizeSmall)
+                    )
+                },
+                colors = FilterChipDefaults.filterChipColors(
+                    containerColor = MaterialTheme.extendedColors.glass,
+                    labelColor = MaterialTheme.colorScheme.onSurface
+                )
             )
 
-            // Sort button
-            Box {
-                TextButton(
-                    onClick = { showSortMenu = true }
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Sort,
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(sortOption.label)
-                    Icon(
-                        imageVector = Icons.Default.ArrowDropDown,
-                        contentDescription = null
-                    )
-                }
-
-                DropdownMenu(
-                    expanded = showSortMenu,
-                    onDismissRequest = { showSortMenu = false }
-                ) {
-                    SortOption.values().forEach { option ->
-                        DropdownMenuItem(
-                            text = {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(option.label)
-                                    if (option == sortOption) {
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Icon(
-                                            imageVector = Icons.Default.Check,
-                                            contentDescription = null,
-                                            tint = MaterialTheme.extendedColors.electricMint,
-                                            modifier = Modifier.size(16.dp)
-                                        )
-                                    }
-                                }
-                            },
-                            onClick = {
-                                onSortChange(option)
-                                showSortMenu = false
+            DropdownMenu(
+                expanded = showSortMenu,
+                onDismissRequest = { showSortMenu = false }
+            ) {
+                SortOption.values().forEach { option ->
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                option.displayName,
+                                style = AppTextStyles.dropdownItem
+                            )
+                        },
+                        onClick = {
+                            onSortChange(option)
+                            showSortMenu = false
+                        },
+                        leadingIcon = if (option == sortOption) {
+                            {
+                                Icon(
+                                    imageVector = Icons.Default.Check,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(Dimensions.iconSizeSmall)
+                                )
                             }
-                        )
-                    }
+                        } else null
+                    )
                 }
             }
         }
@@ -539,348 +487,237 @@ fun ResultsHeader(
 }
 
 @Composable
-fun GroupedProductCard(
-    groupedProduct: GroupedProduct,
-    onClick: () -> Unit,
+fun ProductCard(
+    product: GroupedProduct,
     onAddToCart: () -> Unit
 ) {
-    val haptics = LocalHapticFeedback.current
-    val bestPrice = groupedProduct.lowestPrice ?: 0.0
-    val worstPrice = groupedProduct.highestPrice ?: 0.0
-    val savings = groupedProduct.savings
-    val savingsPercent = if (worstPrice > 0) {
-        ((worstPrice - bestPrice) / worstPrice * 100).toInt()
-    } else 0
-
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable {
-                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                onClick()
-            },
+            .glassEffect(),
         shape = ComponentShapes.Card,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor = Color.Transparent // glassEffect handles background
         ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 2.dp
-        )
+        elevation = CardDefaults.cardElevation(defaultElevation = Dimensions.elevationMedium)
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(Dimensions.paddingMedium)
         ) {
             // Product header
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                alignment = Alignment.Top
+                verticalAlignment = Alignment.Top
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    // Product name
                     Text(
-                        text = groupedProduct.itemName,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
+                        text = product.itemName,
+                        style = AppTextStyles.productTitle,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis
                     )
 
-                    // Item code
-                    Text(
-                        text = "Code: ${groupedProduct.itemCode}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
-                }
-
-                // Savings badge
-                if (savingsPercent > 0) {
-                    Box(
-                        modifier = Modifier
-                            .clip(ComponentShapes.Badge)
-                            .background(
-                                brush = Brush.linearGradient(
-                                    colors = listOf(
-                                        MaterialTheme.extendedColors.successGreen,
-                                        MaterialTheme.extendedColors.electricMint
-                                    )
-                                )
-                            )
-                            .padding(horizontal = 12.dp, vertical = 6.dp)
-                    ) {
+                    if (product.weight != null && product.unit != null) {
                         Text(
-                            text = "SAVE $savingsPercent%",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold
+                            text = "${product.weight} ${product.unit}",
+                            style = AppTextStyles.productDetails
                         )
                     }
                 }
-            }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Price comparison
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Bottom
-            ) {
-                // Best price
-                Column {
-                    Text(
-                        text = "Best Price",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = "₪${String.format("%.2f", bestPrice)}",
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.extendedColors.successGreen
-                    )
-                }
-
-                // Price range indicator
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(horizontal = 16.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    PriceRangeIndicator(
-                        lowestPrice = bestPrice,
-                        highestPrice = worstPrice
-                    )
-                }
-
-                // Worst price
-                Column(horizontalAlignment = Alignment.End) {
-                    Text(
-                        text = "Highest",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = "₪${String.format("%.2f", worstPrice)}",
-                        style = MaterialTheme.typography.titleMedium,
-                        textDecoration = TextDecoration.LineThrough,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Store prices
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                groupedProduct.storePrices.take(3).forEach { storePrice ->
-                    StorePriceRow(
-                        store = storePrice,
-                        isBestPrice = storePrice.price == bestPrice
-                    )
-                }
-
-                // Show more stores if available
-                if (groupedProduct.storePrices.size > 3) {
-                    Text(
-                        text = "+ ${groupedProduct.storePrices.size - 3} more stores",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.extendedColors.electricMint,
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Action buttons
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                // View details button
-                OutlinedButton(
-                    onClick = onClick,
-                    modifier = Modifier.weight(1f),
-                    shape = ComponentShapes.Button,
-                    border = BorderStroke(
-                        1.dp,
-                        MaterialTheme.extendedColors.electricMint
-                    )
-                ) {
-                    Text("View Details")
-                }
-
-                // Add to cart button
                 Button(
-                    onClick = {
-                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                        onAddToCart()
-                    },
-                    modifier = Modifier.weight(1f),
-                    shape = ComponentShapes.Button,
+                    onClick = onAddToCart,
+                    modifier = Modifier.height(Dimensions.buttonHeightSmall),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.extendedColors.electricMint
-                    )
+                    ),
+                    shape = ComponentShapes.ButtonSmall
                 ) {
                     Icon(
-                        imageVector = Icons.Default.AddShoppingCart,
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp)
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Add to cart",
+                        modifier = Modifier.size(Dimensions.iconSizeSmall)
                     )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Add to Cart")
+                    Spacer(modifier = Modifier.width(Dimensions.spacingExtraSmall))
+                    Text(
+                        "Add",
+                        style = AppTextStyles.buttonTextSmall
+                    )
                 }
             }
+
+            Spacer(modifier = Modifier.height(Dimensions.spacingMedium))
+
+            // Price comparison
+            PriceComparison(
+                storePrices = product.prices,
+                savings = product.savings
+            )
+        }
+    }
+}
+
+@Composable
+fun PriceComparison(
+    storePrices: List<StorePrice>,
+    savings: Double
+) {
+    Column {
+        // Savings badge if applicable
+        if (savings > 0) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(bottom = Dimensions.spacingSmall)
+            ) {
+                Surface(
+                    color = MaterialTheme.extendedColors.successGreen,
+                    shape = ComponentShapes.Badge
+                ) {
+                    Text(
+                        text = "Save ₪${String.format("%.2f", savings)}",
+                        style = AppTextStyles.savingsBadge,
+                        color = Color.White,
+                        modifier = Modifier.padding(
+                            horizontal = Dimensions.paddingSmall,
+                            vertical = Dimensions.paddingExtraSmall
+                        )
+                    )
+                }
+            }
+        }
+
+        // Store prices
+        storePrices.sortedBy { it.price }.forEachIndexed { index, storePrice ->
+            StorePriceRow(
+                storePrice = storePrice,
+                isBestPrice = index == 0,
+                modifier = Modifier.padding(vertical = Dimensions.spacingExtraSmall)
+            )
         }
     }
 }
 
 @Composable
 fun StorePriceRow(
-    store: com.example.championcart.domain.models.ProductStorePrice,
-    isBestPrice: Boolean
+    storePrice: StorePrice,
+    isBestPrice: Boolean,
+    modifier: Modifier = Modifier
 ) {
-    val storeColor = when (store.chain.lowercase()) {
-        "shufersal" -> MaterialTheme.extendedColors.shufersal
-        "victory" -> MaterialTheme.extendedColors.victory
-        else -> MaterialTheme.colorScheme.onSurfaceVariant
-    }
-
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(ComponentShapes.Badge)
-            .background(
-                if (isBestPrice) {
-                    MaterialTheme.extendedColors.successGreen.copy(alpha = 0.1f)
-                } else {
-                    MaterialTheme.extendedColors.glass
-                }
-            )
-            .padding(horizontal = 12.dp, vertical = 8.dp),
+        modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Store indicator
-            Box(
-                modifier = Modifier
-                    .size(8.dp)
-                    .clip(CircleShape)
-                    .background(storeColor)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-
-            // Store name
+        Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = "${store.chain} - ${store.storeId}",
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = if (isBestPrice) FontWeight.SemiBold else FontWeight.Normal,
-                color = if (isBestPrice) {
-                    MaterialTheme.extendedColors.successGreen
-                } else {
-                    MaterialTheme.colorScheme.onSurface
-                }
+                text = storePrice.chain.replaceFirstChar { it.uppercase() },
+                style = if (isBestPrice) AppTextStyles.bestPriceStore else AppTextStyles.priceStore
             )
 
-            // Best price indicator
             if (isBestPrice) {
-                Spacer(modifier = Modifier.width(8.dp))
-                Icon(
-                    imageVector = Icons.Default.Star,
-                    contentDescription = "Best price",
-                    tint = MaterialTheme.extendedColors.successGreen,
-                    modifier = Modifier.size(16.dp)
-                )
+                Spacer(modifier = Modifier.width(Dimensions.spacingSmall))
+                Surface(
+                    color = MaterialTheme.extendedColors.bestPrice,
+                    shape = CircleShape
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Star,
+                        contentDescription = "Best price",
+                        tint = Color.White,
+                        modifier = Modifier
+                            .size(Dimensions.iconSizeSmall)
+                            .padding(Dimensions.spacingExtraSmall)
+                    )
+                }
             }
         }
 
-        // Price
         Text(
-            text = "₪${String.format("%.2f", store.price)}",
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Bold,
-            color = if (isBestPrice) {
-                MaterialTheme.extendedColors.successGreen
-            } else {
-                MaterialTheme.colorScheme.onSurface
-            }
+            text = "₪${String.format("%.2f", storePrice.price)}",
+            style = if (isBestPrice) AppTextStyles.bestPrice else AppTextStyles.regularPrice
         )
     }
 }
 
 @Composable
-fun PriceRangeIndicator(
-    lowestPrice: Double,
-    highestPrice: Double
+fun EmptySearchResults(
+    searchQuery: String,
+    onClearSearch: () -> Unit
 ) {
-    if (lowestPrice == highestPrice) {
-        Text(
-            text = "Same price",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    } else {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(4.dp)
-                .clip(ComponentShapes.Badge)
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth(0.7f)
-                    .fillMaxHeight()
-                    .background(
-                        brush = Brush.horizontalGradient(
-                            colors = listOf(
-                                MaterialTheme.extendedColors.successGreen,
-                                MaterialTheme.extendedColors.warningAmber
-                            )
-                        )
-                    )
-            )
-        }
-    }
+    EmptyState(
+        icon = Icons.Outlined.SearchOff,
+        title = "No products found",
+        description = "We couldn't find any products matching \"$searchQuery\".\nTry different keywords or check spelling.",
+        actionText = "Clear Search",
+        onAction = onClearSearch,
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(Dimensions.paddingLarge)
+    )
 }
 
 @Composable
 fun LoadingContent() {
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(20.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(Dimensions.paddingMedium),
+        verticalArrangement = Arrangement.spacedBy(Dimensions.spacingMedium)
     ) {
-        items(5) {
-            Card(
+        repeat(5) {
+            SearchResultSkeleton()
+        }
+    }
+}
+
+@Composable
+fun SearchResultSkeleton() {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .glassEffect(),
+        shape = ComponentShapes.Card,
+        colors = CardDefaults.cardColors(
+            containerColor = Color.Transparent
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(Dimensions.paddingMedium),
+            verticalArrangement = Arrangement.spacedBy(Dimensions.spacingSmall)
+        ) {
+            Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(200.dp),
-                shape = ComponentShapes.Card
-            ) {
+                    .fillMaxWidth(0.7f)
+                    .height(Dimensions.buttonHeightSmall)
+                    .background(
+                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
+                        ComponentShapes.ButtonSmall
+                    )
+            )
+
+            repeat(3) {
                 Box(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .shimmerEffect()
+                        .fillMaxWidth()
+                        .height(Dimensions.spacingMedium)
+                        .background(
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f),
+                            ComponentShapes.ButtonSmall
+                        )
                 )
             }
         }
     }
 }
 
-enum class SortOption(val label: String) {
-    PRICE_LOW_TO_HIGH("Price: Low to High"),
-    PRICE_HIGH_TO_LOW("Price: High to Low"),
-    SAVINGS_HIGHEST("Highest Savings"),
-    NAME_A_TO_Z("Name: A to Z")
-}
+// Extension for SortOption display names
+private val SortOption.displayName: String
+    get() = when (this) {
+        SortOption.RELEVANCE -> "Relevance"
+        SortOption.PRICE_LOW_TO_HIGH -> "Price: Low to High"
+        SortOption.PRICE_HIGH_TO_LOW -> "Price: High to Low"
+        SortOption.NAME_A_TO_Z -> "Name: A to Z"
+        SortOption.NAME_Z_TO_A -> "Name: Z to A"
+        SortOption.SAVINGS_HIGH_TO_LOW -> "Highest Savings"
+    }

@@ -3,7 +3,9 @@ package com.example.championcart.presentation.screens.auth
 import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.championcart.domain.repository.AuthRepository
+import com.example.championcart.domain.usecase.LoginUseCase
+import com.example.championcart.domain.usecase.RegisterUseCase
+import com.example.championcart.domain.models.AuthResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -27,7 +29,8 @@ data class AuthState(
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
-    private val authRepository: AuthRepository
+    private val loginUseCase: LoginUseCase,
+    private val registerUseCase: RegisterUseCase
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(AuthState())
@@ -37,7 +40,8 @@ class AuthViewModel @Inject constructor(
         _state.update {
             it.copy(
                 email = email,
-                emailError = if (email.isNotBlank()) validateEmail(email) else null
+                emailError = if (email.isNotBlank()) validateEmail(email) else null,
+                error = null
             )
         }
     }
@@ -46,7 +50,8 @@ class AuthViewModel @Inject constructor(
         _state.update {
             it.copy(
                 password = password,
-                passwordError = if (password.isNotBlank()) validatePassword(password) else null
+                passwordError = if (password.isNotBlank()) validatePassword(password) else null,
+                error = null
             )
         }
     }
@@ -56,27 +61,23 @@ class AuthViewModel @Inject constructor(
             it.copy(
                 confirmPassword = confirmPassword,
                 confirmPasswordError = if (confirmPassword.isNotBlank())
-                    validateConfirmPassword(confirmPassword, _state.value.password) else null
+                    validateConfirmPassword(confirmPassword, _state.value.password) else null,
+                error = null
             )
         }
     }
 
-    // MISSING FUNCTION - This was being called in LoginRegisterScreen
-    fun toggleAuthMode() {
+    fun toggleMode() {
         _state.update {
             it.copy(
                 isLoginMode = !it.isLoginMode,
                 error = null,
                 emailError = null,
                 passwordError = null,
-                confirmPasswordError = null,
-                confirmPassword = ""
+                confirmPasswordError = null
             )
         }
     }
-
-    // Alias for backwards compatibility (if needed)
-    fun toggleMode() = toggleAuthMode()
 
     fun login() {
         val currentState = _state.value
@@ -85,14 +86,13 @@ class AuthViewModel @Inject constructor(
         val emailError = validateEmail(currentState.email)
         val passwordError = validatePassword(currentState.password)
 
-        _state.update {
-            it.copy(
-                emailError = emailError,
-                passwordError = passwordError
-            )
-        }
-
         if (emailError != null || passwordError != null) {
+            _state.update {
+                it.copy(
+                    emailError = emailError,
+                    passwordError = passwordError
+                )
+            }
             return
         }
 
@@ -100,13 +100,10 @@ class AuthViewModel @Inject constructor(
             _state.update { it.copy(isLoading = true, error = null) }
 
             try {
-                val result = authRepository.login(
-                    email = currentState.email.trim(),
-                    password = currentState.password
-                )
+                val result = loginUseCase(currentState.email, currentState.password)
 
-                result.fold(
-                    onSuccess = { user ->
+                when (result) {
+                    is AuthResult.Success -> {
                         _state.update {
                             it.copy(
                                 isLoading = false,
@@ -114,27 +111,24 @@ class AuthViewModel @Inject constructor(
                                 error = null
                             )
                         }
-                    },
-                    onFailure = { exception ->
+                    }
+                    is AuthResult.Error -> {
                         _state.update {
                             it.copy(
                                 isLoading = false,
-                                error = when {
-                                    exception.message?.contains("401") == true ->
-                                        "Invalid email or password"
-                                    exception.message?.contains("network") == true ->
-                                        "Network error. Please check your connection"
-                                    else -> "Login failed. Please try again"
-                                }
+                                error = result.message
                             )
                         }
                     }
-                )
+                    is AuthResult.Loading -> {
+                        // Already in loading state
+                    }
+                }
             } catch (e: Exception) {
                 _state.update {
                     it.copy(
                         isLoading = false,
-                        error = "An unexpected error occurred"
+                        error = "Login failed: ${e.message}"
                     )
                 }
             }
@@ -152,15 +146,14 @@ class AuthViewModel @Inject constructor(
             currentState.password
         )
 
-        _state.update {
-            it.copy(
-                emailError = emailError,
-                passwordError = passwordError,
-                confirmPasswordError = confirmPasswordError
-            )
-        }
-
         if (emailError != null || passwordError != null || confirmPasswordError != null) {
+            _state.update {
+                it.copy(
+                    emailError = emailError,
+                    passwordError = passwordError,
+                    confirmPasswordError = confirmPasswordError
+                )
+            }
             return
         }
 
@@ -168,13 +161,14 @@ class AuthViewModel @Inject constructor(
             _state.update { it.copy(isLoading = true, error = null) }
 
             try {
-                val result = authRepository.register(
-                    email = currentState.email.trim(),
-                    password = currentState.password
+                val result = registerUseCase(
+                    email = currentState.email,
+                    password = currentState.password,
+                    confirmPassword = currentState.confirmPassword
                 )
 
-                result.fold(
-                    onSuccess = { user ->
+                when (result) {
+                    is AuthResult.Success -> {
                         _state.update {
                             it.copy(
                                 isLoading = false,
@@ -182,27 +176,24 @@ class AuthViewModel @Inject constructor(
                                 error = null
                             )
                         }
-                    },
-                    onFailure = { exception ->
+                    }
+                    is AuthResult.Error -> {
                         _state.update {
                             it.copy(
                                 isLoading = false,
-                                error = when {
-                                    exception.message?.contains("already") == true ->
-                                        "This email is already registered"
-                                    exception.message?.contains("network") == true ->
-                                        "Network error. Please check your connection"
-                                    else -> "Registration failed. Please try again"
-                                }
+                                error = result.message
                             )
                         }
                     }
-                )
+                    is AuthResult.Loading -> {
+                        // Already in loading state
+                    }
+                }
             } catch (e: Exception) {
                 _state.update {
                     it.copy(
                         isLoading = false,
-                        error = "An unexpected error occurred"
+                        error = "Registration failed: ${e.message}"
                     )
                 }
             }
@@ -214,9 +205,7 @@ class AuthViewModel @Inject constructor(
     }
 
     fun resetState() {
-        _state.update {
-            AuthState()
-        }
+        _state.update { AuthState() }
     }
 
     private fun validateEmail(email: String): String? {
@@ -231,7 +220,6 @@ class AuthViewModel @Inject constructor(
         return when {
             password.isBlank() -> "Password is required"
             password.length < 6 -> "Password must be at least 6 characters"
-            !password.any { it.isDigit() } -> "Password must contain at least one number"
             else -> null
         }
     }
@@ -242,18 +230,5 @@ class AuthViewModel @Inject constructor(
             confirmPassword != password -> "Passwords don't match"
             else -> null
         }
-    }
-}
-
-// Alternative ViewModel without Hilt for testing
-class AuthViewModelFactory(
-    private val authRepository: AuthRepository
-) : androidx.lifecycle.ViewModelProvider.Factory {
-    @Suppress("UNCHECKED_CAST")
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(AuthViewModel::class.java)) {
-            return AuthViewModel(authRepository) as T
-        }
-        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }

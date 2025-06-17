@@ -18,14 +18,3 @@ data class SavedCartItem(
     val quantity: Int,
     val price: Double
 )
-
-/**
- * Save cart request
- * Matches: POST /save-cart request format
- */
-data class SaveCartRequest(
-    val cartName: String,
-    val email: String,
-    val city: String,
-    val items: List<CartProduct>
-)

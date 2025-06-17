@@ -239,7 +239,7 @@ fun ProductCardSkeleton(
                 modifier = Modifier
                     .fillMaxWidth(0.7f)
                     .height(20.dp)
-                    .clip(ComponentShapes.Small)
+                    .clip(ComponentShapes.DialogSmall)
                     .shimmerEffect()
             )
 
@@ -255,7 +255,7 @@ fun ProductCardSkeleton(
                     modifier = Modifier
                         .width(80.dp)
                         .height(28.dp)
-                        .clip(ComponentShapes.Small)
+                        .clip(ComponentShapes.Badge)
                         .shimmerEffect()
                 )
 

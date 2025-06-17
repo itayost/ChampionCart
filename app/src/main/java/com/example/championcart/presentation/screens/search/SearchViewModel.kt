@@ -4,10 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.championcart.data.local.preferences.TokenManager
 import com.example.championcart.domain.models.GroupedProduct
-import com.example.championcart.domain.models.Product
-import com.example.championcart.domain.models.ProductStorePrice
+import com.example.championcart.domain.models.SortOption
 import com.example.championcart.domain.repository.CartRepository
 import com.example.championcart.domain.repository.PriceRepository
+import com.example.championcart.domain.usecase.SearchProductsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -19,14 +19,16 @@ data class SearchState(
     val isLoading: Boolean = false,
     val error: String? = null,
     val hasSearched: Boolean = false,
-    val selectedCity: String = "Tel Aviv", // Default city
-    val sortOption: SortOption = SortOption.PRICE_LOW_TO_HIGH,
+    val selectedCity: String = "Tel Aviv",
+    val sortOption: SortOption = SortOption.RELEVANCE,
     val recentSearches: List<String> = emptyList(),
-    val popularSearches: List<String> = emptyList()
+    val popularSearches: List<String> = emptyList(),
+    val showIdenticalOnly: Boolean = false
 )
 
 @HiltViewModel
 class SearchViewModel @Inject constructor(
+    private val searchProductsUseCase: SearchProductsUseCase,
     private val priceRepository: PriceRepository,
     private val cartRepository: CartRepository,
     private val tokenManager: TokenManager
@@ -42,9 +44,9 @@ class SearchViewModel @Inject constructor(
     private fun loadInitialData() {
         viewModelScope.launch {
             // Load recent searches from local storage
-            val recentSearches = listOf("חלב", "לחם", "ביצים", "במבה", "קפה")
+            val recentSearches = listOf("חלב", "לחם", "ביצים", "במבה", "קפה", "שמן זית")
 
-            // Load popular searches (could be from API)
+            // Load popular searches (could be from analytics)
             val popularSearches = listOf(
                 "חלב תנובה 3%",
                 "לחם אחיד",
@@ -54,26 +56,36 @@ class SearchViewModel @Inject constructor(
                 "שמן זית"
             )
 
+            // Get selected city from preferences
+            val savedCity = "Tel Aviv" // Could be tokenManager.getSelectedCity()
+
             _state.update {
                 it.copy(
                     recentSearches = recentSearches,
-                    popularSearches = popularSearches
+                    popularSearches = popularSearches,
+                    selectedCity = savedCity
                 )
             }
-
-            // Load selected city from preferences
-            // val savedCity = tokenManager.getSelectedCity() ?: "Tel Aviv"
-            // _state.update { it.copy(selectedCity = savedCity) }
         }
     }
 
     fun updateSearchQuery(query: String) {
-        _state.update { it.copy(searchQuery = query) }
+        _state.update {
+            it.copy(
+                searchQuery = query,
+                error = null
+            )
+        }
     }
 
     fun searchProducts() {
-        val query = _state.value.searchQuery.trim()
-        if (query.isEmpty()) return
+        val currentState = _state.value
+        val query = currentState.searchQuery.trim()
+
+        if (query.isEmpty()) {
+            _state.update { it.copy(error = "Please enter a search term") }
+            return
+        }
 
         viewModelScope.launch {
             _state.update {
@@ -85,16 +97,26 @@ class SearchViewModel @Inject constructor(
             }
 
             try {
-                val result = priceRepository.searchProducts(
-                    city = _state.value.selectedCity,
-                    productName = query
-                )
+                val result = if (currentState.showIdenticalOnly) {
+                    // Search for identical products across chains only
+                    priceRepository.getIdenticalProducts(
+                        city = currentState.selectedCity,
+                        productName = query,
+                        limit = 50
+                    )
+                } else {
+                    // Regular search using use case
+                    searchProductsUseCase(
+                        city = currentState.selectedCity,
+                        query = query,
+                        groupByCode = true,
+                        limit = 50
+                    )
+                }
 
                 result.fold(
                     onSuccess = { products ->
-                        val groupedProducts = groupProductsByCode(products)
-                        val sortedProducts = sortProducts(groupedProducts, _state.value.sortOption)
-
+                        val sortedProducts = sortProducts(products, currentState.sortOption)
                         _state.update {
                             it.copy(
                                 groupedProducts = sortedProducts,
@@ -110,7 +132,7 @@ class SearchViewModel @Inject constructor(
                         _state.update {
                             it.copy(
                                 isLoading = false,
-                                error = exception.message ?: "Search failed"
+                                error = "Search failed: ${exception.message}"
                             )
                         }
                     }
@@ -119,86 +141,85 @@ class SearchViewModel @Inject constructor(
                 _state.update {
                     it.copy(
                         isLoading = false,
-                        error = "Network error. Please try again."
+                        error = "Search error: ${e.message}"
                     )
                 }
             }
         }
     }
 
-    private fun groupProductsByCode(products: List<Product>): List<GroupedProduct> {
-        return products
-            .groupBy { it.itemCode }
-            .map { (itemCode, productList) ->
-                val storePrices = productList.map { product ->
-                    ProductStorePrice(
-                        chain = product.chainName,
-                        storeId = product.storeName.substringAfter("Store "),
-                        price = product.price
-                    )
-                }
-
-                val lowestPrice = storePrices.minByOrNull { it.price }?.price
-                val highestPrice = storePrices.maxByOrNull { it.price }?.price
-                val savings = if (lowestPrice != null && highestPrice != null) {
-                    highestPrice - lowestPrice
-                } else {
-                    0.0
-                }
-
-                GroupedProduct(
-                    itemCode = itemCode,
-                    itemName = productList.first().itemName,
-                    storePrices = storePrices.sortedBy { it.price },
-                    lowestPrice = lowestPrice,
-                    highestPrice = highestPrice,
-                    savings = savings
-                )
-            }
+    fun searchFromSuggestion(query: String) {
+        _state.update { it.copy(searchQuery = query) }
+        searchProducts()
     }
 
-    private fun sortProducts(
-        products: List<GroupedProduct>,
-        sortOption: SortOption
-    ): List<GroupedProduct> {
-        return when (sortOption) {
-            SortOption.PRICE_LOW_TO_HIGH -> products.sortedBy { it.lowestPrice ?: Double.MAX_VALUE }
-            SortOption.PRICE_HIGH_TO_LOW -> products.sortedByDescending { it.lowestPrice ?: 0.0 }
-            SortOption.SAVINGS_HIGHEST -> products.sortedByDescending { it.savings }
-            SortOption.NAME_A_TO_Z -> products.sortedBy { it.itemName }
+    fun toggleIdenticalOnly() {
+        _state.update {
+            it.copy(showIdenticalOnly = !it.showIdenticalOnly)
+        }
+
+        // Re-search if we have a query
+        if (_state.value.searchQuery.isNotEmpty()) {
+            searchProducts()
         }
     }
 
     fun updateSort(sortOption: SortOption) {
         _state.update { currentState ->
+            val sortedProducts = sortProducts(currentState.groupedProducts, sortOption)
             currentState.copy(
                 sortOption = sortOption,
-                groupedProducts = sortProducts(currentState.groupedProducts, sortOption)
+                groupedProducts = sortedProducts
             )
         }
     }
 
-    fun addToCart(productId: String) {
+    fun selectCity(city: String) {
+        _state.update {
+            it.copy(
+                selectedCity = city,
+                error = null
+            )
+        }
+
+        // Re-search if we have results
+        if (_state.value.hasSearched && _state.value.searchQuery.isNotEmpty()) {
+            searchProducts()
+        }
+
+        // Save city preference
+        viewModelScope.launch {
+            // tokenManager.saveSelectedCity(city)
+        }
+    }
+
+    fun addToCart(groupedProduct: GroupedProduct) {
         viewModelScope.launch {
             try {
-                // Find the product with the best price
-                val groupedProduct = _state.value.groupedProducts.find { it.itemCode == productId }
-                groupedProduct?.let { product ->
-                    val bestPrice = product.storePrices.minByOrNull { it.price }
+                // Find the best price (lowest)
+                val bestPrice = groupedProduct.prices.minByOrNull { it.price }
 
-                    // Add to cart with best price store
-                    // cartRepository.addToCart(
-                    //     productId = productId,
-                    //     productName = product.itemName,
-                    //     price = bestPrice?.price ?: 0.0,
-                    //     storeName = "${bestPrice?.chain} - ${bestPrice?.storeId}"
-                    // )
+                if (bestPrice != null) {
+                    // Add to cart through CartRepository
+                    cartRepository.addToCart(
+                        productId = groupedProduct.itemCode,
+                        productName = groupedProduct.itemName,
+                        price = bestPrice.price,
+                        quantity = 1,
+                        storeChain = bestPrice.chain,
+                        storeId = bestPrice.storeId
+                    )
 
-                    // Show success feedback
-                    // Could emit a UI event here for showing a snackbar
+                    // Could show success message here
+                } else {
+                    _state.update {
+                        it.copy(error = "No price information available for this product")
+                    }
                 }
             } catch (e: Exception) {
-                // Handle error
+                _state.update {
+                    it.copy(error = "Failed to add to cart: ${e.message}")
+                }
             }
         }
     }
@@ -206,6 +227,34 @@ class SearchViewModel @Inject constructor(
     fun retry() {
         if (_state.value.searchQuery.isNotEmpty()) {
             searchProducts()
+        } else {
+            clearError()
+        }
+    }
+
+    fun clearResults() {
+        _state.update {
+            it.copy(
+                groupedProducts = emptyList(),
+                hasSearched = false,
+                searchQuery = "",
+                error = null
+            )
+        }
+    }
+
+    fun clearError() {
+        _state.update { it.copy(error = null) }
+    }
+
+    private fun sortProducts(products: List<GroupedProduct>, sortOption: SortOption): List<GroupedProduct> {
+        return when (sortOption) {
+            SortOption.RELEVANCE -> products.sortedByDescending { it.relevanceScore ?: 0.0 }
+            SortOption.PRICE_LOW_TO_HIGH -> products.sortedBy { it.lowestPrice ?: Double.MAX_VALUE }
+            SortOption.PRICE_HIGH_TO_LOW -> products.sortedByDescending { it.lowestPrice ?: 0.0 }
+            SortOption.NAME_A_TO_Z -> products.sortedBy { it.itemName }
+            SortOption.NAME_Z_TO_A -> products.sortedByDescending { it.itemName }
+            SortOption.SAVINGS_HIGH_TO_LOW -> products.sortedByDescending { it.savings }
         }
     }
 
@@ -227,24 +276,5 @@ class SearchViewModel @Inject constructor(
             // Save to local storage
             // tokenManager.saveRecentSearches(updatedRecent)
         }
-    }
-
-    fun clearError() {
-        _state.update { it.copy(error = null) }
-    }
-}
-
-// Alternative ViewModel without Hilt for testing
-class SearchViewModelFactory(
-    private val priceRepository: PriceRepository,
-    private val cartRepository: CartRepository,
-    private val tokenManager: TokenManager
-) : androidx.lifecycle.ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(SearchViewModel::class.java)) {
-            @Suppress("UNCHECKED_CAST")
-            return SearchViewModel(priceRepository, cartRepository, tokenManager) as T
-        }
-        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }

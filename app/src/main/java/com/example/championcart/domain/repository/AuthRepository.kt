@@ -1,6 +1,7 @@
 package com.example.championcart.domain.repository
 
 import com.example.championcart.domain.models.*
+import com.example.championcart.data.models.request.SaveCartRequest
 import kotlinx.coroutines.flow.Flow
 
 interface AuthRepository {
@@ -77,18 +78,12 @@ interface AuthRepository {
     /**
      * Save user cart
      * Matches: POST /save-cart
+     * Uses data layer request model directly
      */
     suspend fun saveUserCart(request: SaveCartRequest): Result<Unit>
 
-    /**
-     * Get user statistics for profile
-     */
-    suspend fun getUserStats(): Result<UserStats>
-
-    /**
-     * Update user preferences
-     */
-    suspend fun updateUserPreferences(preferences: UserPreferences): Result<Unit>
+    // REMOVED: getUserStats() - server doesn't provide user statistics
+    // REMOVED: updateUserPreferences() - server doesn't store preferences
 }
 
 /**

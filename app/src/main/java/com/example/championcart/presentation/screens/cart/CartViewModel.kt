@@ -3,11 +3,12 @@ package com.example.championcart.presentation.screens.cart
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.championcart.data.local.preferences.TokenManager
+import com.example.championcart.data.models.request.SaveCartRequest
 import com.example.championcart.domain.models.*
 import com.example.championcart.domain.repository.CartRepository
 import com.example.championcart.domain.repository.PriceRepository
+import com.example.championcart.domain.repository.AuthRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -15,18 +16,24 @@ import javax.inject.Inject
 data class CartState(
     val cartItems: List<CartItem> = emptyList(),
     val totalPrice: Double = 0.0,
-    val selectedStore: Store? = null,
+    val selectedCity: String = "Tel Aviv",
     val cheapestCartResult: CheapestCartResult? = null,
+    val savedCarts: List<SavedCart> = emptyList(),
     val isLoading: Boolean = false,
+    val isFindingCheapest: Boolean = false,
+    val isSaving: Boolean = false,
+    val isLoadingSavedCarts: Boolean = false,
     val error: String? = null,
-    val showSavingsAnimation: Boolean = false,
-    val selectedCity: String = "Tel Aviv"
+    val showSaveDialog: Boolean = false,
+    val showSavedCartsDialog: Boolean = false,
+    val saveCartName: String = ""
 )
 
 @HiltViewModel
 class CartViewModel @Inject constructor(
     private val cartRepository: CartRepository,
     private val priceRepository: PriceRepository,
+    private val authRepository: AuthRepository,
     private val tokenManager: TokenManager
 ) : ViewModel() {
 
@@ -34,250 +41,363 @@ class CartViewModel @Inject constructor(
     val state: StateFlow<CartState> = _state.asStateFlow()
 
     init {
-        loadCart()
-        observeCartChanges()
+        observeCartItems()
+        loadSavedCarts()
+
+        // Get selected city
+        val savedCity = "Tel Aviv" // Could be tokenManager.getSelectedCity()
+        _state.update { it.copy(selectedCity = savedCity) }
     }
 
-    private fun loadCart() {
+    private fun observeCartItems() {
         viewModelScope.launch {
-            // Load cart items from local storage
-            val items = getMockCartItems() // In real app, load from repository
-            updateCartState(items)
-        }
-    }
-
-    private fun observeCartChanges() {
-        // In real app, observe cart repository for changes
-        viewModelScope.launch {
-            state.map { it.cartItems }
-                .distinctUntilChanged()
+            cartRepository.getCartItems()
+                .catch { exception ->
+                    _state.update {
+                        it.copy(error = "Failed to load cart: ${exception.message}")
+                    }
+                }
                 .collect { items ->
-                    calculateTotalPrice(items)
+                    val total = items.sumOf { it.price * it.quantity }
+                    _state.update {
+                        it.copy(
+                            cartItems = items,
+                            totalPrice = total,
+                            error = null
+                        )
+                    }
                 }
         }
-    }
-
-    private fun updateCartState(items: List<CartItem>) {
-        _state.update { currentState ->
-            currentState.copy(
-                cartItems = items,
-                totalPrice = items.sumOf { it.price * it.quantity }
-            )
-        }
-    }
-
-    private fun calculateTotalPrice(items: List<CartItem>) {
-        val total = items.sumOf { it.price * it.quantity }
-        _state.update { it.copy(totalPrice = total) }
     }
 
     fun updateQuantity(itemId: String, newQuantity: Int) {
         viewModelScope.launch {
-            val updatedItems = _state.value.cartItems.map { item ->
-                if (item.id == itemId) {
-                    item.copy(quantity = newQuantity)
+            try {
+                if (newQuantity <= 0) {
+                    cartRepository.removeFromCart(itemId)
                 } else {
-                    item
+                    cartRepository.updateQuantity(itemId, newQuantity)
+                }
+            } catch (e: Exception) {
+                _state.update {
+                    it.copy(error = "Failed to update quantity: ${e.message}")
                 }
             }
-            updateCartState(updatedItems)
         }
     }
 
     fun removeItem(itemId: String) {
         viewModelScope.launch {
-            val updatedItems = _state.value.cartItems.filter { it.id != itemId }
-            updateCartState(updatedItems)
-
-            // Reset cheapest result if cart changed
-            _state.update { it.copy(cheapestCartResult = null, selectedStore = null) }
+            try {
+                cartRepository.removeFromCart(itemId)
+            } catch (e: Exception) {
+                _state.update {
+                    it.copy(error = "Failed to remove item: ${e.message}")
+                }
+            }
         }
     }
 
     fun clearCart() {
         viewModelScope.launch {
-            updateCartState(emptyList())
-            _state.update {
-                it.copy(
-                    cheapestCartResult = null,
-                    selectedStore = null,
-                    showSavingsAnimation = false
-                )
+            try {
+                cartRepository.clearCart()
+                _state.update {
+                    it.copy(
+                        cheapestCartResult = null,
+                        error = null
+                    )
+                }
+            } catch (e: Exception) {
+                _state.update {
+                    it.copy(error = "Failed to clear cart: ${e.message}")
+                }
             }
         }
     }
 
-    fun findCheapestStore() {
+    fun findCheapestCart() {
+        val currentItems = _state.value.cartItems
+        if (currentItems.isEmpty()) {
+            _state.update {
+                it.copy(error = "Cart is empty. Add some products first.")
+            }
+            return
+        }
+
         viewModelScope.launch {
-            _state.update { it.copy(isLoading = true, error = null) }
+            _state.update {
+                it.copy(
+                    isFindingCheapest = true,
+                    error = null
+                )
+            }
 
             try {
-                // Simulate API call
-                delay(1500)
-
-                val cartItems = _state.value.cartItems
-                if (cartItems.isEmpty()) {
-                    _state.update {
-                        it.copy(
-                            isLoading = false,
-                            error = "Cart is empty"
-                        )
-                    }
-                    return@launch
-                }
-
-                // Create mock result
-                val result = createMockCheapestResult(cartItems)
-
-                _state.update {
-                    it.copy(
-                        isLoading = false,
-                        cheapestCartResult = result,
-                        selectedStore = result.bestStore,
-                        showSavingsAnimation = true
+                // Convert cart items to API format
+                val cartProducts = currentItems.map { cartItem ->
+                    CartProduct(
+                        itemName = cartItem.productName,
+                        quantity = cartItem.quantity
                     )
                 }
 
-                // Hide animation after delay
-                delay(3000)
-                _state.update { it.copy(showSavingsAnimation = false) }
+                // Call cheapest cart API
+                val result = priceRepository.findCheapestCart(
+                    city = _state.value.selectedCity,
+                    items = cartProducts
+                )
 
+                result.fold(
+                    onSuccess = { cheapestResult ->
+                        _state.update {
+                            it.copy(
+                                cheapestCartResult = cheapestResult,
+                                isFindingCheapest = false,
+                                error = null
+                            )
+                        }
+                    },
+                    onFailure = { exception ->
+                        _state.update {
+                            it.copy(
+                                isFindingCheapest = false,
+                                error = "Failed to find cheapest cart: ${exception.message}"
+                            )
+                        }
+                    }
+                )
             } catch (e: Exception) {
                 _state.update {
                     it.copy(
-                        isLoading = false,
-                        error = "Failed to find cheapest store: ${e.message}"
+                        isFindingCheapest = false,
+                        error = "Error finding cheapest cart: ${e.message}"
                     )
                 }
             }
         }
     }
 
-    fun selectStore(store: Store) {
-        _state.update { it.copy(selectedStore = store) }
-    }
-
-    // Mock data functions
-    private fun getMockCartItems(): List<CartItem> {
-        return listOf(
-            CartItem(
-                id = "1",
-                productId = "7290000042435",
-                productName = "חלב תנובה 3% 1 ליטר",
-                price = 6.90,
-                quantity = 2,
-                imageUrl = null
-            ),
-            CartItem(
-                id = "2",
-                productId = "7290000156378",
-                productName = "לחם אחיד פרוס",
-                price = 7.50,
-                quantity = 1,
-                imageUrl = null
-            ),
-            CartItem(
-                id = "3",
-                productId = "7290000234567",
-                productName = "ביצים L 12 יחידות",
-                price = 12.90,
-                quantity = 1,
-                imageUrl = null
-            ),
-            CartItem(
-                id = "4",
-                productId = "7290000345678",
-                productName = "במבה אוסם 80 גרם",
-                price = 4.50,
-                quantity = 3,
-                imageUrl = null
+    fun showSaveDialog() {
+        _state.update {
+            it.copy(
+                showSaveDialog = true,
+                saveCartName = "My Cart ${System.currentTimeMillis() / 1000}" // Default name
             )
-        )
+        }
     }
 
-    private fun createMockCheapestResult(items: List<CartItem>): CheapestCartResult {
-        val bestStore = Store(
-            id = "shufersal-001",
-            chain = "Shufersal",
-            name = "Shufersal Deal",
-            address = "Dizengoff 123, Tel Aviv"
-        )
+    fun hideSaveDialog() {
+        _state.update {
+            it.copy(
+                showSaveDialog = false,
+                saveCartName = ""
+            )
+        }
+    }
 
-        val itemsBreakdown = items.map { item ->
-            CartItemBreakdown(
-                itemName = item.productName,
-                quantity = item.quantity,
-                price = item.price * 0.85, // 15% cheaper at best store
-                totalPrice = item.price * item.quantity * 0.85
+    fun updateSaveCartName(name: String) {
+        _state.update { it.copy(saveCartName = name) }
+    }
+
+    fun saveCart() {
+        val currentState = _state.value
+        val userEmail = tokenManager.getUserEmail()
+
+        if (userEmail == null) {
+            _state.update {
+                it.copy(error = "Please log in to save carts")
+            }
+            return
+        }
+
+        if (currentState.cartItems.isEmpty()) {
+            _state.update {
+                it.copy(error = "Cart is empty. Add some products first.")
+            }
+            return
+        }
+
+        if (currentState.saveCartName.isBlank()) {
+            _state.update {
+                it.copy(error = "Please enter a cart name")
+            }
+            return
+        }
+
+        viewModelScope.launch {
+            _state.update {
+                it.copy(
+                    isSaving = true,
+                    error = null
+                )
+            }
+
+            try {
+                // Convert cart items to API format
+                val cartProducts = currentState.cartItems.map { cartItem ->
+                    CartProduct(
+                        itemName = cartItem.productName,
+                        quantity = cartItem.quantity
+                    )
+                }
+
+                val saveRequest = SaveCartRequest(
+                    cartName = currentState.saveCartName.trim(),
+                    email = userEmail,
+                    city = currentState.selectedCity,
+                    items = cartProducts
+                )
+
+                val result = authRepository.saveUserCart(saveRequest)
+
+                result.fold(
+                    onSuccess = {
+                        _state.update {
+                            it.copy(
+                                isSaving = false,
+                                showSaveDialog = false,
+                                saveCartName = "",
+                                error = null
+                            )
+                        }
+
+                        // Reload saved carts
+                        loadSavedCarts()
+                    },
+                    onFailure = { exception ->
+                        _state.update {
+                            it.copy(
+                                isSaving = false,
+                                error = "Failed to save cart: ${exception.message}"
+                            )
+                        }
+                    }
+                )
+            } catch (e: Exception) {
+                _state.update {
+                    it.copy(
+                        isSaving = false,
+                        error = "Error saving cart: ${e.message}"
+                    )
+                }
+            }
+        }
+    }
+
+    fun showSavedCartsDialog() {
+        _state.update { it.copy(showSavedCartsDialog = true) }
+        loadSavedCarts()
+    }
+
+    fun hideSavedCartsDialog() {
+        _state.update { it.copy(showSavedCartsDialog = false) }
+    }
+
+    fun loadSavedCarts() {
+        val userEmail = tokenManager.getUserEmail() ?: return
+
+        viewModelScope.launch {
+            _state.update { it.copy(isLoadingSavedCarts = true) }
+
+            try {
+                val result = authRepository.getUserSavedCarts()
+
+                result.fold(
+                    onSuccess = { savedCarts ->
+                        _state.update {
+                            it.copy(
+                                savedCarts = savedCarts,
+                                isLoadingSavedCarts = false,
+                                error = null
+                            )
+                        }
+                    },
+                    onFailure = { exception ->
+                        _state.update {
+                            it.copy(
+                                savedCarts = emptyList(),
+                                isLoadingSavedCarts = false,
+                                error = "Failed to load saved carts: ${exception.message}"
+                            )
+                        }
+                    }
+                )
+            } catch (e: Exception) {
+                _state.update {
+                    it.copy(
+                        savedCarts = emptyList(),
+                        isLoadingSavedCarts = false,
+                        error = "Error loading saved carts: ${e.message}"
+                    )
+                }
+            }
+        }
+    }
+
+    fun loadSavedCart(savedCart: SavedCart) {
+        viewModelScope.launch {
+            try {
+                // Clear current cart
+                cartRepository.clearCart()
+
+                // Add items from saved cart
+                savedCart.items.forEach { savedItem ->
+                    cartRepository.addToCart(
+                        productId = "saved-${savedItem.itemName.hashCode()}", // Generate ID
+                        productName = savedItem.itemName,
+                        price = savedItem.price,
+                        quantity = savedItem.quantity,
+                        storeChain = "Unknown", // Saved carts don't include store info
+                        storeId = "000"
+                    )
+                }
+
+                _state.update {
+                    it.copy(
+                        showSavedCartsDialog = false,
+                        error = null
+                    )
+                }
+            } catch (e: Exception) {
+                _state.update {
+                    it.copy(error = "Failed to load saved cart: ${e.message}")
+                }
+            }
+        }
+    }
+
+    fun selectCity(city: String) {
+        _state.update {
+            it.copy(
+                selectedCity = city,
+                cheapestCartResult = null, // Clear previous results
+                error = null
             )
         }
 
-        val totalPrice = itemsBreakdown.sumOf { it.totalPrice }
-        val originalTotal = items.sumOf { it.price * it.quantity }
-        val savings = originalTotal - totalPrice
-        val savingsPercentage = savings / originalTotal
-
-        return CheapestCartResult(
-            bestStore = bestStore,
-            totalPrice = totalPrice,
-            savingsAmount = savings,
-            savingsPercentage = savingsPercentage,
-            itemsBreakdown = itemsBreakdown,
-            allStores = listOf(
-                bestStore,
-                Store(
-                    id = "victory-052",
-                    chain = "Victory",
-                    name = "Victory Supermarket",
-                    address = "Ibn Gabirol 89, Tel Aviv"
-                ),
-                Store(
-                    id = "shufersal-007",
-                    chain = "Shufersal",
-                    name = "Shufersal Express",
-                    address = "Rothschild 45, Tel Aviv"
-                )
-            )
-        )
+        // Save city preference
+        viewModelScope.launch {
+            // tokenManager.saveSelectedCity(city)
+        }
     }
 
     fun clearError() {
         _state.update { it.copy(error = null) }
     }
-}
 
-// Cart item model
-data class CartItem(
-    val id: String,
-    val productId: String,
-    val productName: String,
-    val price: Double,
-    val quantity: Int,
-    val imageUrl: String? = null
-)
-
-// Extension to domain model if needed
-fun CartItemBreakdown.toCartItem(): CartItem {
-    return CartItem(
-        id = "", // Generate ID
-        productId = "", // Would need product ID
-        productName = itemName,
-        price = price,
-        quantity = quantity
-    )
-}
-
-// Alternative ViewModel without Hilt for testing
-class CartViewModelFactory(
-    private val cartRepository: CartRepository,
-    private val priceRepository: PriceRepository,
-    private val tokenManager: TokenManager
-) : androidx.lifecycle.ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(CartViewModel::class.java)) {
-            @Suppress("UNCHECKED_CAST")
-            return CartViewModel(cartRepository, priceRepository, tokenManager) as T
+    fun retryLastAction() {
+        // Retry the last failed action based on current state
+        when {
+            _state.value.cartItems.isNotEmpty() && _state.value.cheapestCartResult == null -> {
+                findCheapestCart()
+            }
+            _state.value.savedCarts.isEmpty() -> {
+                loadSavedCarts()
+            }
+            else -> {
+                clearError()
+            }
         }
-        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }
