@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.airbnb.lottie.compose.*
@@ -650,7 +651,7 @@ private fun FloatingElements(
     icons: List<ImageVector>,
     count: Int,
     tint: Color,
-    radius: dp = 60.dp,
+    radius: Dp = 60.dp,
     rotationSpeed: Int = 10000
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "floating")
