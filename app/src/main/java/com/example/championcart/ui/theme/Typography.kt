@@ -1,6 +1,7 @@
 package com.example.championcart.ui.theme
 
 import androidx.compose.material3.Typography
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
@@ -151,58 +152,58 @@ val JetBrainsMonoFontFamily = FontFamily(
     )
 )
 
-// Material3 Typography - Electric Harmony Style
+// Material3 Typography - Electric Harmony Style (FIXED to match design system)
 val Typography = Typography(
-    // Display - Hero text with Space Grotesk for maximum impact
+    // Display - FIXED sizes to match design system
     displayLarge = TextStyle(
         fontFamily = SpaceGroteskFontFamily,
         fontWeight = FontWeight(800),
-        fontSize = 57.sp,
-        lineHeight = 64.sp,
-        letterSpacing = (-0.25).sp
+        fontSize = 48.sp,  // FIXED: Was 57sp, now matches Hero spec
+        lineHeight = 56.sp,
+        letterSpacing = (-0.5).sp
     ),
     displayMedium = TextStyle(
         fontFamily = SpaceGroteskFontFamily,
-        fontWeight = FontWeight.Bold,
-        fontSize = 45.sp,
-        lineHeight = 52.sp,
+        fontWeight = FontWeight(700),
+        fontSize = 36.sp,  // FIXED: Was 45sp
+        lineHeight = 44.sp,
         letterSpacing = 0.sp
     ),
     displaySmall = TextStyle(
         fontFamily = SpaceGroteskFontFamily,
-        fontWeight = FontWeight.Bold,
-        fontSize = 36.sp,
-        lineHeight = 44.sp,
+        fontWeight = FontWeight(600),
+        fontSize = 28.sp,  // FIXED: Was 36sp
+        lineHeight = 36.sp,
         letterSpacing = 0.sp
     ),
 
-    // Headlines - Inter Variable for modern hierarchy
+    // Headlines - Inter Variable with proper weights (already correct)
     headlineLarge = TextStyle(
         fontFamily = InterFontFamily,
         fontWeight = FontWeight(700),
-        fontSize = 32.sp,
-        lineHeight = 40.sp,
+        fontSize = 24.sp,
+        lineHeight = 32.sp,
         letterSpacing = 0.sp
     ),
     headlineMedium = TextStyle(
         fontFamily = InterFontFamily,
         fontWeight = FontWeight(600),
-        fontSize = 28.sp,
-        lineHeight = 36.sp,
-        letterSpacing = 0.sp
+        fontSize = 20.sp,
+        lineHeight = 28.sp,
+        letterSpacing = 0.15.sp
     ),
     headlineSmall = TextStyle(
         fontFamily = InterFontFamily,
         fontWeight = FontWeight(600),
-        fontSize = 24.sp,
-        lineHeight = 32.sp,
+        fontSize = 18.sp,
+        lineHeight = 24.sp,
         letterSpacing = 0.sp
     ),
 
-    // Titles - Inter Variable with optimized spacing
+    // Titles - Inter Variable with medium weights
     titleLarge = TextStyle(
         fontFamily = InterFontFamily,
-        fontWeight = FontWeight(600),
+        fontWeight = FontWeight(500),
         fontSize = 22.sp,
         lineHeight = 28.sp,
         letterSpacing = 0.sp
@@ -222,20 +223,20 @@ val Typography = Typography(
         letterSpacing = 0.1.sp
     ),
 
-    // Body text - Inter Variable for excellent readability
+    // Body - Inter Variable with optimal readability
     bodyLarge = TextStyle(
         fontFamily = InterFontFamily,
         fontWeight = FontWeight(400),
         fontSize = 16.sp,
         lineHeight = 24.sp,
-        letterSpacing = 0.5.sp
+        letterSpacing = 0.25.sp
     ),
     bodyMedium = TextStyle(
         fontFamily = InterFontFamily,
         fontWeight = FontWeight(400),
         fontSize = 14.sp,
         lineHeight = 20.sp,
-        letterSpacing = 0.25.sp
+        letterSpacing = 0.15.sp
     ),
     bodySmall = TextStyle(
         fontFamily = InterFontFamily,
@@ -275,7 +276,7 @@ object AppTextStyles {
     val heroDisplay = TextStyle(
         fontFamily = SpaceGroteskFontFamily,
         fontWeight = FontWeight(800),
-        fontSize = 48.sp,
+        fontSize = 48.sp,  // Matches design system Hero spec
         lineHeight = 56.sp,
         letterSpacing = (-0.5).sp
     )
@@ -390,6 +391,12 @@ object AppTextStyles {
         fontFeatureSettings = "tnum"
     )
 
+    // Crossed out price (for original/sale prices)
+    val priceCrossed = priceSmall.copy(
+        fontWeight = FontWeight(400),
+        color = Color(0xFF9E9E9E)
+    )
+
     // Product & Store Names - Enhanced hierarchy
     val productNameLarge = TextStyle(
         fontFamily = InterFontFamily,
@@ -407,12 +414,12 @@ object AppTextStyles {
         letterSpacing = 0.sp
     )
 
-    val productNameSmall = TextStyle(
+    val productBrand = TextStyle(
         fontFamily = InterFontFamily,
-        fontWeight = FontWeight(500),
+        fontWeight = FontWeight(400),
         fontSize = 14.sp,
         lineHeight = 20.sp,
-        letterSpacing = 0.sp
+        letterSpacing = 0.25.sp
     )
 
     val storeName = TextStyle(
@@ -420,32 +427,16 @@ object AppTextStyles {
         fontWeight = FontWeight(600),
         fontSize = 14.sp,
         lineHeight = 20.sp,
-        letterSpacing = 0.25.sp
-    )
-
-    val storeNameSmall = TextStyle(
-        fontFamily = InterFontFamily,
-        fontWeight = FontWeight(500),
-        fontSize = 12.sp,
-        lineHeight = 16.sp,
-        letterSpacing = 0.4.sp
-    )
-
-    // UI Elements - Consistent interactive text
-    val buttonText = TextStyle(
-        fontFamily = InterFontFamily,
-        fontWeight = FontWeight(600),
-        fontSize = 16.sp,
-        lineHeight = 20.sp,
         letterSpacing = 0.1.sp
     )
 
-    val buttonTextSmall = TextStyle(
+    // UI Elements - Buttons, chips, badges
+    val buttonText = TextStyle(
         fontFamily = InterFontFamily,
-        fontWeight = FontWeight(500),
+        fontWeight = FontWeight(600),
         fontSize = 14.sp,
-        lineHeight = 18.sp,
-        letterSpacing = 0.25.sp
+        lineHeight = 20.sp,
+        letterSpacing = 0.1.sp
     )
 
     val chipText = TextStyle(
@@ -453,40 +444,32 @@ object AppTextStyles {
         fontWeight = FontWeight(500),
         fontSize = 12.sp,
         lineHeight = 16.sp,
-        letterSpacing = 0.5.sp
+        letterSpacing = 0.25.sp
     )
 
     val badge = TextStyle(
         fontFamily = InterFontFamily,
-        fontWeight = FontWeight(600),
+        fontWeight = FontWeight(700),
         fontSize = 10.sp,
-        lineHeight = 12.sp,
+        lineHeight = 14.sp,
         letterSpacing = 0.5.sp
     )
 
-    // Form Elements
-    val inputLabel = TextStyle(
+    // Navigation & Headers
+    val navigationLabel = TextStyle(
         fontFamily = InterFontFamily,
         fontWeight = FontWeight(500),
         fontSize = 12.sp,
         lineHeight = 16.sp,
-        letterSpacing = 0.5.sp
+        letterSpacing = 0.4.sp
     )
 
-    val inputText = TextStyle(
+    val sectionHeader = TextStyle(
         fontFamily = InterFontFamily,
-        fontWeight = FontWeight(400),
-        fontSize = 16.sp,
-        lineHeight = 24.sp,
-        letterSpacing = 0.15.sp
-    )
-
-    val inputHint = TextStyle(
-        fontFamily = InterFontFamily,
-        fontWeight = FontWeight(400),
-        fontSize = 16.sp,
-        lineHeight = 24.sp,
-        letterSpacing = 0.15.sp
+        fontWeight = FontWeight(700),
+        fontSize = 12.sp,
+        lineHeight = 16.sp,
+        letterSpacing = 0.8.sp
     )
 
     // Supporting Text

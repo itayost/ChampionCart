@@ -22,8 +22,22 @@ data class ExtendedColors(
     // Primary Brand Colors
     val electricMint: Color,
     val electricMintVariant: Color,
+    val electricMintLight: Color,
+    val electricMintDark: Color,
+    val electricMintGlow: Color,
+
     val cosmicPurple: Color,
     val cosmicPurpleVariant: Color,
+    val cosmicPurpleLight: Color,
+    val cosmicPurpleDark: Color,
+    val cosmicPurpleGlow: Color,
+
+    // NEW: Neon Coral colors
+    val neonCoral: Color,
+    val neonCoralLight: Color,
+    val neonCoralDark: Color,
+    val neonCoralGlow: Color,
+
     val deepNavy: Color,
     val deepNavyVariant: Color,
 
@@ -52,6 +66,7 @@ data class ExtendedColors(
     // Price Comparison Colors
     val bestPrice: Color,
     val bestPriceContainer: Color,
+    val bestPriceGlow: Color,
     val onBestPrice: Color,
 
     val midPrice: Color,
@@ -132,16 +147,30 @@ val lightExtendedColors = ExtendedColors(
     // Primary Brand Colors
     electricMint = BrandColors.ElectricMint,
     electricMintVariant = BrandColors.ElectricMintVariant,
+    electricMintLight = BrandColors.ElectricMintLight,
+    electricMintDark = BrandColors.ElectricMintDark,
+    electricMintGlow = BrandColors.ElectricMintGlow,
+
     cosmicPurple = BrandColors.CosmicPurple,
     cosmicPurpleVariant = BrandColors.CosmicPurpleVariant,
+    cosmicPurpleLight = BrandColors.CosmicPurpleLight,
+    cosmicPurpleDark = BrandColors.CosmicPurpleDark,
+    cosmicPurpleGlow = BrandColors.CosmicPurpleGlow,
+
+    // NEW: Neon Coral
+    neonCoral = BrandColors.NeonCoral,
+    neonCoralLight = BrandColors.NeonCoralLight,
+    neonCoralDark = BrandColors.NeonCoralDark,
+    neonCoralGlow = BrandColors.NeonCoralGlow,
+
     deepNavy = BrandColors.DeepNavy,
     deepNavyVariant = BrandColors.DeepNavyVariant,
 
-    // Glassmorphic Overlays
-    glassLight = Color(0x12FFFFFF),
-    glassMedium = Color(0x1FFFFFFF),
-    glassHeavy = Color(0x33FFFFFF),
-    glassAccent = Color(0x26FFFFFF),
+    // Glassmorphic Overlays - Updated with correct values
+    glassLight = BrandColors.GlassLight,     // 8% white
+    glassMedium = BrandColors.GlassMedium,   // 16% white
+    glassHeavy = BrandColors.GlassHeavy,     // 20% white
+    glassAccent = Color(0x26FFFFFF),         // 15% white for accents
 
     // Semantic State Colors
     success = BrandColors.Success,
@@ -162,6 +191,7 @@ val lightExtendedColors = ExtendedColors(
     // Price Comparison Colors
     bestPrice = BrandColors.BestPrice,
     bestPriceContainer = Color(0xFFE8F5E8),
+    bestPriceGlow = BrandColors.BestPriceGlow,
     onBestPrice = Color.White,
 
     midPrice = BrandColors.MidPrice,
@@ -196,10 +226,10 @@ val lightExtendedColors = ExtendedColors(
     eveningAccent = TimeBasedColors.EveningPrimary,
     nightAccent = TimeBasedColors.NightPrimary,
 
-    // Gradient Colors
+    // Gradient Colors - Updated with Neon Coral
     gradientStart = BrandColors.ElectricMint,
     gradientMiddle = BrandColors.CosmicPurple,
-    gradientEnd = BrandColors.DeepNavy,
+    gradientEnd = BrandColors.NeonCoral,
 
     // Interactive States
     interactiveDefault = BrandColors.ElectricMint,
@@ -230,7 +260,7 @@ val lightExtendedColors = ExtendedColors(
 
     // Special Effects
     shadow = Color(0x1A000000),
-    glow = Color(0x4000D9A3),
+    glow = BrandColors.ElectricMintGlow,
     shimmer = Color(0x80FFFFFF),
     highlight = Color(0x4000E676)
 )
@@ -240,18 +270,32 @@ val lightExtendedColors = ExtendedColors(
  */
 val darkExtendedColors = ExtendedColors(
     // Primary Brand Colors
-    electricMint = BrandColors.ElectricMintVariant,
-    electricMintVariant = Color(0xFF80F5D4),
-    cosmicPurple = BrandColors.CosmicPurpleVariant,
+    electricMint = Color(0xFF80F5D4),  // Lighter for dark mode
+    electricMintVariant = Color(0xFF00E676),
+    electricMintLight = Color(0xFFB3FFE6),
+    electricMintDark = Color(0xFF4DCCB3),
+    electricMintGlow = Color(0x5480F5D4),
+
+    cosmicPurple = Color(0xFF9D6FFF),  // Lighter for dark mode
     cosmicPurpleVariant = Color(0xFFCE93D8),
+    cosmicPurpleLight = Color(0xFFBE9FFF),
+    cosmicPurpleDark = Color(0xFF7B3FF2),
+    cosmicPurpleGlow = Color(0x549D6FFF),
+
+    // NEW: Neon Coral for dark theme
+    neonCoral = Color(0xFFFF8FB3),  // Lighter for dark mode
+    neonCoralLight = Color(0xFFFFB3CC),
+    neonCoralDark = Color(0xFFFF6B9D),
+    neonCoralGlow = Color(0x54FF8FB3),
+
     deepNavy = Color(0xFF2A2F4A),
     deepNavyVariant = Color(0xFF353A54),
 
-    // Glassmorphic Overlays
-    glassLight = Color(0x0AFFFFFF),
-    glassMedium = Color(0x1AFFFFFF),
-    glassHeavy = Color(0x26FFFFFF),
-    glassAccent = Color(0x33FFFFFF),
+    // Glassmorphic Overlays - Dark mode
+    glassLight = BrandColors.GlassDark,       // 8% black
+    glassMedium = BrandColors.GlassDarkMedium, // 16% black
+    glassHeavy = Color(0x26FFFFFF),           // 15% white for dark mode
+    glassAccent = Color(0x33FFFFFF),          // 20% white for accents
 
     // Semantic State Colors
     success = Color(0xFF81C784),
@@ -272,6 +316,7 @@ val darkExtendedColors = ExtendedColors(
     // Price Comparison Colors
     bestPrice = Color(0xFF81C784),
     bestPriceContainer = Color(0xFF2E7D32),
+    bestPriceGlow = Color(0x5481C784),
     onBestPrice = Color.White,
 
     midPrice = Color(0xFFFFB74D),
@@ -306,10 +351,10 @@ val darkExtendedColors = ExtendedColors(
     eveningAccent = TimeBasedColors.EveningSecondary,
     nightAccent = TimeBasedColors.NightSecondary,
 
-    // Gradient Colors
+    // Gradient Colors - Dark mode
     gradientStart = Color(0xFF80F5D4),
-    gradientMiddle = Color(0xFFCE93D8),
-    gradientEnd = Color(0xFF2A2F4A),
+    gradientMiddle = Color(0xFF9D6FFF),
+    gradientEnd = Color(0xFFFF8FB3),
 
     // Interactive States
     interactiveDefault = Color(0xFF80F5D4),
@@ -354,8 +399,8 @@ val highContrastLightExtendedColors = lightExtendedColors.copy(
     textSecondary = Color(0xFF333333),
     borderDefault = Color.Black,
     borderStrong = Color.Black,
-    interactiveDefault = Color(0xFF003D33),
-    interactiveHover = Color(0xFF00251F),
+    interactiveDefault = BrandColors.ElectricMintDark,
+    interactiveHover = Color(0xFF00A67C),
     bestPrice = Color(0xFF1B5E20),
     midPrice = Color(0xFFE65100),
     highPrice = Color(0xFFB71C1C)
@@ -401,150 +446,52 @@ object ExtendedGradients {
     )
 
     @Composable
+    fun neonGradient(): Brush = Brush.linearGradient(
+        colors = listOf(
+            LocalExtendedColors.current.cosmicPurple,
+            LocalExtendedColors.current.neonCoral
+        )
+    )
+
+    @Composable
+    fun fullSpectrumGradient(): Brush = Brush.linearGradient(
+        colors = listOf(
+            LocalExtendedColors.current.electricMint,
+            LocalExtendedColors.current.cosmicPurple,
+            LocalExtendedColors.current.neonCoral
+        )
+    )
+
+    @Composable
     fun timeBasedGradient(hour: Int): Brush {
         val colors = LocalExtendedColors.current
         val (start, end) = when (hour) {
-            in 6..11 -> colors.morningAccent to colors.electricMint
-            in 12..17 -> colors.afternoonAccent to colors.cosmicPurple
-            in 18..23 -> colors.eveningAccent to colors.deepNavy
-            else -> colors.nightAccent to colors.deepNavyVariant
+            in 6..11 -> colors.morningAccent to colors.afternoonAccent
+            in 12..17 -> colors.afternoonAccent to colors.eveningAccent
+            in 18..23 -> colors.eveningAccent to colors.nightAccent
+            else -> colors.nightAccent to colors.morningAccent
         }
-        return Brush.linearGradient(colors = listOf(start, end))
+
+        return Brush.linearGradient(
+            colors = listOf(start, end),
+            tileMode = TileMode.Clamp
+        )
     }
 
     @Composable
-    fun glassmorphicGradient(): Brush = Brush.linearGradient(
+    fun glassGradient(): Brush = Brush.verticalGradient(
         colors = listOf(
             LocalExtendedColors.current.glassLight,
-            LocalExtendedColors.current.glassMedium,
-            LocalExtendedColors.current.glassHeavy
+            LocalExtendedColors.current.glassMedium
         )
     )
 
     @Composable
-    fun priceGradient(priceLevel: PriceLevel): Brush {
-        val colors = LocalExtendedColors.current
-        return when (priceLevel) {
-            PriceLevel.Best -> Brush.radialGradient(
-                colors = listOf(colors.bestPrice, colors.bestPriceContainer)
-            )
-            PriceLevel.Mid -> Brush.radialGradient(
-                colors = listOf(colors.midPrice, colors.midPriceContainer)
-            )
-            PriceLevel.High -> Brush.radialGradient(
-                colors = listOf(colors.highPrice, colors.highPriceContainer)
-            )
-        }
-    }
-
-    @Composable
-    fun heroGradient(): Brush = Brush.sweepGradient(
+    fun priceGradient(): Brush = Brush.horizontalGradient(
         colors = listOf(
-            LocalExtendedColors.current.gradientStart,
-            LocalExtendedColors.current.gradientMiddle,
-            LocalExtendedColors.current.gradientEnd,
-            LocalExtendedColors.current.gradientStart
+            LocalExtendedColors.current.bestPrice,
+            LocalExtendedColors.current.midPrice,
+            LocalExtendedColors.current.highPrice
         )
     )
-}
-
-/**
- * Helper functions for color selection
- */
-object ColorHelpers {
-    @Composable
-    fun getStoreColor(storeName: String): Color {
-        val colors = LocalExtendedColors.current
-        return when (storeName.lowercase()) {
-            "shufersal", "שופרסל" -> colors.shufersal
-            "rami levy", "rami-levy", "ramilevy", "רמי לוי" -> colors.ramiLevi
-            "victory", "ויקטורי" -> colors.victory
-            "mega", "מגה" -> colors.mega
-            "osher ad", "אושר עד" -> colors.osherAd
-            "coop", "קופ" -> colors.coop
-            else -> colors.interactiveDefault
-        }
-    }
-
-    @Composable
-    fun getCategoryColor(category: String): Color {
-        val colors = LocalExtendedColors.current
-        return when (category.lowercase()) {
-            "dairy", "חלב", "מוצרי חלב" -> colors.dairy
-            "meat", "בשר" -> colors.meat
-            "produce", "פירות וירקות" -> colors.produce
-            "bakery", "מאפייה" -> colors.bakery
-            "frozen", "קפוא" -> colors.frozen
-            "household", "מוצרי בית" -> colors.household
-            "kosher", "כשר" -> colors.kosher
-            "organic", "אורגני" -> colors.organic
-            else -> colors.interactiveDefault
-        }
-    }
-
-    @Composable
-    fun getPriceColor(priceLevel: PriceLevel): Color {
-        val colors = LocalExtendedColors.current
-        return when (priceLevel) {
-            PriceLevel.Best -> colors.bestPrice
-            PriceLevel.Mid -> colors.midPrice
-            PriceLevel.High -> colors.highPrice
-        }
-    }
-
-    @Composable
-    fun getTimeBasedAccent(): Color {
-        val colors = LocalExtendedColors.current
-        val calendar = Calendar.getInstance()
-        val hour = calendar.get(Calendar.HOUR_OF_DAY)
-        return when (hour) {
-            in 6..11 -> colors.morningAccent
-            in 12..17 -> colors.afternoonAccent
-            in 18..23 -> colors.eveningAccent
-            else -> colors.nightAccent
-        }
-    }
-}
-
-/**
- * Supporting enums
- */
-enum class PriceLevel { Best, Mid, High }
-
-/**
- * Color animation helpers
- */
-object ColorAnimations {
-    @Composable
-    fun animatedPriceColor(
-        priceLevel: PriceLevel,
-        isAnimating: Boolean = false
-    ): Color {
-        val targetColor = ColorHelpers.getPriceColor(priceLevel)
-        return if (isAnimating) {
-            androidx.compose.animation.animateColorAsState(
-                targetValue = targetColor,
-                animationSpec = SpringSpecs.Smooth,
-                label = "priceColor"
-            ).value
-        } else {
-            targetColor
-        }
-    }
-
-    @Composable
-    fun animatedGlowColor(
-        baseColor: Color,
-        isGlowing: Boolean = false
-    ): Color {
-        return androidx.compose.animation.animateColorAsState(
-            targetValue = if (isGlowing) {
-                baseColor.copy(alpha = 0.8f)
-            } else {
-                baseColor.copy(alpha = 0.3f)
-            },
-            animationSpec = SpringSpecs.Gentle,
-            label = "glowColor"
-        ).value
-    }
 }
