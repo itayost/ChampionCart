@@ -2,350 +2,102 @@ package com.example.championcart.ui.theme
 
 import android.app.Activity
 import android.os.Build
-import android.view.View
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material3.*
+import androidx.compose.material3.ColorScheme
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.dynamicDarkColorScheme
+import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
-import java.time.LocalTime
+import java.util.*
 
 /**
- * Champion Cart - Electric Harmony Theme
- * Dynamic, vibrant theme with glassmorphism and time-based colors
- * FIXED VERSION - Compatible with existing Color.kt
+ * Champion Cart - Main Theme Orchestration
+ * Electric Harmony design system with intelligent theming
+ * Integrates all theme components for cohesive user experience
  */
 
-// Light Color Scheme - Electric Harmony
-private fun lightColorScheme(timeBasedColors: TimeBasedColors? = null) = lightColorScheme(
-    primary = timeBasedColors?.primary ?: ChampionCartColors.electricMint,
-    onPrimary = ChampionCartColors.textOnPrimary,
-    primaryContainer = ChampionCartColors.electricMintLight,
-    onPrimaryContainer = ChampionCartColors.electricMintDark,
-
-    secondary = ChampionCartColors.cosmicPurple,
-    onSecondary = ChampionCartColors.textOnSecondary,
-    secondaryContainer = ChampionCartColors.cosmicPurpleLight,
-    onSecondaryContainer = ChampionCartColors.cosmicPurpleDark,
-
-    tertiary = timeBasedColors?.accent ?: ChampionCartColors.neonCoral,
-    onTertiary = ChampionCartColors.textOnAccent,
-    tertiaryContainer = ChampionCartColors.neonCoralLight,
-    onTertiaryContainer = ChampionCartColors.neonCoralDark,
-
-    error = ChampionCartColors.errorRed,
-    errorContainer = ChampionCartColors.errorRed.copy(alpha = 0.1f),
-    onError = Color.White,
-    onErrorContainer = ChampionCartColors.errorRed,
-
-    background = timeBasedColors?.gradientStart ?: ChampionCartColors.backgroundLight,
-    onBackground = ChampionCartColors.textPrimary,
-
-    surface = ChampionCartColors.surfaceLight,
-    onSurface = ChampionCartColors.textPrimary,
-    surfaceVariant = ChampionCartColors.surfaceVariantLight,
-    onSurfaceVariant = ChampionCartColors.textSecondary,
-
-    outline = ChampionCartColors.textTertiary.copy(alpha = 0.5f),
-    outlineVariant = ChampionCartColors.textTertiary.copy(alpha = 0.25f),
-    scrim = ChampionCartColors.shadowDark,
-
-    inverseSurface = ChampionCartColors.textPrimary,
-    inverseOnSurface = ChampionCartColors.surfaceLight,
-    inversePrimary = ChampionCartColors.electricMintLight
-)
-
-// Dark Color Scheme - Night Mode
-private val darkColorScheme = darkColorScheme(
-    primary = ChampionCartColors.electricMintLight,
-    onPrimary = ChampionCartColors.electricMintDark,
-    primaryContainer = ChampionCartColors.electricMint.copy(alpha = 0.3f),
-    onPrimaryContainer = ChampionCartColors.electricMintLight,
-
-    secondary = ChampionCartColors.cosmicPurpleLight,
-    onSecondary = ChampionCartColors.cosmicPurpleDark,
-    secondaryContainer = ChampionCartColors.cosmicPurple.copy(alpha = 0.3f),
-    onSecondaryContainer = ChampionCartColors.cosmicPurpleLight,
-
-    tertiary = ChampionCartColors.neonCoralLight,
-    onTertiary = ChampionCartColors.neonCoralDark,
-    tertiaryContainer = ChampionCartColors.neonCoral.copy(alpha = 0.3f),
-    onTertiaryContainer = ChampionCartColors.neonCoralLight,
-
-    error = ChampionCartColors.errorRed,
-    errorContainer = ChampionCartColors.errorRed.copy(alpha = 0.2f),
-    onError = ChampionCartColors.textPrimary,
-    onErrorContainer = ChampionCartColors.errorRed,
-
-    background = ChampionCartColors.backgroundDark,
-    onBackground = ChampionCartColors.textPrimaryDark,
-
-    surface = ChampionCartColors.surfaceDark,
-    onSurface = ChampionCartColors.textPrimaryDark,
-    surfaceVariant = ChampionCartColors.surfaceVariantDark,
-    onSurfaceVariant = ChampionCartColors.textSecondaryDark,
-
-    outline = ChampionCartColors.textSecondaryDark.copy(alpha = 0.5f),
-    outlineVariant = ChampionCartColors.textSecondaryDark.copy(alpha = 0.25f),
-    scrim = ChampionCartColors.shadowDark,
-
-    inverseSurface = ChampionCartColors.textPrimaryDark,
-    inverseOnSurface = ChampionCartColors.surfaceDark,
-    inversePrimary = ChampionCartColors.electricMint
-)
-
-// Extended theme colors - matching your existing structure
-val lightExtendedColors = ExtendedColors(
-    electricMint = ChampionCartColors.electricMint,
-    electricMintGlow = ChampionCartColors.electricMintGlow,
-    cosmicPurple = ChampionCartColors.cosmicPurple,
-    cosmicPurpleGlow = ChampionCartColors.cosmicPurpleGlow,
-    neonCoral = ChampionCartColors.neonCoral,
-    neonCoralGlow = ChampionCartColors.neonCoralGlow,
-
-    success = ChampionCartColors.successGreen,
-    successGlow = ChampionCartColors.successGreenGlow,
-    warning = ChampionCartColors.warningAmber,
-    warningGlow = ChampionCartColors.warningAmberGlow,
-    error = ChampionCartColors.errorRed,
-    errorGlow = ChampionCartColors.errorRedGlow,
-    info = ChampionCartColors.infoBlue,
-    infoGlow = ChampionCartColors.infoBlueGlow,
-
-    bestPrice = ChampionCartColors.bestPrice,
-    bestPriceGlow = ChampionCartColors.bestPriceGlow,
-    midPrice = ChampionCartColors.midPrice,
-    highPrice = ChampionCartColors.highPrice,
-    priceLow = ChampionCartColors.bestPrice,
-    priceHigh = ChampionCartColors.highPrice,
-    bestDeal = ChampionCartColors.bestPrice,
-    savings = ChampionCartColors.electricMint,
-    tertiary = ChampionCartColors.neonCoral,
-    errorRed = ChampionCartColors.errorRed,
-
-    glass = ChampionCartColors.glassLight,
-    glassBorder = ChampionCartColors.glassLightBorder,
-    glassDark = ChampionCartColors.glassDark,
-    glassDarkBorder = ChampionCartColors.glassDarkBorder,
-    glassFrosted = ChampionCartColors.glassFrosted,
-    glassFrostedBorder = ChampionCartColors.glassFrostedBorder,
-
-    shufersal = ChampionCartColors.shufersalBrand,
-    shufersalGlow = ChampionCartColors.shufersalGlow,
-    victory = ChampionCartColors.victoryBrand,
-    victoryGlow = ChampionCartColors.victoryGlow,
-    ramiLevy = ChampionCartColors.ramiLevyBrand,
-    ramiLevyGlow = ChampionCartColors.ramiLevyGlow,
-    mega = ChampionCartColors.megaBrand,
-    megaGlow = ChampionCartColors.megaGlow,
-    genericStore = ChampionCartColors.genericStore,
-
-    morningPrimary = ChampionCartColors.morningPrimary,
-    morningAccent = ChampionCartColors.morningAccent,
-    morningGradientStart = ChampionCartColors.morningGradientStart,
-    morningGradientEnd = ChampionCartColors.morningGradientEnd,
-    eveningPrimary = ChampionCartColors.eveningPrimary,
-    eveningAccent = ChampionCartColors.eveningAccent,
-    eveningGradientStart = ChampionCartColors.eveningGradientStart,
-    eveningGradientEnd = ChampionCartColors.eveningGradientEnd,
-    nightPrimary = ChampionCartColors.nightPrimary,
-    nightAccent = ChampionCartColors.nightAccent,
-
-    shimmerHighlight = ChampionCartColors.shimmerHighlight,
-    shadowLight = ChampionCartColors.shadowLight,
-    shadowMedium = ChampionCartColors.shadowMedium,
-    shadowDark = ChampionCartColors.shadowDark
-)
-
-// Dark theme extended colors
-val darkExtendedColors = lightExtendedColors.copy(
-    glass = ChampionCartColors.glassDark,
-    glassBorder = ChampionCartColors.glassDarkBorder,
-    glassDark = ChampionCartColors.glassDark,
-    glassDarkBorder = ChampionCartColors.glassDarkBorder
-)
-
-// High contrast extended colors
-val highContrastExtendedColors = lightExtendedColors.copy(
-    electricMint = Color.Black,
-    electricMintGlow = Color.Transparent,
-    cosmicPurple = Color.Black,
-    cosmicPurpleGlow = Color.Transparent,
-    neonCoral = Color.Black,
-    neonCoralGlow = Color.Transparent,
-    tertiary = Color.Black,
-    glass = Color.Transparent,
-    glassBorder = Color.Black,
-    glassFrosted = Color.White.copy(alpha = 0.9f),
-    glassFrostedBorder = Color.Black
-)
-
-// Composition locals
-val LocalExtendedColors = staticCompositionLocalOf {
-    lightExtendedColors
+/**
+ * Theme preference types
+ */
+enum class ThemePreference(val displayName: String) {
+    System("Follow System"),
+    Light("Light"),
+    Dark("Dark"),
+    Auto("Auto (Time-based)")
 }
 
+/**
+ * Theme configuration data class
+ */
+data class ThemeConfig(
+    val darkTheme: Boolean = false,
+    val dynamicColor: Boolean = true,
+    val highContrast: Boolean = false,
+    val timeBasedColors: Boolean = false,
+    val reduceMotion: Boolean = false,
+    val hapticsEnabled: Boolean = true,
+    val glassEffectsEnabled: Boolean = true,
+    val performanceMode: Boolean = false
+)
+
+/**
+ * Composition locals for theme configuration
+ */
+val LocalThemeConfig = staticCompositionLocalOf { ThemeConfig() }
 val LocalReduceMotion = staticCompositionLocalOf { false }
 val LocalHapticsEnabled = staticCompositionLocalOf { true }
+val LocalGlassEffectsEnabled = staticCompositionLocalOf { true }
 
-// Extension property to access extended colors from MaterialTheme
-val MaterialTheme.extendedColors: ExtendedColors
-    @Composable
-    @ReadOnlyComposable
-    get() = LocalExtendedColors.current
-
-// Theme configuration data class
-private data class ThemeConfig(
-    val darkTheme: Boolean,
-    val dynamicColor: Boolean,
-    val highContrast: Boolean,
-    val timeBasedColors: TimeBasedColors?
-) {
-    fun shouldUseDarkTheme(): Boolean = darkTheme || timeBasedColors?.isDark == true
-}
-
-// EXTRACTED HELPER FUNCTIONS - Low Cognitive Complexity
-
-@Composable
-private fun getTimeBasedColorsIfEnabled(timeBasedTheme: Boolean): TimeBasedColors? {
-    return if (timeBasedTheme) {
-        val currentHour = remember { LocalTime.now().hour }
-        remember(currentHour) { getTimeBasedColors(currentHour) }
-    } else {
-        null
-    }
-}
-
-@Composable
-private fun getColorScheme(config: ThemeConfig): ColorScheme {
-    return when {
-        config.highContrast -> getHighContrastColorScheme(config)
-        config.dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            getDynamicColorScheme(config)
-        }
-        config.shouldUseDarkTheme() -> darkColorScheme
-        else -> lightColorScheme(config.timeBasedColors)
-    }
-}
-
-@Composable
-private fun getHighContrastColorScheme(config: ThemeConfig): ColorScheme {
-    return if (config.darkTheme) darkColorScheme else lightColorScheme()
-}
-
-@Composable
-private fun getDynamicColorScheme(config: ThemeConfig): ColorScheme {
-    val context = LocalContext.current
-    return if (config.shouldUseDarkTheme()) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            dynamicDarkColorScheme(context)
-        } else {
-            darkColorScheme
-        }
-    } else {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            dynamicLightColorScheme(context)
-        } else {
-            lightColorScheme(config.timeBasedColors)
-        }
-    }
-}
-
-private fun getExtendedColors(config: ThemeConfig): ExtendedColors {
-    return when {
-        config.highContrast -> highContrastExtendedColors
-        config.shouldUseDarkTheme() -> darkExtendedColors
-        else -> lightExtendedColors
-    }
-}
-
-// Overload for compatibility with new files
-@Composable
-fun getExtendedColors(isDark: Boolean): ExtendedColors {
-    return if (isDark) darkExtendedColors else lightExtendedColors
-}
-
-@Composable
-private fun createAnimatedColorScheme(colorScheme: ColorScheme): ColorScheme {
-    return colorScheme.copy(
-        primary = animateColorAsState(
-            targetValue = colorScheme.primary,
-            animationSpec = tween(1000),
-            label = "primary"
-        ).value,
-        background = animateColorAsState(
-            targetValue = colorScheme.background,
-            animationSpec = tween(1000),
-            label = "background"
-        ).value
-        // Add more animated colors as needed
-    )
-}
-
-@Composable
-private fun createAnimatedExtendedColors(extendedColors: ExtendedColors): ExtendedColors {
-    return extendedColors.copy(
-        electricMint = animateColorAsState(
-            targetValue = extendedColors.electricMint,
-            animationSpec = tween(1000),
-            label = "electricMint"
-        ).value
-        // Add more animated colors as needed
-    )
-}
-
-@Composable
-private fun ConfigureSystemUI(
-    useDarkTheme: Boolean,
-    colorScheme: ColorScheme
-) {
-    val view = LocalView.current
-    if (!view.isInEditMode) {
-        SideEffect {
-            val window = (view.context as Activity).window
-            window.statusBarColor = colorScheme.surface.toArgb()
-            window.navigationBarColor = colorScheme.surface.toArgb()
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !useDarkTheme
-            WindowCompat.getInsetsController(window, view).isAppearanceLightNavigationBars = !useDarkTheme
-        }
-    }
-}
-
-// MAIN THEME FUNCTION
+/**
+ * Main Champion Cart Theme Composable
+ */
 @Composable
 fun ChampionCartTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     dynamicColor: Boolean = true,
-    timeBasedTheme: Boolean = true,
     highContrast: Boolean = false,
+    timeBasedTheme: Boolean = false,
     reduceMotion: Boolean = false,
     hapticsEnabled: Boolean = true,
+    glassEffectsEnabled: Boolean = true,
+    performanceMode: Boolean = false,
     content: @Composable () -> Unit
 ) {
-    // Get time-based colors
+    // Time-based color determination
     val timeBasedColors = getTimeBasedColorsIfEnabled(timeBasedTheme)
 
-    // Determine theme configuration
+    // Theme configuration
     val themeConfig = ThemeConfig(
         darkTheme = darkTheme,
         dynamicColor = dynamicColor,
         highContrast = highContrast,
-        timeBasedColors = timeBasedColors
+        timeBasedColors = timeBasedColors,
+        reduceMotion = reduceMotion,
+        hapticsEnabled = hapticsEnabled,
+        glassEffectsEnabled = glassEffectsEnabled,
+        performanceMode = performanceMode
     )
 
-    // Get color schemes
+    // Color schemes
     val colorScheme = getColorScheme(themeConfig)
     val extendedColors = getExtendedColors(themeConfig)
 
-    // Create animated colors
+    // Animated color transitions
     val animatedColorScheme = createAnimatedColorScheme(colorScheme)
     val animatedExtendedColors = createAnimatedExtendedColors(extendedColors)
+
+    // Glass theme configuration
+    val glassConfig = GlassThemeConfig(
+        defaultIntensity = if (performanceMode) GlassIntensity.Light else GlassIntensity.Medium,
+        enableAnimations = !reduceMotion && glassEffectsEnabled,
+        enableBlur = glassEffectsEnabled && !performanceMode,
+        performanceMode = performanceMode
+    )
 
     // Configure system UI
     ConfigureSystemUI(
@@ -355,32 +107,465 @@ fun ChampionCartTheme(
 
     // Apply theme
     CompositionLocalProvider(
+        LocalThemeConfig provides themeConfig,
         LocalExtendedColors provides animatedExtendedColors,
         LocalReduceMotion provides reduceMotion,
-        LocalHapticsEnabled provides hapticsEnabled
+        LocalHapticsEnabled provides hapticsEnabled,
+        LocalGlassEffectsEnabled provides glassEffectsEnabled
     ) {
-        MaterialTheme(
-            colorScheme = animatedColorScheme,
-            typography = Typography,
-            shapes = Shapes,
-            content = content
-        )
+        ProvideGlassTheme(config = glassConfig) {
+            MaterialTheme(
+                colorScheme = animatedColorScheme,
+                typography = Typography,
+                shapes = Shapes,
+                content = content
+            )
+        }
     }
 }
 
-// Provider composable for extended colors
+/**
+ * Get appropriate color scheme based on configuration
+ */
 @Composable
-fun ProvideExtendedColors(
-    colors: ExtendedColors,
-    content: @Composable () -> Unit
-) {
-    CompositionLocalProvider(
-        LocalExtendedColors provides colors,
-        content = content
+private fun getColorScheme(config: ThemeConfig): ColorScheme {
+    val context = LocalContext.current
+
+    return when {
+        // Dynamic color support (Android 12+)
+        config.dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
+            if (config.shouldUseDarkTheme()) {
+                dynamicDarkColorScheme(context)
+            } else {
+                dynamicLightColorScheme(context)
+            }
+        }
+
+        // High contrast themes
+        config.highContrast -> {
+            if (config.shouldUseDarkTheme()) {
+                HighContrastDarkColorScheme
+            } else {
+                HighContrastLightColorScheme
+            }
+        }
+
+        // Time-based color modifications
+        config.timeBasedColors -> {
+            val baseScheme = if (config.shouldUseDarkTheme()) {
+                DarkColorScheme
+            } else {
+                LightColorScheme
+            }
+            applyTimeBasedColors(baseScheme)
+        }
+
+        // Standard themes
+        else -> {
+            if (config.shouldUseDarkTheme()) {
+                DarkColorScheme
+            } else {
+                LightColorScheme
+            }
+        }
+    }
+}
+
+/**
+ * Get extended colors based on configuration
+ */
+@Composable
+private fun getExtendedColors(config: ThemeConfig): ExtendedColors {
+    return when {
+        config.highContrast -> {
+            if (config.shouldUseDarkTheme()) {
+                highContrastDarkExtendedColors
+            } else {
+                highContrastLightExtendedColors
+            }
+        }
+        config.shouldUseDarkTheme() -> darkExtendedColors
+        else -> lightExtendedColors
+    }
+}
+
+/**
+ * Create animated color scheme for smooth transitions
+ */
+@Composable
+private fun createAnimatedColorScheme(targetScheme: ColorScheme): ColorScheme {
+    val animationSpec = if (LocalReduceMotion.current) {
+        snap()
+    } else {
+        SpringSpecs.Smooth
+    }
+
+    return ColorScheme(
+        primary = androidx.compose.animation.animateColorAsState(
+            targetValue = targetScheme.primary,
+            animationSpec = animationSpec,
+            label = "primary"
+        ).value,
+        onPrimary = androidx.compose.animation.animateColorAsState(
+            targetValue = targetScheme.onPrimary,
+            animationSpec = animationSpec,
+            label = "onPrimary"
+        ).value,
+        primaryContainer = androidx.compose.animation.animateColorAsState(
+            targetValue = targetScheme.primaryContainer,
+            animationSpec = animationSpec,
+            label = "primaryContainer"
+        ).value,
+        onPrimaryContainer = androidx.compose.animation.animateColorAsState(
+            targetValue = targetScheme.onPrimaryContainer,
+            animationSpec = animationSpec,
+            label = "onPrimaryContainer"
+        ).value,
+        secondary = androidx.compose.animation.animateColorAsState(
+            targetValue = targetScheme.secondary,
+            animationSpec = animationSpec,
+            label = "secondary"
+        ).value,
+        onSecondary = androidx.compose.animation.animateColorAsState(
+            targetValue = targetScheme.onSecondary,
+            animationSpec = animationSpec,
+            label = "onSecondary"
+        ).value,
+        secondaryContainer = androidx.compose.animation.animateColorAsState(
+            targetValue = targetScheme.secondaryContainer,
+            animationSpec = animationSpec,
+            label = "secondaryContainer"
+        ).value,
+        onSecondaryContainer = androidx.compose.animation.animateColorAsState(
+            targetValue = targetScheme.onSecondaryContainer,
+            animationSpec = animationSpec,
+            label = "onSecondaryContainer"
+        ).value,
+        tertiary = androidx.compose.animation.animateColorAsState(
+            targetValue = targetScheme.tertiary,
+            animationSpec = animationSpec,
+            label = "tertiary"
+        ).value,
+        onTertiary = androidx.compose.animation.animateColorAsState(
+            targetValue = targetScheme.onTertiary,
+            animationSpec = animationSpec,
+            label = "onTertiary"
+        ).value,
+        tertiaryContainer = androidx.compose.animation.animateColorAsState(
+            targetValue = targetScheme.tertiaryContainer,
+            animationSpec = animationSpec,
+            label = "tertiaryContainer"
+        ).value,
+        onTertiaryContainer = androidx.compose.animation.animateColorAsState(
+            targetValue = targetScheme.onTertiaryContainer,
+            animationSpec = animationSpec,
+            label = "onTertiaryContainer"
+        ).value,
+        error = androidx.compose.animation.animateColorAsState(
+            targetValue = targetScheme.error,
+            animationSpec = animationSpec,
+            label = "error"
+        ).value,
+        onError = androidx.compose.animation.animateColorAsState(
+            targetValue = targetScheme.onError,
+            animationSpec = animationSpec,
+            label = "onError"
+        ).value,
+        errorContainer = androidx.compose.animation.animateColorAsState(
+            targetValue = targetScheme.errorContainer,
+            animationSpec = animationSpec,
+            label = "errorContainer"
+        ).value,
+        onErrorContainer = androidx.compose.animation.animateColorAsState(
+            targetValue = targetScheme.onErrorContainer,
+            animationSpec = animationSpec,
+            label = "onErrorContainer"
+        ).value,
+        background = androidx.compose.animation.animateColorAsState(
+            targetValue = targetScheme.background,
+            animationSpec = animationSpec,
+            label = "background"
+        ).value,
+        onBackground = androidx.compose.animation.animateColorAsState(
+            targetValue = targetScheme.onBackground,
+            animationSpec = animationSpec,
+            label = "onBackground"
+        ).value,
+        surface = androidx.compose.animation.animateColorAsState(
+            targetValue = targetScheme.surface,
+            animationSpec = animationSpec,
+            label = "surface"
+        ).value,
+        onSurface = androidx.compose.animation.animateColorAsState(
+            targetValue = targetScheme.onSurface,
+            animationSpec = animationSpec,
+            label = "onSurface"
+        ).value,
+        surfaceVariant = androidx.compose.animation.animateColorAsState(
+            targetValue = targetScheme.surfaceVariant,
+            animationSpec = animationSpec,
+            label = "surfaceVariant"
+        ).value,
+        onSurfaceVariant = androidx.compose.animation.animateColorAsState(
+            targetValue = targetScheme.onSurfaceVariant,
+            animationSpec = animationSpec,
+            label = "onSurfaceVariant"
+        ).value,
+        outline = androidx.compose.animation.animateColorAsState(
+            targetValue = targetScheme.outline,
+            animationSpec = animationSpec,
+            label = "outline"
+        ).value,
+        outlineVariant = androidx.compose.animation.animateColorAsState(
+            targetValue = targetScheme.outlineVariant,
+            animationSpec = animationSpec,
+            label = "outlineVariant"
+        ).value,
+        scrim = androidx.compose.animation.animateColorAsState(
+            targetValue = targetScheme.scrim,
+            animationSpec = animationSpec,
+            label = "scrim"
+        ).value,
+        inverseSurface = androidx.compose.animation.animateColorAsState(
+            targetValue = targetScheme.inverseSurface,
+            animationSpec = animationSpec,
+            label = "inverseSurface"
+        ).value,
+        inverseOnSurface = androidx.compose.animation.animateColorAsState(
+            targetValue = targetScheme.inverseOnSurface,
+            animationSpec = animationSpec,
+            label = "inverseOnSurface"
+        ).value,
+        inversePrimary = androidx.compose.animation.animateColorAsState(
+            targetValue = targetScheme.inversePrimary,
+            animationSpec = animationSpec,
+            label = "inversePrimary"
+        ).value,
+        surfaceDim = androidx.compose.animation.animateColorAsState(
+            targetValue = targetScheme.surfaceDim,
+            animationSpec = animationSpec,
+            label = "surfaceDim"
+        ).value,
+        surfaceBright = androidx.compose.animation.animateColorAsState(
+            targetValue = targetScheme.surfaceBright,
+            animationSpec = animationSpec,
+            label = "surfaceBright"
+        ).value,
+        surfaceContainerLowest = androidx.compose.animation.animateColorAsState(
+            targetValue = targetScheme.surfaceContainerLowest,
+            animationSpec = animationSpec,
+            label = "surfaceContainerLowest"
+        ).value,
+        surfaceContainerLow = androidx.compose.animation.animateColorAsState(
+            targetValue = targetScheme.surfaceContainerLow,
+            animationSpec = animationSpec,
+            label = "surfaceContainerLow"
+        ).value,
+        surfaceContainer = androidx.compose.animation.animateColorAsState(
+            targetValue = targetScheme.surfaceContainer,
+            animationSpec = animationSpec,
+            label = "surfaceContainer"
+        ).value,
+        surfaceContainerHigh = androidx.compose.animation.animateColorAsState(
+            targetValue = targetScheme.surfaceContainerHigh,
+            animationSpec = animationSpec,
+            label = "surfaceContainerHigh"
+        ).value,
+        surfaceContainerHighest = androidx.compose.animation.animateColorAsState(
+            targetValue = targetScheme.surfaceContainerHighest,
+            animationSpec = animationSpec,
+            label = "surfaceContainerHighest"
+        ).value
     )
 }
 
-// Convenience theme composables
+/**
+ * Create animated extended colors
+ */
+@Composable
+private fun createAnimatedExtendedColors(targetColors: ExtendedColors): ExtendedColors {
+    val animationSpec = if (LocalReduceMotion.current) {
+        snap()
+    } else {
+        SpringSpecs.Gentle
+    }
+
+    return ExtendedColors(
+        electricMint = androidx.compose.animation.animateColorAsState(
+            targetValue = targetColors.electricMint,
+            animationSpec = animationSpec,
+            label = "electricMint"
+        ).value,
+        electricMintVariant = androidx.compose.animation.animateColorAsState(
+            targetValue = targetColors.electricMintVariant,
+            animationSpec = animationSpec,
+            label = "electricMintVariant"
+        ).value,
+        cosmicPurple = androidx.compose.animation.animateColorAsState(
+            targetValue = targetColors.cosmicPurple,
+            animationSpec = animationSpec,
+            label = "cosmicPurple"
+        ).value,
+        cosmicPurpleVariant = androidx.compose.animation.animateColorAsState(
+            targetValue = targetColors.cosmicPurpleVariant,
+            animationSpec = animationSpec,
+            label = "cosmicPurpleVariant"
+        ).value,
+        deepNavy = androidx.compose.animation.animateColorAsState(
+            targetValue = targetColors.deepNavy,
+            animationSpec = animationSpec,
+            label = "deepNavy"
+        ).value,
+        deepNavyVariant = androidx.compose.animation.animateColorAsState(
+            targetValue = targetColors.deepNavyVariant,
+            animationSpec = animationSpec,
+            label = "deepNavyVariant"
+        ).value,
+        glassLight = targetColors.glassLight,
+        glassMedium = targetColors.glassMedium,
+        glassHeavy = targetColors.glassHeavy,
+        glassAccent = targetColors.glassAccent,
+        success = targetColors.success,
+        successContainer = targetColors.successContainer,
+        onSuccess = targetColors.onSuccess,
+        onSuccessContainer = targetColors.onSuccessContainer,
+        warning = targetColors.warning,
+        warningContainer = targetColors.warningContainer,
+        onWarning = targetColors.onWarning,
+        onWarningContainer = targetColors.onWarningContainer,
+        info = targetColors.info,
+        infoContainer = targetColors.infoContainer,
+        onInfo = targetColors.onInfo,
+        onInfoContainer = targetColors.onInfoContainer,
+        bestPrice = targetColors.bestPrice,
+        bestPriceContainer = targetColors.bestPriceContainer,
+        onBestPrice = targetColors.onBestPrice,
+        midPrice = targetColors.midPrice,
+        midPriceContainer = targetColors.midPriceContainer,
+        onMidPrice = targetColors.onMidPrice,
+        highPrice = targetColors.highPrice,
+        highPriceContainer = targetColors.highPriceContainer,
+        onHighPrice = targetColors.onHighPrice,
+        shufersal = targetColors.shufersal,
+        ramiLevi = targetColors.ramiLevi,
+        victory = targetColors.victory,
+        mega = targetColors.mega,
+        osherAd = targetColors.osherAd,
+        coop = targetColors.coop,
+        dairy = targetColors.dairy,
+        meat = targetColors.meat,
+        produce = targetColors.produce,
+        bakery = targetColors.bakery,
+        frozen = targetColors.frozen,
+        household = targetColors.household,
+        kosher = targetColors.kosher,
+        organic = targetColors.organic,
+        morningAccent = androidx.compose.animation.animateColorAsState(
+            targetValue = targetColors.morningAccent,
+            animationSpec = animationSpec,
+            label = "morningAccent"
+        ).value,
+        afternoonAccent = androidx.compose.animation.animateColorAsState(
+            targetValue = targetColors.afternoonAccent,
+            animationSpec = animationSpec,
+            label = "afternoonAccent"
+        ).value,
+        eveningAccent = androidx.compose.animation.animateColorAsState(
+            targetValue = targetColors.eveningAccent,
+            animationSpec = animationSpec,
+            label = "eveningAccent"
+        ).value,
+        nightAccent = androidx.compose.animation.animateColorAsState(
+            targetValue = targetColors.nightAccent,
+            animationSpec = animationSpec,
+            label = "nightAccent"
+        ).value,
+        gradientStart = targetColors.gradientStart,
+        gradientMiddle = targetColors.gradientMiddle,
+        gradientEnd = targetColors.gradientEnd,
+        interactiveDefault = targetColors.interactiveDefault,
+        interactiveHover = targetColors.interactiveHover,
+        interactivePressed = targetColors.interactivePressed,
+        interactiveDisabled = targetColors.interactiveDisabled,
+        interactiveFocus = targetColors.interactiveFocus,
+        surfaceGlass = targetColors.surfaceGlass,
+        surfaceElevated = targetColors.surfaceElevated,
+        surfaceCard = targetColors.surfaceCard,
+        surfaceModal = targetColors.surfaceModal,
+        surfaceNavigation = targetColors.surfaceNavigation,
+        borderSubtle = targetColors.borderSubtle,
+        borderDefault = targetColors.borderDefault,
+        borderStrong = targetColors.borderStrong,
+        borderGlass = targetColors.borderGlass,
+        textPrimary = targetColors.textPrimary,
+        textSecondary = targetColors.textSecondary,
+        textTertiary = targetColors.textTertiary,
+        textInverse = targetColors.textInverse,
+        textOnGlass = targetColors.textOnGlass,
+        shadow = targetColors.shadow,
+        glow = targetColors.glow,
+        shimmer = targetColors.shimmer,
+        highlight = targetColors.highlight
+    )
+}
+
+/**
+ * Time-based color helpers
+ */
+@Composable
+private fun getTimeBasedColorsIfEnabled(enabled: Boolean): Boolean {
+    return if (enabled) {
+        val calendar = Calendar.getInstance()
+        val hour = calendar.get(Calendar.HOUR_OF_DAY)
+
+        // Auto switch to dark mode during night hours
+        hour in 22..23 || hour in 0..6
+    } else {
+        false
+    }
+}
+
+@Composable
+private fun applyTimeBasedColors(baseScheme: ColorScheme): ColorScheme {
+    val calendar = Calendar.getInstance()
+    val hour = calendar.get(Calendar.HOUR_OF_DAY)
+
+    val timeAccent = getTimeBasedPrimary(hour)
+
+    return baseScheme.copy(
+        primary = timeAccent,
+        secondary = timeAccent.copy(alpha = 0.8f)
+    )
+}
+
+/**
+ * Theme configuration extension
+ */
+private fun ThemeConfig.shouldUseDarkTheme(): Boolean {
+    return darkTheme || timeBasedColors
+}
+
+/**
+ * System UI configuration
+ */
+@Composable
+private fun ConfigureSystemUI(
+    useDarkTheme: Boolean,
+    colorScheme: ColorScheme
+) {
+    val view = LocalView.current
+    if (!view.isInEditMode) {
+        SideEffect {
+            val window = (view.context as Activity).window
+            window.statusBarColor = colorScheme.primary.toArgb()
+            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !useDarkTheme
+        }
+    }
+}
+
+/**
+ * Convenience theme composables
+ */
 @Composable
 fun ChampionCartLightTheme(content: @Composable () -> Unit) {
     ChampionCartTheme(
@@ -397,4 +582,34 @@ fun ChampionCartDarkTheme(content: @Composable () -> Unit) {
         timeBasedTheme = false,
         content = content
     )
+}
+
+@Composable
+fun ChampionCartAutoTheme(content: @Composable () -> Unit) {
+    ChampionCartTheme(
+        darkTheme = isSystemInDarkTheme(),
+        timeBasedTheme = true,
+        content = content
+    )
+}
+
+/**
+ * Theme preference helpers
+ */
+@Composable
+fun rememberThemePreference(): MutableState<ThemePreference> {
+    return remember { mutableStateOf(ThemePreference.System) }
+}
+
+@Composable
+fun applyThemePreference(
+    preference: ThemePreference,
+    content: @Composable () -> Unit
+) {
+    when (preference) {
+        ThemePreference.System -> ChampionCartTheme(content = content)
+        ThemePreference.Light -> ChampionCartLightTheme(content = content)
+        ThemePreference.Dark -> ChampionCartDarkTheme(content = content)
+        ThemePreference.Auto -> ChampionCartAutoTheme(content = content)
+    }
 }

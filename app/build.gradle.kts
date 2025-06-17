@@ -61,8 +61,10 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
 
+    // Navigation & Lifecycle
     implementation("androidx.navigation:navigation-compose:2.7.7")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.7.0")
     implementation("androidx.compose.material:material-icons-extended:1.5.4")
 
     // Testing
@@ -82,13 +84,13 @@ dependencies {
 
     // Dependency Injection - Hilt
     implementation("com.google.dagger:hilt-android:2.48.1")
-    ksp("com.google.dagger:hilt-compiler:2.48.1") // FIXED: Added missing Hilt compiler
+    ksp("com.google.dagger:hilt-compiler:2.48.1") // FIXED: Added missing compiler
     implementation("androidx.hilt:hilt-navigation-compose:1.1.0")
 
     // Room Database
     implementation("androidx.room:room-runtime:2.6.1")
     implementation("androidx.room:room-ktx:2.6.1")
-    ksp("androidx.room:room-compiler:2.6.1") // FIXED: Added missing Room compiler
+    ksp("androidx.room:room-compiler:2.6.1") // FIXED: Added missing compiler
 
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
@@ -96,33 +98,37 @@ dependencies {
     // Image Loading
     implementation("io.coil-kt:coil-compose:2.5.0")
 
-    // Biometric
-    implementation("androidx.biometric:biometric:1.1.0")
-
     // DataStore (for preferences)
     implementation("androidx.datastore:datastore-preferences:1.0.0")
 
-    // Accompanist libraries for edge-to-edge and additional features
+    // Accompanist libraries for modern UI
     implementation("com.google.accompanist:accompanist-permissions:0.32.0")
     implementation("com.google.accompanist:accompanist-systemuicontroller:0.32.0")
     implementation("com.google.accompanist:accompanist-swiperefresh:0.32.0")
 
-    // Lifecycle runtime compose (for collectAsStateWithLifecycle)
-    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.7.0")
-
     // Gson for JSON parsing
     implementation("com.google.code.gson:gson:2.10.1")
 
-    // Lottie for animations (optional but recommended for your design system)
+    // **CRITICAL ADDITIONS** - Lottie animations for your design system
     implementation("com.airbnb.android:lottie-compose:6.3.0")
+
+    // **CRITICAL ADDITIONS** - For advanced visual effects
+    implementation("androidx.compose.ui:ui-graphics:1.5.4")
+    implementation("androidx.compose.animation:animation-graphics:1.5.4")
 
     // SplashScreen API
     implementation("androidx.core:core-splashscreen:1.0.1")
 
-    // WorkManager (for background tasks if needed)
+    // Biometric authentication
+    implementation("androidx.biometric:biometric:1.1.0")
+
+    // Security (for encrypted storage)
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
+
+    // WorkManager (for background tasks)
     implementation("androidx.work:work-runtime-ktx:2.9.0")
 
-    // Location Services (if needed for store locations)
+    // Location Services (for store locations)
     implementation("com.google.android.gms:play-services-location:21.0.1")
     implementation("com.google.android.gms:play-services-maps:18.2.0")
 
@@ -134,13 +140,11 @@ dependencies {
     // ML Kit Barcode Scanning
     implementation("com.google.mlkit:barcode-scanning:17.2.0")
 
-    // Pull to refresh
-    implementation("androidx.compose.material:material:1.5.4")
-
     // Paging 3 (for large lists)
     implementation("androidx.paging:paging-runtime-ktx:3.2.1")
     implementation("androidx.paging:paging-compose:3.2.1")
 
-    // Security (for encrypted storage)
-    implementation("androidx.security:security-crypto:1.1.0-alpha06")
+    // **NEW** - Advanced Material3 components
+    implementation("androidx.compose.material3:material3-window-size-class:1.1.2")
+    implementation("androidx.compose.material3:material3-adaptive:1.0.0-alpha03")
 }
