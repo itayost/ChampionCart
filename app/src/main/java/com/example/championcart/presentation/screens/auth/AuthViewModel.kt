@@ -38,7 +38,6 @@ data class AuthState(
 
     // Additional features
     val rememberMe: Boolean = false,
-    val agreedToTerms: Boolean = false,
     val enableBiometrics: Boolean = false
 )
 
@@ -93,7 +92,6 @@ class AuthViewModel @Inject constructor(
                 passwordError = null,
                 confirmPasswordError = null,
                 confirmPassword = "", // Clear confirm password when switching modes
-                agreedToTerms = false // Reset terms agreement
             )
         }
     }
@@ -108,10 +106,6 @@ class AuthViewModel @Inject constructor(
 
     fun toggleRememberMe() {
         _state.update { it.copy(rememberMe = !it.rememberMe) }
-    }
-
-    fun toggleTermsAgreement() {
-        _state.update { it.copy(agreedToTerms = !it.agreedToTerms) }
     }
 
     fun toggleBiometrics() {
@@ -143,7 +137,7 @@ class AuthViewModel @Inject constructor(
                 val result = authRepository.login(
                     email = currentState.email.trim(),
                     password = currentState.password,
-                    rememberMe = currentState.rememberMe
+                    //rememberMe = currentState.rememberMe
                 )
 
                 result.fold(
@@ -198,13 +192,6 @@ class AuthViewModel @Inject constructor(
             return
         }
 
-        // Check terms agreement
-        if (!currentState.agreedToTerms) {
-            _state.update {
-                it.copy(error = "Please agree to the terms and conditions to continue")
-            }
-            return
-        }
 
         // Perform registration
         viewModelScope.launch {
@@ -309,8 +296,7 @@ class AuthViewModel @Inject constructor(
                     currentState.confirmPassword.isNotBlank() &&
                     currentState.emailError == null &&
                     currentState.passwordError == null &&
-                    currentState.confirmPasswordError == null &&
-                    currentState.agreedToTerms
+                    currentState.confirmPasswordError == null 
         }
     }
 

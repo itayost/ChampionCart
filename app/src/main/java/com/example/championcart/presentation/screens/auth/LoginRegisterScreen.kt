@@ -480,17 +480,6 @@ private fun AuthFormCard(
                 isLoading = state.isLoading,
                 modifier = Modifier.fillMaxWidth()
             )
-
-            // Terms text (smaller on small screens)
-            Text(
-                text = "בהמשך, אתה מסכים לתנאי השימוש ומדיניות הפרטיות",
-                style = if (isSmallScreen) MaterialTheme.typography.labelSmall else MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = if (isSmallScreen) 4.dp else 8.dp)
-            )
         }
     }
 }
