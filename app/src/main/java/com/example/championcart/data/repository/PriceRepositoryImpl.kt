@@ -8,7 +8,6 @@ import com.example.championcart.data.models.response.*
 import com.example.championcart.domain.models.*
 import com.example.championcart.domain.repository.CartRepository
 import com.example.championcart.domain.repository.PriceRepository
-import com.example.championcart.presentation.screens.cart.StoreInfo
 import javax.inject.Inject
 import javax.inject.Singleton
 

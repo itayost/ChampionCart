@@ -24,6 +24,7 @@ interface AuthRepository {
 
     // Cart operations (optional - can be removed if not needed)
     suspend fun getSavedCarts(): Result<List<Cart>>
+    suspend fun getUserSavedCarts(): Result<List<Cart>> // Add this method alias
     suspend fun saveCart(request: SaveCartRequest): Result<Unit>
     suspend fun deleteCart(cartName: String): Result<Unit>
 }

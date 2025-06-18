@@ -17,6 +17,13 @@ class TokenManager @Inject constructor(
         private const val KEY_AUTH_TOKEN = "auth_token"
         private const val KEY_TOKEN_TYPE = "token_type"
         private const val KEY_REFRESH_TOKEN = "refresh_token"
+
+        // Add new preference keys
+        private const val KEY_USER_EMAIL = "user_email"
+        private const val KEY_SELECTED_CITY = "selected_city"
+        private const val KEY_LANGUAGE = "language"
+        private const val KEY_THEME = "theme"
+        private const val KEY_NOTIFICATIONS_ENABLED = "notifications_enabled"
     }
 
     private val prefs: SharedPreferences by lazy {
@@ -68,10 +75,53 @@ class TokenManager @Inject constructor(
             .remove(KEY_AUTH_TOKEN)
             .remove(KEY_TOKEN_TYPE)
             .remove(KEY_REFRESH_TOKEN)
+            .remove(KEY_USER_EMAIL)
             .apply()
     }
 
     fun hasToken(): Boolean {
         return getToken() != null
+    }
+
+    // New methods for user preferences
+
+    fun saveUserEmail(email: String) {
+        prefs.edit().putString(KEY_USER_EMAIL, email).apply()
+    }
+
+    fun getUserEmail(): String? {
+        return prefs.getString(KEY_USER_EMAIL, null)
+    }
+
+    fun saveSelectedCity(city: String) {
+        prefs.edit().putString(KEY_SELECTED_CITY, city).apply()
+    }
+
+    fun getSelectedCity(): String {
+        return prefs.getString(KEY_SELECTED_CITY, "Tel Aviv") ?: "Tel Aviv"
+    }
+
+    fun saveLanguage(language: String) {
+        prefs.edit().putString(KEY_LANGUAGE, language).apply()
+    }
+
+    fun getLanguage(): String? {
+        return prefs.getString(KEY_LANGUAGE, "en")
+    }
+
+    fun saveTheme(theme: String) {
+        prefs.edit().putString(KEY_THEME, theme).apply()
+    }
+
+    fun getTheme(): String? {
+        return prefs.getString(KEY_THEME, "system")
+    }
+
+    fun saveNotificationsEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_NOTIFICATIONS_ENABLED, enabled).apply()
+    }
+
+    fun getNotificationsEnabled(): Boolean {
+        return prefs.getBoolean(KEY_NOTIFICATIONS_ENABLED, true)
     }
 }

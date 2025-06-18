@@ -9,7 +9,20 @@ import com.example.championcart.ui.theme.ThemePreference
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlin.text.substringBefore
 import javax.inject.Inject
+
+data class ProfileUiState(
+    val email: String? = null,
+    val name: String? = null,
+    val selectedCity: String = "Tel Aviv",
+    val language: String = "en",
+    val theme: String = "system",
+    val notificationsEnabled: Boolean = true,
+    val isLoggedIn: Boolean = false,
+    val showLogoutDialog: Boolean = false,
+    val error: String? = null
+)
 
 data class ProfileState(
     val userName: String = "Guest",
@@ -39,6 +52,9 @@ class ProfileViewModel @Inject constructor(
 
     private val _state = MutableStateFlow(ProfileState())
     val state: StateFlow<ProfileState> = _state.asStateFlow()
+
+    private val _uiState = MutableStateFlow(ProfileUiState())
+    val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
 
     init {
         loadUserProfile()
@@ -144,7 +160,7 @@ class ProfileViewModel @Inject constructor(
                 authRepository.getUserSavedCarts().fold(
                     onSuccess = { carts ->
                         _state.update {
-                            it.copy(savedCarts = carts)
+                            it.copy(savedCarts = Prod)
                         }
                     },
                     onFailure = { error ->
@@ -238,12 +254,10 @@ class ProfileViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(notificationsEnabled = enabled)
     }
 
-    // Fix line 52 - add this method:
     fun getUserEmail(): String {
         return _uiState.value.email ?: ""
     }
 
-    // Fix line 57 - make sure you have the email before calling substringBefore:
     private fun updateUserName() {
         val email = _uiState.value.email
         if (email != null) {
@@ -252,20 +266,32 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
-    // Fix line 66 - logout method:
     fun logout() {
         viewModelScope.launch {
+            _state.update { it.copy(showLogoutDialog = false) }
+
             authRepository.logout().fold(
                 onSuccess = {
-                    _uiState.value = _uiState.value.copy(
-                        isLoggedIn = false,
-                        showLogoutDialog = false
-                    )
+                    // Clear user data
+                    tokenManager.clearToken()
+
+                    // Reset to guest state
+                    _state.update {
+                        ProfileState(
+                            userName = "Guest",
+                            userEmail = "",
+                            isGuest = true,
+                            userStats = UserStats(),
+                            savedCarts = emptyList()
+                        )
+                    }
                 },
                 onFailure = { error ->
-                    _uiState.value = _uiState.value.copy(
-                        error = error.message
-                    )
+                    _state.update {
+                        it.copy(
+                            error = error.message ?: "Logout failed"  // Fix: Provide default value
+                        )
+                    }
                 }
             )
         }

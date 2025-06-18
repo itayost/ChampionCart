@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.*
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -45,7 +46,7 @@ fun ModernHomeScreen(
 ) {
     val context = LocalContext.current
     val tokenManager = TokenManager(context)
-    val state by viewModel.state.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
     val haptics = LocalHapticFeedback.current
 
     // Dynamic greeting
@@ -84,173 +85,168 @@ fun ModernHomeScreen(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(
                 top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding(),
-                bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 80.dp // Space for bottom nav
-            )
+                bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 80.dp
+            ),
+            verticalArrangement = Arrangement.spacedBy(SpacingTokens.M)
         ) {
-            // Fixed Header Section without glass effect issues
+            // Header Section
             item {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(
-                            brush = Brush.verticalGradient(
-                                colors = listOf(
-                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                                    Color.Transparent
-                                ),
-                                startY = 0f,
-                                endY = 200f
-                            )
-                        )
-                ) {
-                    // Top bar with refresh button
-                    Row(
+                HomeHeader(
+                    greeting = greeting,
+                    userName = uiState.userName,
+                    onSearchClick = {
+                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                        navController.navigate(Screen.Search.route)
+                    },
+                    onNotificationClick = {
+                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                        // TODO: Navigate to notifications
+                    }
+                )
+            }
+
+            // Stats Card
+            item {
+                StatsCard(
+                    totalSavings = uiState.totalSavings,
+                    modifier = Modifier.padding(horizontal = SpacingTokens.L)
+                )
+            }
+
+            // Quick Actions
+            item {
+                QuickActionsRow(
+                    onScanClick = {
+                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                        // TODO: Navigate to scanner
+                    },
+                    onListClick = {
+                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                        // TODO: Navigate to lists
+                    },
+                    onCompareClick = {
+                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                        navController.navigate(Screen.Cart.route)
+                    }
+                )
+            }
+
+            // Pull to refresh indicator
+            if (uiState.isRefreshing) {
+                item {
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = SpacingTokens.L, vertical = SpacingTokens.M),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                            .padding(SpacingTokens.M),
+                        contentAlignment = Alignment.Center
                     ) {
-                        // Logo or brand icon
-                        Card(
-                            modifier = Modifier.size(40.dp),
-                            shape = CircleShape,
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.extended.electricMint
-                            )
-                        ) {
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    Icons.Default.ShoppingCart,
-                                    contentDescription = null,
-                                    tint = Color.White,
-                                    modifier = Modifier.size(24.dp)
-                                )
-                            }
-                        }
-
-                        // Refresh button
-                        if (!state.isRefreshing) {
-                            IconButton(
-                                onClick = { viewModel.refresh() },
-                                modifier = Modifier
-                                    .size(40.dp)
-                                    .clip(CircleShape)
-                                    .background(
-                                        MaterialTheme.colorScheme.surface.copy(alpha = 0.8f)
-                                    )
-                            ) {
-                                Icon(
-                                    Icons.Default.Refresh,
-                                    contentDescription = "רענן",
-                                    tint = MaterialTheme.colorScheme.extended.electricMint
-                                )
-                            }
-                        }
+                        CircularProgressIndicator(
+                            color = MaterialTheme.colorScheme.extended.electricMint,
+                            modifier = Modifier.size(24.dp)
+                        )
                     }
-
-                    // Hero Header
-                    HeroHeader(
-                        greeting = greeting,
-                        userName = state.userName ?: tokenManager.getUserEmail()?.substringBefore("@"),
-                        isGuest = state.isGuest,
-                        onLoginClick = { navController.navigate(Screen.Auth.route) },
-                        modifier = Modifier.padding(horizontal = SpacingTokens.L)
-                    )
-
-                    Spacer(modifier = Modifier.height(SpacingTokens.M))
                 }
             }
 
-            // Search bar section
-            item {
-                QuickSearchBar(
-                    onSearchClick = { navController.navigate(Screen.Search.route) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = SpacingTokens.L)
-                )
-
-                Spacer(modifier = Modifier.height(SpacingTokens.L))
-            }
-
-            // Category chips
-            item {
-                CategoryChips(
-                    categories = state.categories,
-                    selectedCategory = state.selectedCategory,
-                    onCategorySelected = viewModel::selectCategory,
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                Spacer(modifier = Modifier.height(SpacingTokens.L))
-            }
-
-            // Featured deals section (instead of special offers)
-            if (state.featuredDeals.isNotEmpty()) {
+            // Categories Section
+            if (uiState.categories.isNotEmpty()) {
                 item {
                     SectionHeader(
-                        title = "מוצרים עם הפרשי מחיר גדולים 💰",
-                        action = "הצג הכל",
-                        onActionClick = { /* Navigate to deals */ }
+                        title = "קטגוריות",
+                        modifier = Modifier.padding(horizontal = SpacingTokens.L)
+                    )
+                }
+
+                item {
+                    CategoriesRow(
+                        categories = uiState.categories,
+                        selectedCategory = uiState.selectedCategory,
+                        onCategoryClick = { category ->
+                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                            viewModel.selectCategory(category.name)
+                        }
+                    )
+                }
+            }
+
+            // Featured Deals Section
+            if (uiState.featuredDeals.isNotEmpty()) {
+                item {
+                    SectionHeader(
+                        title = "מבצעים חמים 🔥",
+                        action = "ראה הכל" to {
+                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                            // Navigate to deals
+                        },
+                        modifier = Modifier.padding(horizontal = SpacingTokens.L)
                     )
                 }
 
                 item {
                     LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
-                        contentPadding = PaddingValues(horizontal = 16.dp)
+                        horizontalArrangement = Arrangement.spacedBy(SpacingTokens.M),
+                        contentPadding = PaddingValues(horizontal = SpacingTokens.L)
                     ) {
-                        items(state.featuredDeals.size) { index ->
-                            val product = state.featuredDeals[index]
-                            DealCard(
-                                product = product,
-                                onProductClick = { navController.navigate("product/${product.itemCode}") },
-                                onAddToCart = { viewModel.addToCart(product) }
+                        items(uiState.featuredDeals) { deal ->
+                            ProductCard(
+                                product = deal,
+                                onAddToCart = {
+                                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    viewModel.addToCart(deal)
+                                },
+                                onFavoriteToggle = { /* TODO */ },
+                                modifier = Modifier.width(200.dp),
+                                onProductClick = TODO(),
+                                isFavorite = TODO(),
+                                isCompact = TODO(),
+                                selectedStoreId = TODO()
                             )
                         }
                     }
+                }
 
-                    Spacer(modifier = Modifier.height(SpacingTokens.L))
+                item {
+                    Spacer(modifier = Modifier.height(SpacingTokens.M))
                 }
             }
 
-            // Popular products section
-            if (state.popularProducts.isNotEmpty()) {
+            // Popular Products Section
+            if (uiState.popularProducts.isNotEmpty()) {
                 item {
                     SectionHeader(
-                        title = "פופולריים השבוע",
-                        action = "עוד",
-                        onActionClick = { /* Navigate to popular */ }
+                        title = "פופולרי עכשיו",
+                        subtitle = "המוצרים הכי נרכשים",
+                        modifier = Modifier.padding(horizontal = SpacingTokens.L)
                     )
                 }
 
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    contentPadding = PaddingValues(horizontal = 16.dp)
-                ) {
-                    items(state.popularProducts.size) { index ->
-                        val product = state.popularProducts[index]
-                        ProductCard(
-                            product = product,
-                            onProductClick = { viewModel.addToCart(product) },
-                            onNavigateToProduct = { navController.navigate("product/${product.itemCode}") }
-                        )
-                    }
+                items(uiState.popularProducts) { product ->
+                    ProductCard(
+                        product = product,
+                        onAddToCart = {
+                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                            viewModel.addToCart(product)
+                        },
+                        onFavoriteToggle = { /* TODO */ },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = SpacingTokens.L)
+                            .padding(bottom = SpacingTokens.M),
+                        onProductClick = TODO(),
+                        isFavorite = TODO(),
+                        isCompact = TODO(),
+                        selectedStoreId = TODO()
+                    )
                 }
             }
 
             // Empty state
-            if (!state.isLoading && state.featuredDeals.isEmpty() && state.popularProducts.isEmpty()) {
+            if (!uiState.isLoading && uiState.featuredDeals.isEmpty() && uiState.popularProducts.isEmpty()) {
                 item {
                     EmptyState(
                         type = EmptyStateType.NO_RESULTS,
-                        title = "אין מוצרים להצגה כרגע",
-                        actionLabel = "רענן",
-                        onAction = { viewModel.refresh() },
+                        title = "אין מוצרים",
+                        subtitle = "לא נמצאו מוצרים באזור שנבחר",
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(SpacingTokens.XL)
@@ -259,217 +255,274 @@ fun ModernHomeScreen(
             }
 
             // Loading state
-            if (state.isLoading && state.popularProducts.isEmpty()) {
-                item {
-                    Box(
+            if (uiState.isLoading && uiState.popularProducts.isEmpty()) {
+                items(5) {
+                    ShimmerProductCard(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(200.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator(
-                            color = MaterialTheme.colorScheme.extended.electricMint
-                        )
-                    }
+                            .padding(horizontal = SpacingTokens.L)
+                            .padding(bottom = SpacingTokens.M)
+                    )
                 }
             }
         }
 
-        // Pull to refresh indicator
-        if (state.isRefreshing) {
+        // Floating Action Button
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(SpacingTokens.L)
+                .padding(bottom = 80.dp)
+        ) {
+            FloatingActionButton(
+                onClick = {
+                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                    navController.navigate(Screen.Search.route)
+                },
+                containerColor = MaterialTheme.colorScheme.extended.electricMint,
+                elevation = FloatingActionButtonDefaults.elevation(
+                    defaultElevation = 8.dp,
+                    pressedElevation = 12.dp
+                )
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = "Search",
+                    tint = Color.Black
+                )
+            }
+        }
+
+        // Error handling
+        uiState.error?.let { error ->
             Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 16.dp),
-                contentAlignment = Alignment.TopCenter
+                    .fillMaxSize()
+                    .padding(SpacingTokens.XL),
+                contentAlignment = Alignment.Center
             ) {
-                Card(
-                    shape = CircleShape,
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.extended.electricMint
-                    ),
-                    elevation = CardDefaults.cardElevation(8.dp)
-                ) {
-                    CircularProgressIndicator(
-                        modifier = Modifier
-                            .padding(8.dp)
-                            .size(24.dp),
-                        color = Color.White,
-                        strokeWidth = 2.dp
-                    )
-                }
-            }
-        }
-
-        // Error Snackbar
-        state.error?.let { error ->
-            Snackbar(
-                modifier = Modifier
-                    .padding(SpacingTokens.M)
-                    .align(Alignment.BottomCenter),
-                action = {
-                    TextButton(onClick = { viewModel.clearError() }) {
-                        Text("סגור", color = MaterialTheme.colorScheme.extended.electricMint)
-                    }
-                },
-                containerColor = MaterialTheme.colorScheme.error,
-                contentColor = MaterialTheme.colorScheme.onError
-            ) {
-                Text(text = error)
+                EmptyState(
+                    type = EmptyStateType.NETWORK_ERROR,
+                    title = "שגיאה",
+                    subtitle = error,
+                    actionLabel = "נסה שוב",
+                    onAction = viewModel::clearError
+                )
             }
         }
     }
 }
 
 @Composable
-private fun HeroHeader(
+private fun HomeHeader(
     greeting: String,
-    userName: String?,
-    isGuest: Boolean,
-    onLoginClick: () -> Unit,
-    modifier: Modifier = Modifier
+    userName: String,
+    onSearchClick: () -> Unit,
+    onNotificationClick: () -> Unit
 ) {
-    Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(SpacingTokens.S)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = SpacingTokens.L)
+            .padding(top = SpacingTokens.L),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            text = greeting,
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold
-        )
-
-        if (isGuest) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(SpacingTokens.S)
-            ) {
-                Text(
-                    text = "צ'מפיון! 🏆",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                )
-                TextButton(onClick = onLoginClick) {
-                    Text(
-                        text = "התחבר",
-                        color = MaterialTheme.colorScheme.extended.electricMint
-                    )
-                }
-            }
-        } else {
+        Column {
             Text(
-                text = "$userName, צ'מפיון! 🏆",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                text = greeting,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = userName,
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
+
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(SpacingTokens.S)
+        ) {
+            GlassmorphicIconButton(
+                onClick = onSearchClick,
+                icon = Icons.Default.Search
+            )
+            GlassmorphicIconButton(
+                onClick = onNotificationClick,
+                icon = Icons.Default.NotificationsNone,
+                badge = true
             )
         }
     }
 }
 
 @Composable
-private fun QuickSearchBar(
-    onSearchClick: () -> Unit,
+private fun StatsCard(
+    totalSavings: Double,
     modifier: Modifier = Modifier
 ) {
-    Card(
-        onClick = onSearchClick,
-        modifier = modifier.height(56.dp),
-        shape = GlassmorphicShapes.SearchField,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
-        ),
-        elevation = CardDefaults.cardElevation(2.dp)
+    GlassmorphicCard(
+        modifier = modifier.fillMaxWidth()
     ) {
-        Row(
+        Column(
+            modifier = Modifier.padding(SpacingTokens.L)
+        ) {
+            Text(
+                text = "החיסכון שלך החודש",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(SpacingTokens.XS))
+            Text(
+                text = "₪${String.format("%.2f", totalSavings)}",
+                style = MaterialTheme.typography.headlineLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.extended.electricMint
+            )
+        }
+    }
+}
+
+@Composable
+private fun QuickActionsRow(
+    onScanClick: () -> Unit,
+    onListClick: () -> Unit,
+    onCompareClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = SpacingTokens.L),
+        horizontalArrangement = Arrangement.spacedBy(SpacingTokens.M)
+    ) {
+        QuickActionButton(
+            icon = Icons.Default.QrCodeScanner,
+            label = "סרוק",
+            onClick = onScanClick,
+            modifier = Modifier.weight(1f)
+        )
+        QuickActionButton(
+            icon = Icons.Default.ListAlt,
+            label = "רשימות",
+            onClick = onListClick,
+            modifier = Modifier.weight(1f)
+        )
+        QuickActionButton(
+            icon = Icons.Default.CompareArrows,
+            label = "השווה",
+            onClick = onCompareClick,
+            modifier = Modifier.weight(1f)
+        )
+    }
+}
+
+@Composable
+private fun QuickActionButton(
+    icon: ImageVector,
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    GlassmorphicCard(
+        onClick = onClick,
+        modifier = modifier
+    ) {
+        Column(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = SpacingTokens.M),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(SpacingTokens.M)
+                .fillMaxWidth()
+                .padding(SpacingTokens.M),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Icon(
-                Icons.Default.Search,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                imageVector = icon,
+                contentDescription = label,
+                tint = MaterialTheme.colorScheme.extended.electricMint,
+                modifier = Modifier.size(24.dp)
             )
+            Spacer(modifier = Modifier.height(SpacingTokens.XS))
             Text(
-                text = "חפש מוצרים...",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                modifier = Modifier.weight(1f)
-            )
-            Icon(
-                Icons.Default.QrCodeScanner,
-                contentDescription = "סרוק ברקוד",
-                tint = MaterialTheme.colorScheme.extended.electricMint
+                text = label,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface
             )
         }
     }
 }
 
 @Composable
-private fun CategoryChips(
-    categories: List<String>,
+private fun CategoriesRow(
+    categories: List<ProductCategory>,
     selectedCategory: String?,
-    onCategorySelected: (String?) -> Unit,
-    modifier: Modifier = Modifier
+    onCategoryClick: (ProductCategory) -> Unit
 ) {
     LazyRow(
-        modifier = modifier,
-        contentPadding = PaddingValues(horizontal = SpacingTokens.L),
-        horizontalArrangement = Arrangement.spacedBy(SpacingTokens.S)
+        horizontalArrangement = Arrangement.spacedBy(SpacingTokens.M),
+        contentPadding = PaddingValues(horizontal = SpacingTokens.L)
     ) {
-        // All categories chip
-        item {
-            FilterChip(
-                selected = selectedCategory == null,
-                onClick = { onCategorySelected(null) },
-                label = { Text("הכל") },
-                colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = MaterialTheme.colorScheme.extended.electricMint,
-                    selectedLabelColor = Color.White
-                )
-            )
-        }
-
         items(categories) { category ->
-            FilterChip(
-                selected = selectedCategory == category,
-                onClick = { onCategorySelected(category) },
-                label = { Text(category) },
-                colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = MaterialTheme.colorScheme.extended.electricMint,
-                    selectedLabelColor = Color.White
-                )
+            CategoryChip(
+                category = category,
+                isSelected = category.name == selectedCategory,
+                onClick = { onCategoryClick(category) }
             )
         }
     }
+}
+
+@Composable
+private fun CategoryChip(
+    category: ProductCategory,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    FilterChip(
+        selected = isSelected,
+        onClick = onClick,
+        label = {
+            Text(
+                text = "${category.name} (${category.productCount})",
+                style = MaterialTheme.typography.bodySmall
+            )
+        },
+        colors = FilterChipDefaults.filterChipColors(
+            selectedContainerColor = MaterialTheme.colorScheme.extended.electricMint,
+            selectedLabelColor = Color.Black
+        )
+    )
 }
 
 @Composable
 private fun SectionHeader(
     title: String,
-    action: String? = null,
-    onActionClick: (() -> Unit)? = null
+    subtitle: String? = null,
+    action: Pair<String, () -> Unit>? = null,
+    modifier: Modifier = Modifier
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = SpacingTokens.L, vertical = SpacingTokens.M),
+        modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold
-        )
-
-        action?.let {
-            TextButton(onClick = onActionClick ?: {}) {
+        Column {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+            subtitle?.let {
                 Text(
                     text = it,
-                    style = MaterialTheme.typography.labelLarge,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+        action?.let { (text, onClick) ->
+            TextButton(onClick = onClick) {
+                Text(
+                    text = text,
                     color = MaterialTheme.colorScheme.extended.electricMint
                 )
             }

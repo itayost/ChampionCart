@@ -251,6 +251,10 @@ class AuthRepositoryImpl @Inject constructor(
             Result.failure(e)
         }
     }
+    override suspend fun getUserSavedCarts(): Result<List<Cart>> {
+        // This is just an alias for getSavedCarts() to match the naming used in ProfileViewModel
+        return getSavedCarts()
+    }
 
     override suspend fun saveCart(request: SaveCartRequest): Result<Unit> {
         return try {

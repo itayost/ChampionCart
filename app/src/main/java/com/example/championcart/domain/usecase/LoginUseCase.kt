@@ -19,7 +19,8 @@ class LoginUseCase @Inject constructor(
                         user = user,
                         isGuest = false
                     )
-                    AuthResult.Success(authResponse)
+                    // Fixed: AuthResult.Success expects (user, authResponse) not (authResponse, token)
+                    AuthResult.Success(user, authResponse)
                 },
                 onFailure = { exception ->
                     AuthResult.Error(exception.message ?: "Login failed")
@@ -36,6 +37,7 @@ class LoginUseCase @Inject constructor(
                 id = "guest",
                 email = "guest@championcart.com",
                 token = "",
+                tokenType = "Bearer",
                 name = "Guest User"
             )
             val authResponse = AuthResponse(
@@ -43,7 +45,8 @@ class LoginUseCase @Inject constructor(
                 user = guestUser,
                 isGuest = true
             )
-            AuthResult.Success(authResponse)
+            // Fixed: AuthResult.Success expects (user, authResponse)
+            AuthResult.Success(guestUser, authResponse)
         } catch (e: Exception) {
             AuthResult.Error(e.message ?: "Failed to login as guest")
         }
