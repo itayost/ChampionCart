@@ -495,8 +495,6 @@ private fun AuthFormCard(
     }
 }
 
-// ... Rest of the components (AuthModeToggle, ToggleButton, GuestModeButton, PrimaryActionButton) remain the same ...
-
 @Composable
 private fun AuthModeToggle(
     isLoginMode: Boolean,

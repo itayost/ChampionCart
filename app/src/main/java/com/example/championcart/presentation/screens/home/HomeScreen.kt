@@ -25,9 +25,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import coil.compose.AsyncImage
 import com.example.championcart.data.local.preferences.TokenManager
 import com.example.championcart.domain.models.GroupedProduct
+import com.example.championcart.domain.models.StorePrice
 import com.example.championcart.presentation.components.*
 import com.example.championcart.presentation.navigation.Screen
 import com.example.championcart.ui.theme.*
@@ -189,13 +189,13 @@ fun ModernHomeScreen(
                 Spacer(modifier = Modifier.height(SpacingTokens.L))
             }
 
-            // Special offers section
-            if (state.specialOffers.isNotEmpty()) {
+            // Featured deals section (instead of special offers)
+            if (state.featuredDeals.isNotEmpty()) {
                 item {
                     SectionHeader(
-                        title = "מבצעים חמים 🔥",
+                        title = "מוצרים עם הפרשי מחיר גדולים 💰",
                         action = "הצג הכל",
-                        onActionClick = { /* Navigate to offers */ }
+                        onActionClick = { /* Navigate to deals */ }
                     )
                 }
 
@@ -204,10 +204,15 @@ fun ModernHomeScreen(
                         contentPadding = PaddingValues(horizontal = SpacingTokens.L),
                         horizontalArrangement = Arrangement.spacedBy(SpacingTokens.M)
                     ) {
-                        items(state.specialOffers) { offer ->
-                            SpecialOfferCard(
-                                offer = offer,
-                                onClick = { /* Handle offer click */ }
+                        items(state.featuredDeals) { product ->
+                            CompactProductCard(
+                                product = product,
+                                onProductClick = {
+                                    navController.navigate("${Screen.ProductDetail.route}/${product.itemCode}")
+                                },
+                                onAddToCart = { storePrice ->
+                                    viewModel.addToCart(product, storePrice)
+                                }
                             )
                         }
                     }
@@ -227,13 +232,37 @@ fun ModernHomeScreen(
                 }
 
                 items(state.popularProducts) { product ->
-                    ProductCard(
+                    ListProductCard(
                         product = product,
-                        onAddToCart = { viewModel.addToCart(product) },
+                        onAddToCart = { storePrice ->
+                            viewModel.addToCart(product, storePrice)
+                        },
+                        onProductClick = {
+                            navController.navigate("${Screen.ProductDetail.route}/${product.itemCode}")
+                        },
+                        onFavoriteToggle = {
+                            // TODO: Implement favorite toggle
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = SpacingTokens.L)
-                            .padding(bottom = SpacingTokens.M)
+                            .padding(bottom = SpacingTokens.M),
+                        isFavorite = false // TODO: Get from state
+                    )
+                }
+            }
+
+            // Empty state
+            if (!state.isLoading && state.featuredDeals.isEmpty() && state.popularProducts.isEmpty()) {
+                item {
+                    EmptyState(
+                        type = EmptyStateType.NO_RESULTS,
+                        title = "אין מוצרים להצגה כרגע",
+                        actionLabel = "רענן",
+                        onAction = { viewModel.refresh() },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(SpacingTokens.XL)
                     )
                 }
             }
@@ -278,6 +307,24 @@ fun ModernHomeScreen(
                         strokeWidth = 2.dp
                     )
                 }
+            }
+        }
+
+        // Error Snackbar
+        state.error?.let { error ->
+            Snackbar(
+                modifier = Modifier
+                    .padding(SpacingTokens.M)
+                    .align(Alignment.BottomCenter),
+                action = {
+                    TextButton(onClick = { viewModel.clearError() }) {
+                        Text("סגור", color = MaterialTheme.colorScheme.extended.electricMint)
+                    }
+                },
+                containerColor = MaterialTheme.colorScheme.error,
+                contentColor = MaterialTheme.colorScheme.onError
+            ) {
+                Text(text = error)
             }
         }
     }
@@ -433,133 +480,6 @@ private fun SectionHeader(
                     text = it,
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.extended.electricMint
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun SpecialOfferCard(
-    offer: Any, // Replace with your offer model
-    onClick: () -> Unit
-) {
-    Card(
-        onClick = onClick,
-        modifier = Modifier
-            .width(280.dp)
-            .height(160.dp),
-        shape = GlassmorphicShapes.GlassCard,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.extended.electricMint.copy(alpha = 0.1f)
-        )
-    ) {
-        // Implement offer card content
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Text("Special Offer")
-        }
-    }
-}
-
-@Composable
-private fun ProductCard(
-    product: GroupedProduct,
-    onAddToCart: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val haptics = LocalHapticFeedback.current
-
-    Card(
-        modifier = modifier,
-        shape = GlassmorphicShapes.ProductCard,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.cardElevation(2.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(SpacingTokens.M),
-            horizontalArrangement = Arrangement.spacedBy(SpacingTokens.M)
-        ) {
-            // Product image
-            Card(
-                modifier = Modifier.size(80.dp),
-                shape = GlassmorphicShapes.GlassCardSmall,
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
-                )
-            ) {
-                AsyncImage(
-                    model = product.imageUrl,
-                    contentDescription = product.name,
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
-
-            // Product details
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight(),
-                verticalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column {
-                    Text(
-                        text = product.name,
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Medium,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-
-                    Text(
-                        text = "${product.stores.size} חנויות",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                    )
-                }
-
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(SpacingTokens.S),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "₪${product.lowestPrice}",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.extended.electricMint
-                    )
-
-                    if (product.highestPrice > product.lowestPrice) {
-                        Text(
-                            text = "עד ₪${product.highestPrice}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                        )
-                    }
-                }
-            }
-
-            // Add to cart button
-            IconButton(
-                onClick = {
-                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                    onAddToCart()
-                },
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.extended.electricMint)
-            ) {
-                Icon(
-                    Icons.Default.Add,
-                    contentDescription = "הוסף לעגלה",
-                    tint = Color.White
                 )
             }
         }

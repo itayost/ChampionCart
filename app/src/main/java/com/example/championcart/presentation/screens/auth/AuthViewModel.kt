@@ -143,7 +143,7 @@ class AuthViewModel @Inject constructor(
                 val result = authRepository.login(
                     email = currentState.email.trim(),
                     password = currentState.password,
-                    //rememberMe = currentState.rememberMe
+                    rememberMe = currentState.rememberMe
                 )
 
                 result.fold(

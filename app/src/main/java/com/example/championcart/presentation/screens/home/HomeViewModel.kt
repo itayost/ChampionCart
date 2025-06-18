@@ -150,13 +150,28 @@ class HomeViewModel @Inject constructor(
             onFailure = { /* Handle error */ }
         )
 
+        // Load popular products
+        priceRepository.searchProducts(
+            city = currentCity,
+            productName = "לחם", // Example search for popular items
+            groupByCode = true,
+            limit = 10
+        ).fold(
+            onSuccess = { products ->
+                _state.update {
+                    it.copy(popularProducts = products)
+                }
+            },
+            onFailure = { /* Handle error */ }
+        )
+
         // For demo: simulate recent comparisons
         // In real app, this would come from local storage
         delay(100)
 
         priceRepository.searchProducts(
             city = currentCity,
-            productName = "לחם",
+            productName = "חלב",
             groupByCode = true,
             limit = 5
         ).fold(
@@ -191,6 +206,19 @@ class HomeViewModel @Inject constructor(
 
             // Reload content for new city
             loadHomeContent()
+        }
+    }
+
+    fun selectCategory(category: String?) {
+        _state.update { it.copy(selectedCategory = category) }
+
+        // Filter products based on category if needed
+        viewModelScope.launch {
+            if (category != null) {
+                // In a real app, you'd filter by category
+                // For now, we'll just update the state
+                loadHomeContent()
+            }
         }
     }
 
@@ -277,9 +305,23 @@ data class HomeScreenState(
     val itemsCompared: Int = 0,
     val cheapestStore: String? = null,
 
+    // Categories
+    val categories: List<String> = listOf(
+        "חלב ומוצריו",
+        "לחם ומאפים",
+        "בשר ודגים",
+        "פירות וירקות",
+        "משקאות",
+        "חטיפים ומתוקים",
+        "מוצרי ניקיון",
+        "טיפוח והיגיינה"
+    ),
+    val selectedCategory: String? = null,
+
     // Content
     val featuredDeals: List<GroupedProduct> = emptyList(),
     val recentComparisons: List<GroupedProduct> = emptyList(),
+    val popularProducts: List<GroupedProduct> = emptyList(),
 
     // UI states
     val isLoading: Boolean = false,

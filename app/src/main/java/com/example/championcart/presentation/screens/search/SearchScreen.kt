@@ -10,6 +10,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.items
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -19,23 +21,31 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.championcart.domain.models.GroupedProduct
 import com.example.championcart.domain.models.SortOption
 import com.example.championcart.domain.models.StorePrice
 import com.example.championcart.presentation.components.*
 import com.example.championcart.ui.theme.*
 
+/**
+ * Search Screen with Electric Harmony Design
+ * Supports product search, filtering, and sorting
+ */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun SearchScreen(
-    viewModel: SearchViewModel = viewModel(),
+    viewModel: SearchViewModel = hiltViewModel(),
     onNavigateBack: () -> Unit = {},
     onProductClick: (GroupedProduct) -> Unit = {}
 ) {
@@ -52,17 +62,26 @@ fun SearchScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                brush = Brush.verticalGradient(
-                    colors = listOf(
-                        MaterialTheme.colorScheme.extended.electricMint.copy(alpha = 0.02f),
-                        MaterialTheme.colorScheme.surface
+            .background(MaterialTheme.colorScheme.background)
+    ) {
+        // Background gradient
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.extended.electricMint.copy(alpha = 0.02f),
+                            MaterialTheme.colorScheme.surface
+                        )
                     )
                 )
-            )
-    ) {
+        )
+
         Column(
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
         ) {
             // Search Header
             SearchHeader(
@@ -84,7 +103,7 @@ fun SearchScreen(
                 onCityChange = viewModel::selectCity,
                 showIdenticalOnly = state.showIdenticalOnly,
                 onToggleIdenticalOnly = viewModel::toggleIdenticalOnly,
-                modifier = Modifier.padding(bottom = SpacingTokens.M)
+                modifier = Modifier.padding(horizontal = SpacingTokens.L, vertical = SpacingTokens.S)
             )
 
             // Content Area
@@ -102,9 +121,8 @@ fun SearchScreen(
 
                     state.error != null -> {
                         EmptyState(
-                            type = EmptyStateType.EMPTY_CART,
-                            title = "שגיאה",
-                            subtitle = state.error,
+                            type = EmptyStateType.NETWORK_ERROR,
+                            title = state.error,
                             actionLabel = "נסה שוב",
                             onAction = viewModel::retry,
                             modifier = Modifier
@@ -116,8 +134,7 @@ fun SearchScreen(
                     state.hasSearched && state.groupedProducts.isEmpty() -> {
                         EmptyState(
                             type = EmptyStateType.NO_RESULTS,
-                            title = "לא נמצאו תוצאות",
-                            subtitle = "נסה לחפש עם מילות מפתח אחרות",
+                            title = "לא נמצאו תוצאות עבור \"${state.searchQuery}\"",
                             actionLabel = "נקה חיפוש",
                             onAction = viewModel::clearResults,
                             modifier = Modifier
@@ -155,6 +172,7 @@ fun SearchScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SearchHeader(
     searchQuery: String,
@@ -172,7 +190,9 @@ private fun SearchHeader(
         // Back button
         IconButton(
             onClick = onBack,
-            modifier = Modifier.size(SizingTokens.IconL)
+            modifier = Modifier
+                .size(48.dp)
+                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.8f))
         ) {
             Icon(
                 Icons.Default.ArrowBack,
@@ -181,19 +201,51 @@ private fun SearchHeader(
             )
         }
 
-        // Search Field
-        SearchTextField(
-            query = searchQuery,
-            onQueryChange = onSearchQueryChange,
-            onSearch = onSearch,
-            placeholder = "חפש מוצרים...",
+        // Search field
+        OutlinedTextField(
+            value = searchQuery,
+            onValueChange = onSearchQueryChange,
             modifier = Modifier
                 .weight(1f)
-                .focusRequester(focusRequester)
+                .focusRequester(focusRequester),
+            placeholder = {
+                Text("חפש מוצרים...")
+            },
+            leadingIcon = {
+                Icon(
+                    Icons.Default.Search,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            },
+            trailingIcon = {
+                if (searchQuery.isNotEmpty()) {
+                    IconButton(onClick = { onSearchQueryChange("") }) {
+                        Icon(
+                            Icons.Default.Clear,
+                            contentDescription = "נקה",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(
+                imeAction = ImeAction.Search
+            ),
+            keyboardActions = KeyboardActions(
+                onSearch = { onSearch() }
+            ),
+            shape = GlassmorphicShapes.SearchField,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = MaterialTheme.colorScheme.extended.electricMint,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+            )
         )
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun SearchFilterSection(
     selectedCity: String,
@@ -202,84 +254,99 @@ private fun SearchFilterSection(
     onToggleIdenticalOnly: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    LazyRow(
+    var showCityDialog by remember { mutableStateOf(false) }
+    val cities = listOf("תל אביב", "ירושלים", "חיפה", "באר שבע", "ראשון לציון", "פתח תקווה")
+
+    FlowRow(
         modifier = modifier,
-        contentPadding = PaddingValues(horizontal = SpacingTokens.L),
-        horizontalArrangement = Arrangement.spacedBy(SpacingTokens.S)
+        horizontalArrangement = Arrangement.spacedBy(SpacingTokens.S),
+        verticalArrangement = Arrangement.spacedBy(SpacingTokens.S)
     ) {
         // City selector
-        item {
-            CityFilterChip(
-                selectedCity = selectedCity,
-                onClick = { /* Open city selector */ }
-            )
-        }
-
-        // Identical products toggle
-        item {
-            FilterChip(
-                selected = showIdenticalOnly,
-                onClick = onToggleIdenticalOnly,
-                label = {
-                    Text(
-                        "מוצרים זהים בלבד",
-                        style = AppTextStyles.chipText
+        FilterChip(
+            selected = false,
+            onClick = { showCityDialog = true },
+            label = {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(SpacingTokens.XS),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Default.LocationOn,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                        tint = MaterialTheme.colorScheme.extended.electricMint
                     )
-                },
-                leadingIcon = if (showIdenticalOnly) {
-                    {
-                        Icon(
-                            Icons.Default.Check,
-                            contentDescription = null,
-                            modifier = Modifier.size(SizingTokens.IconXS)
-                        )
-                    }
-                } else null,
-                colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = MaterialTheme.colorScheme.extended.electricMint,
-                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary
-                ),
-                shape = GlassmorphicShapes.Chip
+                    Text(selectedCity)
+                    Icon(
+                        Icons.Default.KeyboardArrowDown,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            },
+            shape = GlassmorphicShapes.Chip,
+            colors = FilterChipDefaults.filterChipColors(
+                containerColor = MaterialTheme.colorScheme.surface,
+                labelColor = MaterialTheme.colorScheme.onSurface
             )
-        }
-    }
-}
-
-@Composable
-private fun CityFilterChip(
-    selectedCity: String,
-    onClick: () -> Unit
-) {
-    FilterChip(
-        selected = false,
-        onClick = onClick,
-        label = {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(SpacingTokens.XS),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    Icons.Default.LocationOn,
-                    contentDescription = null,
-                    modifier = Modifier.size(SizingTokens.IconXS),
-                    tint = MaterialTheme.colorScheme.extended.electricMint
-                )
-                Text(
-                    text = selectedCity,
-                    style = AppTextStyles.chipText
-                )
-                Icon(
-                    Icons.Default.KeyboardArrowDown,
-                    contentDescription = null,
-                    modifier = Modifier.size(SizingTokens.IconXS)
-                )
-            }
-        },
-        shape = GlassmorphicShapes.Chip,
-        colors = FilterChipDefaults.filterChipColors(
-            containerColor = MaterialTheme.colorScheme.surface
         )
-    )
+
+        // Identical products filter
+        FilterChip(
+            selected = showIdenticalOnly,
+            onClick = onToggleIdenticalOnly,
+            label = {
+                Text("מוצרים זהים בלבד")
+            },
+            leadingIcon = if (showIdenticalOnly) {
+                {
+                    Icon(
+                        Icons.Default.Check,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            } else null,
+            shape = GlassmorphicShapes.Chip,
+            colors = FilterChipDefaults.filterChipColors(
+                selectedContainerColor = MaterialTheme.colorScheme.extended.electricMint,
+                selectedLabelColor = Color.White
+            )
+        )
+    }
+
+    // City selection dialog
+    if (showCityDialog) {
+        AlertDialog(
+            onDismissRequest = { showCityDialog = false },
+            title = { Text("בחר עיר") },
+            text = {
+                LazyColumn {
+                    items(cities) { city ->
+                        TextButton(
+                            onClick = {
+                                onCityChange(city)
+                                showCityDialog = false
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = city,
+                                modifier = Modifier.fillMaxWidth(),
+                                textAlign = TextAlign.Start
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showCityDialog = false }) {
+                    Text("ביטול")
+                }
+            }
+        )
+    }
 }
 
 @Composable
@@ -300,17 +367,22 @@ private fun SearchResultsContent(
 
         // Product list
         LazyColumn(
-            contentPadding = PaddingValues(SpacingTokens.L),
+            contentPadding = PaddingValues(
+                horizontal = SpacingTokens.L,
+                vertical = SpacingTokens.M
+            ),
             verticalArrangement = Arrangement.spacedBy(SpacingTokens.M)
         ) {
             items(products) { product ->
-                GroupedProductCard(
+                ListProductCard(
                     product = product,
                     onAddToCart = { storePrice ->
-                        // Pass the selected store price to the parent
                         onAddToCart(product)
                     },
                     onProductClick = { onProductClick(product) },
+                    onFavoriteToggle = {
+                        // TODO: Implement favorite toggle
+                    },
                     modifier = Modifier.fillMaxWidth()
                 )
             }
@@ -324,80 +396,50 @@ private fun SearchResultsHeader(
     sortOption: SortOption,
     onSortChange: (SortOption) -> Unit
 ) {
+    var showSortMenu by remember { mutableStateOf(false) }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = SpacingTokens.L, vertical = SpacingTokens.M),
+            .padding(horizontal = SpacingTokens.L, vertical = SpacingTokens.S),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
             text = "נמצאו $resultCount מוצרים",
             style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurface
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
-        // Sort dropdown
-        SortDropdown(
-            currentSort = sortOption,
-            onSortChange = onSortChange
-        )
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun SortDropdown(
-    currentSort: SortOption,
-    onSortChange: (SortOption) -> Unit
-) {
-    var expanded by remember { mutableStateOf(false) }
-
-    Box {
+        // Sort button
         TextButton(
-            onClick = { expanded = true },
-            colors = ButtonDefaults.textButtonColors(
-                contentColor = MaterialTheme.colorScheme.extended.electricMint
-            )
+            onClick = { showSortMenu = true }
         ) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(SpacingTokens.XS),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    Icons.Default.Sort,
-                    contentDescription = null,
-                    modifier = Modifier.size(SizingTokens.IconS)
-                )
-                Text(
-                    text = getSortDisplayName(currentSort),
-                    style = AppTextStyles.buttonText
-                )
-                Icon(
-                    Icons.Default.KeyboardArrowDown,
-                    contentDescription = null,
-                    modifier = Modifier.size(SizingTokens.IconXS)
-                )
-            }
+            Icon(
+                Icons.Default.Sort,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp)
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(
+                text = getSortOptionText(sortOption),
+                style = MaterialTheme.typography.labelLarge
+            )
         }
 
+        // Sort dropdown menu
         DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false }
+            expanded = showSortMenu,
+            onDismissRequest = { showSortMenu = false }
         ) {
             SortOption.values().forEach { option ->
                 DropdownMenuItem(
-                    text = {
-                        Text(
-                            getSortDisplayName(option),
-                            style = AppTextStyles.hebrewBodyMedium
-                        )
-                    },
+                    text = { Text(getSortOptionText(option)) },
                     onClick = {
                         onSortChange(option)
-                        expanded = false
+                        showSortMenu = false
                     },
-                    leadingIcon = if (option == currentSort) {
+                    leadingIcon = if (option == sortOption) {
                         {
                             Icon(
                                 Icons.Default.Check,
@@ -455,6 +497,11 @@ private fun SearchSuggestionsContent(
                 }
             )
         }
+
+        // Search tips
+        item {
+            SearchTipsCard()
+        }
     }
 }
 
@@ -462,7 +509,7 @@ private fun SearchSuggestionsContent(
 @Composable
 private fun SearchSuggestionSection(
     title: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    icon: ImageVector,
     suggestions: List<String>,
     onSuggestionClick: (String) -> Unit
 ) {
@@ -477,13 +524,13 @@ private fun SearchSuggestionSection(
             Icon(
                 icon,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.extended.electricMint,
-                modifier = Modifier.size(SizingTokens.IconS)
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(20.dp)
             )
             Text(
                 text = title,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
 
@@ -495,19 +542,10 @@ private fun SearchSuggestionSection(
             suggestions.forEach { suggestion ->
                 SuggestionChip(
                     onClick = { onSuggestionClick(suggestion) },
-                    label = {
-                        Text(
-                            suggestion,
-                            style = AppTextStyles.chipText
-                        )
-                    },
+                    label = { Text(suggestion) },
                     shape = GlassmorphicShapes.Chip,
                     colors = SuggestionChipDefaults.suggestionChipColors(
-                        containerColor = MaterialTheme.colorScheme.surface
-                    ),
-                    border = BorderStroke(
-                        width = 1.dp,
-                        color = MaterialTheme.colorScheme.extended.borderDefault
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
                     )
                 )
             }
@@ -521,10 +559,10 @@ private fun PopularCategoriesSection(
 ) {
     val categories = listOf(
         "חלב ומוצריו" to Icons.Default.LocalDrink,
-        "פירות וירקות" to Icons.Default.Eco,
-        "לחם ומאפים" to Icons.Default.Cookie,
+        "לחם ומאפים" to Icons.Default.BakeryDining,
         "בשר ודגים" to Icons.Default.Restaurant,
-        "מוצרי ניקיון" to Icons.Default.CleaningServices,
+        "פירות וירקות" to Icons.Default.Eco,
+        "משקאות" to Icons.Default.LocalBar,
         "חטיפים" to Icons.Default.Cookie
     )
 
@@ -533,8 +571,8 @@ private fun PopularCategoriesSection(
     ) {
         Text(
             text = "קטגוריות פופולריות",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
         LazyRow(
@@ -555,16 +593,17 @@ private fun PopularCategoriesSection(
 @Composable
 private fun CategoryCard(
     category: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    icon: ImageVector,
     onClick: () -> Unit
 ) {
     Card(
         onClick = onClick,
-        modifier = Modifier.size(120.dp),
+        modifier = Modifier.size(100.dp),
+        shape = GlassmorphicShapes.GlassCard,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.extended.surfaceGlass
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
         ),
-        shape = GlassmorphicShapes.GlassCard
+        elevation = CardDefaults.cardElevation(2.dp)
     ) {
         Column(
             modifier = Modifier
@@ -576,14 +615,14 @@ private fun CategoryCard(
             Icon(
                 icon,
                 contentDescription = null,
-                modifier = Modifier.size(SizingTokens.IconL),
+                modifier = Modifier.size(32.dp),
                 tint = MaterialTheme.colorScheme.extended.electricMint
             )
             Spacer(modifier = Modifier.height(SpacingTokens.S))
             Text(
                 text = category,
-                style = AppTextStyles.caption,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                style = MaterialTheme.typography.labelSmall,
+                textAlign = TextAlign.Center,
                 maxLines = 2
             )
         }
@@ -591,39 +630,83 @@ private fun CategoryCard(
 }
 
 @Composable
-private fun LoadingContent(
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+private fun SearchTipsCard() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = GlassmorphicShapes.GlassCard,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.extended.info.copy(alpha = 0.1f)
+        )
     ) {
         Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(SpacingTokens.L),
             verticalArrangement = Arrangement.spacedBy(SpacingTokens.M)
         ) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(48.dp),
-                color = MaterialTheme.colorScheme.extended.electricMint,
-                strokeWidth = 3.dp
-            )
-            Text(
-                text = "מחפש מוצרים...",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(SpacingTokens.S),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    Icons.Default.Lightbulb,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.extended.info,
+                    modifier = Modifier.size(24.dp)
+                )
+                Text(
+                    text = "טיפים לחיפוש",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+
+            Column(
+                verticalArrangement = Arrangement.spacedBy(SpacingTokens.S)
+            ) {
+                SearchTipItem("🔍 השתמש בעברית לתוצאות טובות יותר")
+                SearchTipItem("📦 נסה מונחים כלליים כמו \"חלב\" או \"לחם\"")
+                SearchTipItem("🏷️ שמות מותגים עובדים מצוין!")
+                SearchTipItem("💡 אנחנו מחפשים ברמי לוי, שופרסל ועוד")
+            }
         }
     }
 }
 
-// Helper function for sort display names
-private fun getSortDisplayName(sortOption: SortOption): String {
+@Composable
+private fun SearchTipItem(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
+}
+
+@Composable
+private fun LoadingContent(
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(SpacingTokens.M)
+    ) {
+        CircularProgressIndicator(
+            color = MaterialTheme.colorScheme.extended.electricMint
+        )
+        Text(
+            text = "מחפש מוצרים...",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+private fun getSortOptionText(sortOption: SortOption): String {
     return when (sortOption) {
         SortOption.RELEVANCE -> "רלוונטיות"
         SortOption.PRICE_LOW_TO_HIGH -> "מחיר: נמוך לגבוה"
         SortOption.PRICE_HIGH_TO_LOW -> "מחיר: גבוה לנמוך"
         SortOption.NAME_A_TO_Z -> "שם: א-ת"
         SortOption.NAME_Z_TO_A -> "שם: ת-א"
-        SortOption.SAVINGS_HIGH_TO_LOW -> "חיסכון מרבי"
+        SortOption.SAVINGS_HIGH_TO_LOW -> "חיסכון: גבוה לנמוך"
     }
 }

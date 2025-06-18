@@ -1,0 +1,44 @@
+<!-- CONCEPT 2: The Victory Flame -->
+<!-- A flame that forms from rising price graphs -->
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="120"
+    android:viewportHeight="120">
+
+    <!-- Dark background circle for contrast -->
+    <circle
+        android:fillColor="#0A0E27"
+        android:radius="50"
+        android:centerX="60"
+        android:centerY="60"/>
+
+    <!-- Flame shape made from price chart lines -->
+    <!-- Base flame -->
+    <path
+        android:fillColor="#00E5A0"
+        android:pathData="M60,90 Q45,80 40,65 Q35,50 45,40 Q50,35 55,45 Q58,35 60,25 Q62,35 65,45 Q70,35 75,40 Q85,50 80,65 Q75,80 60,90 Z"/>
+
+    <!-- Inner flame layers -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.4"
+        android:pathData="M60,85 Q50,78 47,68 Q45,58 52,50 Q55,47 57,52 Q59,45 60,37 Q61,45 63,52 Q65,47 68,50 Q75,58 73,68 Q70,78 60,85 Z"/>
+
+    <!-- Golden hot core -->
+    <path
+        android:fillColor="#FFD700"
+        android:pathData="M60,75 Q55,70 53,65 Q52,60 56,55 Q58,53 59,56 Q60,52 60,48 Q60,52 61,56 Q62,53 64,55 Q68,60 67,65 Q65,70 60,75 Z"/>
+
+    <!-- Chart lines inside flame -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.5"
+        android:fillColor="@null"
+        android:pathData="M45,70 L50,65 L55,60 L60,50 L65,55 L70,60 L75,65"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:strokeAlpha="0.6"/>
+
+</vector>

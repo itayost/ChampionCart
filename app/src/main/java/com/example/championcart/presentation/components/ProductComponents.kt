@@ -19,73 +19,55 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.example.championcart.domain.models.GroupedProduct
+import com.example.championcart.domain.models.StorePrice
+import com.example.championcart.domain.models.PriceComparison
 import com.example.championcart.ui.theme.*
 
 /**
  * Champion Cart - Product Components
- * Electric Harmony glassmorphic product cards with price comparison
+ * Updated to work with API data models (GroupedProduct, StorePrice)
  */
-
-// Data classes for products and prices
-data class Product(
-    val id: String,
-    val name: String,
-    val nameHebrew: String? = null,
-    val brand: String,
-    val imageUrl: String,
-    val category: String,
-    val unit: String = "יח'", // Hebrew unit
-    val isKosher: Boolean = false,
-    val isOrganic: Boolean = false
-)
-
-data class ProductPrice(
-    val storeId: String,
-    val storeName: String,
-    val storeNameHebrew: String,
-    val price: Double,
-    val originalPrice: Double? = null,
-    val isOnSale: Boolean = false,
-    val currency: String = "₪"
-)
-
-data class ProductWithPrices(
-    val product: Product,
-    val prices: List<ProductPrice>,
-    val bestPrice: ProductPrice? = null,
-    val averagePrice: Double = 0.0,
-    val savingsFromBest: Double = 0.0
-)
 
 /**
  * Main Product Card - Electric Harmony Design
+ * Works with GroupedProduct from API
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProductCard(
-    productWithPrices: ProductWithPrices,
-    onProductClick: (Product) -> Unit,
-    onAddToList: (Product) -> Unit,
-    onFavoriteToggle: (Product) -> Unit,
+    product: GroupedProduct,
+    onProductClick: () -> Unit,
+    onAddToCart: (StorePrice) -> Unit,
+    onFavoriteToggle: () -> Unit,
     modifier: Modifier = Modifier,
     isFavorite: Boolean = false,
-    isCompact: Boolean = false
+    isCompact: Boolean = false,
+    selectedStoreId: String? = null
 ) {
-    val product = productWithPrices.product
+    val haptics = LocalHapticFeedback.current
+    val lowestPrice = product.prices.minByOrNull { it.price }
+    val highestPrice = product.prices.maxByOrNull { it.price }
 
     Card(
-        onClick = { onProductClick(product) },
+        onClick = {
+            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+            onProductClick()
+        },
         modifier = modifier
             .fillMaxWidth()
-            .aspectRatio(if (isCompact) 1f else 0.8f),
+            .then(if (isCompact) Modifier.aspectRatio(0.75f) else Modifier),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.extended.surfaceGlass
         ),
@@ -98,37 +80,34 @@ fun ProductCard(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(SpacingTokens.M)
+                .padding(if (isCompact) SpacingTokens.S else SpacingTokens.M)
         ) {
-            // Product Image with Favorite Button
+            // Product Icon/Image placeholder with Favorite Button
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(if (isCompact) 0.5f else 0.4f)
+                    .weight(if (isCompact) 0.4f else 0.3f)
             ) {
-                AsyncImage(
-                    model = product.imageUrl,
-                    contentDescription = product.nameHebrew ?: product.name,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clip(GlassmorphicShapes.GlassCardSmall),
-                    contentScale = ContentScale.Crop,
-                    placeholder = painterResource(id = android.R.drawable.ic_menu_gallery)
+                // Product Icon based on category
+                ProductIconPlaceholder(
+                    productName = product.itemName,
+                    modifier = Modifier.fillMaxSize()
                 )
 
                 // Favorite Button
                 FavoriteButton(
                     isFavorite = isFavorite,
-                    onClick = { onFavoriteToggle(product) },
+                    onClick = onFavoriteToggle,
                     modifier = Modifier.align(Alignment.TopEnd)
                 )
 
-                // Product Badges
-                ProductBadges(
-                    isKosher = product.isKosher,
-                    isOrganic = product.isOrganic,
-                    modifier = Modifier.align(Alignment.TopStart)
-                )
+                // Discount Badge if applicable
+                if (product.savings > 5) {
+                    DiscountBadge(
+                        savingsPercent = ((product.savings / (highestPrice?.price ?: 1.0)) * 100).toInt(),
+                        modifier = Modifier.align(Alignment.TopStart)
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(SpacingTokens.S))
@@ -137,333 +116,22 @@ fun ProductCard(
             ProductInfo(
                 product = product,
                 isCompact = isCompact,
-                modifier = Modifier.weight(if (isCompact) 0.3f else 0.4f)
+                modifier = Modifier.weight(if (isCompact) 0.3f else 0.35f)
             )
 
             Spacer(modifier = Modifier.height(SpacingTokens.S))
 
-            // Price Section
+            // Price Section with store selection
             PriceSection(
-                prices = productWithPrices.prices,
-                bestPrice = productWithPrices.bestPrice,
+                product = product,
+                selectedStoreId = selectedStoreId,
                 isCompact = isCompact,
-                modifier = Modifier.weight(if (isCompact) 0.2f else 0.2f)
-            )
-
-            // Action Button
-            ProductActionButton(
-                onAddToList = { onAddToList(product) },
-                isCompact = isCompact
+                onStoreSelected = { storePrice ->
+                    onAddToCart(storePrice)
+                },
+                modifier = Modifier.weight(if (isCompact) 0.3f else 0.35f)
             )
         }
-    }
-}
-
-/**
- * Product Information Section
- */
-@Composable
-private fun ProductInfo(
-    product: Product,
-    isCompact: Boolean,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(SpacingTokens.XS)
-    ) {
-        // Product Name (Hebrew first)
-        Text(
-            text = product.nameHebrew ?: product.name,
-            style = if (isCompact) {
-                AppTextStyles.productName
-            } else {
-                AppTextStyles.productName
-            }.withSmartHebrewSupport(product.nameHebrew ?: product.name),
-            color = MaterialTheme.colorScheme.onSurface,
-            maxLines = if (isCompact) 1 else 2,
-            overflow = TextOverflow.Ellipsis
-        )
-
-        // Brand
-        Text(
-            text = product.brand,
-            style = if (isCompact) {
-                AppTextStyles.caption
-            } else {
-                AppTextStyles.storeNameSmall
-            },
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-
-        // Unit
-        Text(
-            text = product.unit,
-            style = AppTextStyles.caption,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-        )
-    }
-}
-
-/**
- * Product Badges (Kosher, Organic, etc.)
- */
-@Composable
-private fun ProductBadges(
-    isKosher: Boolean,
-    isOrganic: Boolean,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(SpacingTokens.XXS)
-    ) {
-        if (isKosher) {
-            Badge(
-                modifier = Modifier.size(20.dp),
-                containerColor = MaterialTheme.colorScheme.extended.kosher
-            ) {
-                Text(
-                    "כ",
-                    style = AppTextStyles.badge,
-                    color = Color.White
-                )
-            }
-        }
-
-        if (isOrganic) {
-            Badge(
-                modifier = Modifier.size(20.dp),
-                containerColor = MaterialTheme.colorScheme.extended.organic
-            ) {
-                Icon(
-                    Icons.Default.Eco,
-                    contentDescription = "Organic",
-                    tint = Color.White,
-                    modifier = Modifier.size(12.dp)
-                )
-            }
-        }
-    }
-}
-
-/**
- * Price Comparison Section
- */
-@Composable
-private fun PriceSection(
-    prices: List<ProductPrice>,
-    bestPrice: ProductPrice?,
-    isCompact: Boolean,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(SpacingTokens.XS)
-    ) {
-        if (bestPrice != null) {
-            // Best Price Display
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column {
-                    Text(
-                        text = "${bestPrice.price}${bestPrice.currency}",
-                        style = if (isCompact) {
-                            AppTextStyles.priceMedium
-                        } else {
-                            AppTextStyles.priceLarge
-                        },
-                        color = MaterialTheme.colorScheme.extended.bestPrice
-                    )
-
-                    Text(
-                        text = bestPrice.storeNameHebrew,
-                        style = AppTextStyles.caption.withSmartHebrewSupport(bestPrice.storeNameHebrew),
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                    )
-                }
-
-                if (bestPrice.isOnSale && bestPrice.originalPrice != null) {
-                    Column(
-                        horizontalAlignment = Alignment.End
-                    ) {
-                        Text(
-                            text = "${bestPrice.originalPrice}${bestPrice.currency}",
-                            style = AppTextStyles.priceSmall,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                            textDecoration = androidx.compose.ui.text.style.TextDecoration.LineThrough
-                        )
-
-                        val savings = ((bestPrice.originalPrice - bestPrice.price) / bestPrice.originalPrice * 100).toInt()
-                        Text(
-                            text = "-$savings%",
-                            style = AppTextStyles.badge,
-                            color = MaterialTheme.colorScheme.extended.bestPrice
-                        )
-                    }
-                }
-            }
-
-            // Price Comparison Indicator
-            if (prices.size > 1 && !isCompact) {
-                Spacer(modifier = Modifier.height(SpacingTokens.XS))
-                PriceComparisonIndicator(
-                    prices = prices,
-                    bestPrice = bestPrice
-                )
-            }
-        }
-    }
-}
-
-/**
- * Price Comparison Visual Indicator
- */
-@Composable
-private fun PriceComparisonIndicator(
-    prices: List<ProductPrice>,
-    bestPrice: ProductPrice
-) {
-    val maxPrice = prices.maxOfOrNull { it.price } ?: bestPrice.price
-    val minPrice = prices.minOfOrNull { it.price } ?: bestPrice.price
-    val priceRange = maxPrice - minPrice
-
-    LazyRow(
-        horizontalArrangement = Arrangement.spacedBy(SpacingTokens.XS)
-    ) {
-        items(prices.take(3)) { price ->
-            val normalizedPrice: Float = if (priceRange > 0) {
-                ((price.price - minPrice) / priceRange).toFloat()
-            } else {
-                0.5f
-            }
-
-            val priceLevel = when {
-                price.price == minPrice -> com.example.championcart.ui.theme.PriceLevel.Best
-                normalizedPrice < 0.5f -> com.example.championcart.ui.theme.PriceLevel.Mid
-                else -> com.example.championcart.ui.theme.PriceLevel.High
-            }
-
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(SpacingTokens.XXS)
-            ) {
-                val priceColor = ColorHelpers.getPriceColor(priceLevel)
-
-                Box(
-                    modifier = Modifier
-                        .width(24.dp)
-                        .height(4.dp)
-                        .background(
-                            priceColor,
-                            RoundedCornerShape(2.dp)
-                        )
-                )
-
-                Text(
-                    text = price.storeNameHebrew.take(3),
-                    style = AppTextStyles.caption,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                    textAlign = TextAlign.Center
-                )
-            }
-        }
-    }
-}
-
-/**
- * Product Action Button
- */
-@Composable
-private fun ProductActionButton(
-    onAddToList: () -> Unit,
-    isCompact: Boolean
-) {
-    Button(
-        onClick = onAddToList,
-        modifier = Modifier.fillMaxWidth(),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.extended.electricMint
-        ),
-        shape = GlassmorphicShapes.Button,
-        contentPadding = PaddingValues(
-            horizontal = SpacingTokens.M,
-            vertical = if (isCompact) SpacingTokens.XS else SpacingTokens.S
-        )
-    ) {
-        Icon(
-            Icons.Default.Add,
-            contentDescription = null,
-            modifier = Modifier.size(SizingTokens.IconS)
-        )
-        Spacer(modifier = Modifier.width(SpacingTokens.XS))
-        Text(
-            "הוסף לרשימה",
-            style = if (isCompact) {
-                MaterialTheme.typography.bodySmall
-            } else {
-                AppTextStyles.buttonText
-            }.withSmartHebrewSupport("הוסף לרשימה")
-        )
-    }
-}
-
-/**
- * Favorite Button with proper animation specs
- */
-@Composable
-private fun FavoriteButton(
-    isFavorite: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    var isPressed by remember { mutableStateOf(false) }
-
-    // Float animation for scale - this works with SpringSpec<Float>
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.8f else 1f,
-        animationSpec = spring(
-            dampingRatio = SpringSpecs.DampingRatioHighBounce,
-            stiffness = SpringSpecs.StiffnessHigh
-        ),
-        label = "favoriteScale"
-    )
-
-    // Color animation - must use AnimationSpec<Color>
-    val iconColor by animateColorAsState(
-        targetValue = if (isFavorite) {
-            MaterialTheme.colorScheme.error
-        } else {
-            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-        },
-        animationSpec = spring(
-            dampingRatio = SpringSpecs.DampingRatioLowBounce,
-            stiffness = SpringSpecs.StiffnessMedium
-        ),
-        label = "favoriteColor"
-    )
-
-    IconButton(
-        onClick = onClick,
-        modifier = modifier
-            .size(32.dp)
-            .scale(scale)
-            .background(
-                MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
-                CircleShape
-            )
-    ) {
-        Icon(
-            if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-            contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites",
-            tint = iconColor,
-            modifier = Modifier.size(18.dp)
-        )
     }
 }
 
@@ -472,16 +140,16 @@ private fun FavoriteButton(
  */
 @Composable
 fun CompactProductCard(
-    productWithPrices: ProductWithPrices,
-    onProductClick: (Product) -> Unit,
-    onAddToList: (Product) -> Unit,
+    product: GroupedProduct,
+    onProductClick: () -> Unit,
+    onAddToCart: (StorePrice) -> Unit,
     modifier: Modifier = Modifier,
     isFavorite: Boolean = false
 ) {
     ProductCard(
-        productWithPrices = productWithPrices,
+        product = product,
         onProductClick = onProductClick,
-        onAddToList = onAddToList,
+        onAddToCart = onAddToCart,
         onFavoriteToggle = { /* Handle favorite */ },
         modifier = modifier,
         isFavorite = isFavorite,
@@ -495,17 +163,21 @@ fun CompactProductCard(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ListProductCard(
-    productWithPrices: ProductWithPrices,
-    onProductClick: (Product) -> Unit,
-    onAddToList: (Product) -> Unit,
-    onFavoriteToggle: (Product) -> Unit,
+    product: GroupedProduct,
+    onProductClick: () -> Unit,
+    onAddToCart: (StorePrice) -> Unit,
+    onFavoriteToggle: () -> Unit,
     modifier: Modifier = Modifier,
     isFavorite: Boolean = false
 ) {
-    val product = productWithPrices.product
+    val lowestPrice = product.prices.minByOrNull { it.price }
+    val haptics = LocalHapticFeedback.current
 
     Card(
-        onClick = { onProductClick(product) },
+        onClick = {
+            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+            onProductClick()
+        },
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.extended.surfaceGlass
@@ -519,15 +191,12 @@ fun ListProductCard(
                 .padding(SpacingTokens.M),
             horizontalArrangement = Arrangement.spacedBy(SpacingTokens.M)
         ) {
-            // Product Image
-            AsyncImage(
-                model = product.imageUrl,
-                contentDescription = product.nameHebrew ?: product.name,
+            // Product Icon
+            ProductIconPlaceholder(
+                productName = product.itemName,
                 modifier = Modifier
                     .size(80.dp)
-                    .clip(GlassmorphicShapes.GlassCardSmall),
-                contentScale = ContentScale.Crop,
-                placeholder = painterResource(id = android.R.drawable.ic_menu_gallery)
+                    .clip(GlassmorphicShapes.GlassCardSmall)
             )
 
             // Product Info
@@ -536,27 +205,40 @@ fun ListProductCard(
                 verticalArrangement = Arrangement.spacedBy(SpacingTokens.XS)
             ) {
                 Text(
-                    text = product.nameHebrew ?: product.name,
-                    style = AppTextStyles.productName.withSmartHebrewSupport(
-                        product.nameHebrew ?: product.name
-                    ),
-                    color = MaterialTheme.colorScheme.onSurface,
+                    text = product.itemName,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
 
-                Text(
-                    text = product.brand,
-                    style = AppTextStyles.storeNameSmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                )
-
-                productWithPrices.bestPrice?.let { price ->
+                // Weight/Unit info if available
+                if (product.weight != null && product.unit != null) {
                     Text(
-                        text = "${price.price}${price.currency}",
-                        style = AppTextStyles.priceMedium,
-                        color = MaterialTheme.colorScheme.extended.bestPrice
+                        text = "${product.weight}${product.unit}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                     )
+                }
+
+                // Price range
+                lowestPrice?.let { price ->
+                    Row(
+                        verticalAlignment = Alignment.Bottom,
+                        horizontalArrangement = Arrangement.spacedBy(SpacingTokens.XS)
+                    ) {
+                        Text(
+                            text = "₪${String.format("%.2f", price.price)}",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.extended.electricMint,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "ב-${price.chain}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        )
+                    }
                 }
             }
 
@@ -567,22 +249,23 @@ fun ListProductCard(
             ) {
                 FavoriteButton(
                     isFavorite = isFavorite,
-                    onClick = { onFavoriteToggle(product) }
+                    onClick = onFavoriteToggle
                 )
 
-                Button(
-                    onClick = { onAddToList(product) },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.extended.electricMint
-                    ),
-                    shape = GlassmorphicShapes.ButtonSmall,
-                    contentPadding = PaddingValues(SpacingTokens.S)
-                ) {
-                    Icon(
-                        Icons.Default.Add,
-                        contentDescription = "Add to list",
-                        modifier = Modifier.size(16.dp)
-                    )
+                lowestPrice?.let { price ->
+                    FilledIconButton(
+                        onClick = { onAddToCart(price) },
+                        colors = IconButtonDefaults.filledIconButtonColors(
+                            containerColor = MaterialTheme.colorScheme.extended.electricMint
+                        ),
+                        modifier = Modifier.size(40.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Add,
+                            contentDescription = "הוסף לעגלה",
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
                 }
             }
         }
@@ -590,9 +273,272 @@ fun ListProductCard(
 }
 
 /**
- * Product-specific Price Level Helper (for internal component use)
+ * Product Icon Placeholder based on product name
  */
-enum class ProductPriceLevel { Best, Mid, High }
+@Composable
+fun ProductIconPlaceholder(
+    productName: String,
+    modifier: Modifier = Modifier
+) {
+    val icon = getProductIcon(productName)
+    val backgroundColor = getProductCategoryColor(productName)
+
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(backgroundColor.copy(alpha = 0.1f)),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = backgroundColor,
+            modifier = Modifier.size(if (modifier == Modifier) 48.dp else 32.dp)
+        )
+    }
+}
+
+/**
+ * Product Information Section
+ */
+@Composable
+private fun ProductInfo(
+    product: GroupedProduct,
+    isCompact: Boolean,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(SpacingTokens.XS)
+    ) {
+        // Product Name
+        Text(
+            text = product.itemName,
+            style = if (isCompact) {
+                MaterialTheme.typography.bodyMedium
+            } else {
+                MaterialTheme.typography.bodyLarge
+            },
+            fontWeight = FontWeight.Medium,
+            maxLines = if (isCompact) 1 else 2,
+            overflow = TextOverflow.Ellipsis
+        )
+
+        // Item code (as "brand" substitute)
+        Text(
+            text = "קוד: ${product.itemCode}",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+        )
+
+        // Weight/Unit if available
+        if (product.weight != null && product.unit != null) {
+            Text(
+                text = "${product.weight}${product.unit}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+            )
+        }
+
+        // Number of stores
+        Text(
+            text = "זמין ב-${product.prices.size} חנויות",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.extended.electricMint
+        )
+    }
+}
+
+/**
+ * Price Section with store selection
+ */
+@Composable
+private fun PriceSection(
+    product: GroupedProduct,
+    selectedStoreId: String?,
+    isCompact: Boolean,
+    onStoreSelected: (StorePrice) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val lowestPrice = product.prices.minByOrNull { it.price }
+    val highestPrice = product.prices.maxByOrNull { it.price }
+
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(SpacingTokens.XS)
+    ) {
+        // Price range indicator
+        if (lowestPrice != null && highestPrice != null && lowestPrice.price < highestPrice.price) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Lowest price
+                Column {
+                    Text(
+                        text = "₪${String.format("%.2f", lowestPrice.price)}",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.extended.electricMint,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = lowestPrice.chain,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                // Savings badge
+                val savingsPercent = ((product.savings / highestPrice.price) * 100).toInt()
+                if (savingsPercent > 0) {
+                    Badge(
+                        containerColor = MaterialTheme.colorScheme.extended.success.copy(alpha = 0.15f),
+                        contentColor = MaterialTheme.colorScheme.extended.success
+                    ) {
+                        Text(
+                            text = "חסכון $savingsPercent%",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+        } else {
+            // Single price
+            lowestPrice?.let { price ->
+                Text(
+                    text = "₪${String.format("%.2f", price.price)}",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+
+        // Add to cart button
+        if (!isCompact && lowestPrice != null) {
+            Button(
+                onClick = { onStoreSelected(lowestPrice) },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.extended.electricMint
+                ),
+                shape = GlassmorphicShapes.ButtonSmall
+            ) {
+                Icon(
+                    Icons.Default.AddShoppingCart,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(SpacingTokens.XS))
+                Text("הוסף לעגלה", style = MaterialTheme.typography.labelLarge)
+            }
+        }
+    }
+}
+
+/**
+ * Favorite button component
+ */
+@Composable
+private fun FavoriteButton(
+    isFavorite: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val scale by animateFloatAsState(
+        targetValue = if (isFavorite) 1.2f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "favoriteScale"
+    )
+
+    IconButton(
+        onClick = onClick,
+        modifier = modifier
+            .size(32.dp)
+            .scale(scale)
+            .clip(CircleShape)
+            .background(
+                MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
+            )
+    ) {
+        Icon(
+            if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+            contentDescription = if (isFavorite) "הסר מהמועדפים" else "הוסף למועדפים",
+            tint = if (isFavorite) {
+                MaterialTheme.colorScheme.extended.neonCoral
+            } else {
+                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            },
+            modifier = Modifier.size(18.dp)
+        )
+    }
+}
+
+/**
+ * Discount badge component
+ */
+@Composable
+private fun DiscountBadge(
+    savingsPercent: Int,
+    modifier: Modifier = Modifier
+) {
+    if (savingsPercent > 0) {
+        Surface(
+            modifier = modifier,
+            shape = RoundedCornerShape(topStart = 12.dp, bottomEnd = 12.dp),
+            color = MaterialTheme.colorScheme.extended.success
+        ) {
+            Text(
+                text = "-$savingsPercent%",
+                modifier = Modifier.padding(horizontal = SpacingTokens.S, vertical = SpacingTokens.XS),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.extended.onSuccess,
+                fontWeight = FontWeight.Bold
+            )
+        }
+    }
+}
+
+/**
+ * Helper functions
+ */
+private fun getProductIcon(productName: String): ImageVector {
+    return when {
+        productName.contains("חלב") -> Icons.Default.LocalDrink
+        productName.contains("לחם") -> Icons.Default.BakeryDining
+        productName.contains("בשר") || productName.contains("עוף") -> Icons.Default.Restaurant
+        productName.contains("פירות") || productName.contains("ירקות") -> Icons.Default.Eco
+        productName.contains("משקה") || productName.contains("מיץ") -> Icons.Default.LocalBar
+        productName.contains("ביצ") -> Icons.Default.Egg
+        productName.contains("גבינ") -> Icons.Default.LocalPizza
+        productName.contains("יוגורט") -> Icons.Default.Icecream
+        productName.contains("ניקוי") -> Icons.Default.CleaningServices
+        productName.contains("נייר") -> Icons.Default.Article
+        productName.contains("שמפו") || productName.contains("סבון") -> Icons.Default.Soap
+        else -> Icons.Default.ShoppingBasket
+    }
+}
+
+@Composable
+private fun getProductCategoryColor(productName: String): Color {
+    val colors = MaterialTheme.colorScheme.extended
+    return when {
+        productName.contains("חלב") || productName.contains("גבינ") || productName.contains("יוגורט") -> colors.dairy
+        productName.contains("לחם") || productName.contains("מאפ") -> colors.bakery
+        productName.contains("בשר") || productName.contains("עוף") -> colors.meat
+        productName.contains("ירק") || productName.contains("פיר") -> colors.produce
+        productName.contains("משקה") || productName.contains("מיץ") -> colors.frozen
+        productName.contains("ניקוי") -> colors.household
+        else -> colors.electricMint
+    }
+}
 
 /**
  * Preview for Product Card
@@ -601,47 +547,47 @@ enum class ProductPriceLevel { Best, Mid, High }
 @Composable
 fun ProductCardPreview() {
     ChampionCartTheme {
-        val sampleProduct = Product(
-            id = "1",
-            name = "Milk 3% Fat",
-            nameHebrew = "חלב 3% שומן",
-            brand = "Tnuva",
-            imageUrl = "",
-            category = "Dairy",
-            unit = "1L",
-            isKosher = true,
-            isOrganic = false
-        )
-
-        val samplePrices = listOf(
-            ProductPrice(
-                storeId = "1",
-                storeName = "Shufersal",
-                storeNameHebrew = "שופרסל",
-                price = 5.90,
-                originalPrice = 6.90,
-                isOnSale = true
+        val sampleProduct = GroupedProduct(
+            itemCode = "12345",
+            itemName = "חלב 3% שומן תנובה",
+            prices = listOf(
+                StorePrice(
+                    chain = "שופרסל",
+                    storeId = "001",
+                    price = 6.90,
+                    originalName = "חלב 3% 1 ליטר",
+                    timestamp = "2024-01-01"
+                ),
+                StorePrice(
+                    chain = "רמי לוי",
+                    storeId = "002",
+                    price = 5.90,
+                    originalName = "חלב 3% 1 ליטר",
+                    timestamp = "2024-01-01"
+                )
             ),
-            ProductPrice(
-                storeId = "2",
-                storeName = "Rami Levy",
-                storeNameHebrew = "רמי לוי",
-                price = 6.20
+            crossChain = true,
+            weight = 1.0,
+            unit = "ליטר"
+        )
+
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            ProductCard(
+                product = sampleProduct,
+                onProductClick = {},
+                onAddToCart = {},
+                onFavoriteToggle = {}
             )
-        )
 
-        val productWithPrices = ProductWithPrices(
-            product = sampleProduct,
-            prices = samplePrices,
-            bestPrice = samplePrices[0]
-        )
-
-        ProductCard(
-            productWithPrices = productWithPrices,
-            onProductClick = {},
-            onAddToList = {},
-            onFavoriteToggle = {},
-            modifier = Modifier.padding(16.dp)
-        )
+            ListProductCard(
+                product = sampleProduct,
+                onProductClick = {},
+                onAddToCart = {},
+                onFavoriteToggle = {}
+            )
+        }
     }
 }

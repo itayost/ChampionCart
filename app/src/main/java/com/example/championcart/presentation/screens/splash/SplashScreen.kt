@@ -35,9 +35,7 @@ import androidx.compose.ui.tooling.preview.Wallpapers
  * Modern Splash Screen with Electric Harmony Design
  * Features animated logo, floating orbs, and smooth transitions
  */
-@Preview(uiMode = Configuration.UI_MODE_NIGHT_NO or Configuration.UI_MODE_TYPE_NORMAL,
-    wallpaper = Wallpapers.NONE, device = "id:pixel_fold"
-)
+
 @Composable
 fun ModernSplashScreen(
     onSplashComplete: () -> Unit
