@@ -159,10 +159,6 @@ fun ProfileScreen(
                     onSavedCartsClick = {
                         haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                         navController.navigate(Screen.SavedCarts.route)
-                    },
-                    onAboutClick = {
-                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                        navController.navigate(Screen.About.route)
                     }
                 )
             }
@@ -636,8 +632,7 @@ private fun ActionsSection(
     isGuest: Boolean,
     onLoginClick: () -> Unit,
     onLogoutClick: () -> Unit,
-    onSavedCartsClick: () -> Unit,
-    onAboutClick: () -> Unit
+    onSavedCartsClick: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -681,12 +676,6 @@ private fun ActionsSection(
                 HorizontalDivider(
                     modifier = Modifier.padding(vertical = SpacingTokens.S),
                     color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                )
-
-                ActionItem(
-                    icon = Icons.Default.Info,
-                    title = "אודות",
-                    onClick = onAboutClick
                 )
 
                 HorizontalDivider(

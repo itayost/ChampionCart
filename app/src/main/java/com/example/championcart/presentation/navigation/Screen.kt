@@ -80,16 +80,6 @@ sealed class Screen(
         fun createRoute(productId: String) = "product/$productId"
     }
 
-    object StoreDetail : Screen(
-        route = "store/{storeId}",
-        arguments = listOf(
-            navArgument("storeId") { type = NavType.StringType }
-        ),
-        showInBottomNav = false
-    ) {
-        fun createRoute(storeId: String) = "store/$storeId"
-    }
-
     // ===== SETTINGS & OTHER SCREENS =====
     object Settings : Screen(
         route = "settings",
@@ -100,36 +90,18 @@ sealed class Screen(
         route = "saved_carts",
         showInBottomNav = false
     )
-
-    object PriceAlerts : Screen(
-        route = "price_alerts",
-        showInBottomNav = false
-    )
-
-    object About : Screen(
-        route = "about",
-        showInBottomNav = false
-    )
-
-    // ===== CHECKOUT FLOW =====
-    object Checkout : Screen(
-        route = "checkout",
-        showInBottomNav = false
-    )
-
-    object CheckoutSuccess : Screen(
-        route = "checkout_success",
-        showInBottomNav = false
-    )
-
     companion object {
         /**
          * Get all screens that should appear in bottom navigation
+         * Using explicit list instead of reflection to avoid runtime dependency
          */
         fun getBottomNavItems(): List<Screen> {
-            return Screen::class.sealedSubclasses
-                .mapNotNull { it.objectInstance }
-                .filter { it.showInBottomNav }
+            return listOf(
+                Home,
+                Search,
+                Cart,
+                Profile
+            ).filter { it.showInBottomNav }
         }
 
         /**
@@ -137,6 +109,26 @@ sealed class Screen(
          */
         fun shouldShowBottomBar(currentRoute: String?): Boolean {
             return getBottomNavItems().any { it.route == currentRoute }
+        }
+
+        /**
+         * Get all available screens (if needed elsewhere)
+         */
+        fun getAllScreens(): List<Screen> {
+            return listOf(
+                // Bottom nav screens
+                Home,
+                Search,
+                Cart,
+                Profile,
+                // Auth flow
+                Splash,
+                Auth,
+                // Settings & other
+                Settings,
+                SavedCarts,
+                // Note: ProductDetail and StoreDetail are not included as they are parameterized
+            )
         }
     }
 }

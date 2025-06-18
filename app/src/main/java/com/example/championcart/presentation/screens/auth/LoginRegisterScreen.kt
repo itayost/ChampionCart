@@ -338,20 +338,27 @@ private fun AuthFormCard(
     val focusManager = LocalFocusManager.current
     val colors = LocalExtendedColors.current
 
-    Card(
+    // Use Box for proper layering instead of Card with glassmorphic
+    Box(
         modifier = modifier
             .fillMaxWidth()
-            .glassmorphic(
-                intensity = GlassIntensity.Medium,
-                shape = GlassmorphicShapes.GlassCardLarge
-            ),
-        shape = GlassmorphicShapes.GlassCardLarge,
-        colors = CardDefaults.cardColors(
-            containerColor = colors.glassLight
-        )
+            .clip(GlassmorphicShapes.GlassCardLarge)
     ) {
+        // Glass background layer
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .glassmorphic(
+                    intensity = GlassIntensity.Light,
+                    shape = GlassmorphicShapes.GlassCardLarge
+                )
+        )
+
+        // Content layer on top
         Column(
-            modifier = Modifier.padding(20.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // Mode toggle
@@ -360,7 +367,6 @@ private fun AuthFormCard(
                 onToggle = viewModel::toggleMode
             )
 
-            // Email field
             OutlinedTextField(
                 value = state.email,
                 onValueChange = viewModel::updateEmail,
@@ -380,12 +386,22 @@ private fun AuthFormCard(
                     onNext = { focusManager.moveFocus(FocusDirection.Down) }
                 ),
                 isError = state.emailError != null,
+                supportingText = state.emailError?.let { { Text(it) } },
                 modifier = Modifier.fillMaxWidth(),
                 shape = GlassmorphicShapes.TextField,
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = colors.electricMint,
-                    unfocusedBorderColor = colors.borderDefault,
-                    errorBorderColor = colors.highPrice
+                    unfocusedBorderColor = colors.borderDefault.copy(alpha = 0.5f),
+                    errorBorderColor = colors.highPrice,
+                    focusedLabelColor = colors.electricMint,
+                    unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    focusedLeadingIconColor = colors.electricMint,
+                    unfocusedLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    // For outlined text fields, use container colors like this:
+                    focusedContainerColor = Color.White.copy(alpha = 0.3f),
+                    unfocusedContainerColor = Color.White.copy(alpha = 0.2f),
+                    errorContainerColor = Color.White.copy(alpha = 0.2f),
+                    disabledContainerColor = Color.White.copy(alpha = 0.1f)
                 )
             )
 
@@ -427,41 +443,65 @@ private fun AuthFormCard(
                     }
                 ),
                 isError = state.passwordError != null,
+                supportingText = state.passwordError?.let { { Text(it) } },
                 modifier = Modifier.fillMaxWidth(),
-                shape = GlassmorphicShapes.TextField
+                shape = GlassmorphicShapes.TextField,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = colors.electricMint,
+                    unfocusedBorderColor = colors.borderDefault.copy(alpha = 0.5f),
+                    errorBorderColor = colors.highPrice,
+                    focusedLabelColor = colors.electricMint,
+                    unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    focusedLeadingIconColor = colors.electricMint,
+                    unfocusedLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    focusedTrailingIconColor = colors.electricMint,
+                    unfocusedTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    focusedContainerColor = Color.White.copy(alpha = 0.3f),
+                    unfocusedContainerColor = Color.White.copy(alpha = 0.2f),
+                    errorContainerColor = Color.White.copy(alpha = 0.2f),
+                    disabledContainerColor = Color.White.copy(alpha = 0.1f)
+                )
             )
 
             // Confirm password for registration
-            AnimatedVisibility(
-                visible = !state.isLoginMode,
-                enter = fadeIn() + expandVertically(),
-                exit = fadeOut() + shrinkVertically()
-            ) {
-                OutlinedTextField(
-                    value = state.confirmPassword,
-                    onValueChange = viewModel::updateConfirmPassword,
-                    label = { Text("אשר סיסמה") },
-                    leadingIcon = {
-                        Icon(
-                            Icons.Default.Lock,
-                            contentDescription = null,
-                            tint = colors.electricMint
-                        )
-                    },
-                    visualTransformation = if (state.showPassword) VisualTransformation.None
-                    else PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Password,
-                        imeAction = ImeAction.Done
-                    ),
-                    keyboardActions = KeyboardActions(
-                        onDone = { viewModel.register() }
-                    ),
-                    isError = state.confirmPasswordError != null,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = GlassmorphicShapes.TextField
+            OutlinedTextField(
+                value = state.confirmPassword,
+                onValueChange = viewModel::updateConfirmPassword,
+                label = { Text("אשר סיסמה") },
+                leadingIcon = {
+                    Icon(
+                        Icons.Default.Lock,
+                        contentDescription = null,
+                        tint = colors.electricMint
+                    )
+                },
+                visualTransformation = if (state.showPassword) VisualTransformation.None
+                else PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Password,
+                    imeAction = ImeAction.Done
+                ),
+                keyboardActions = KeyboardActions(
+                    onDone = { viewModel.register() }
+                ),
+                isError = state.confirmPasswordError != null,
+                supportingText = state.confirmPasswordError?.let { { Text(it) } },
+                modifier = Modifier.fillMaxWidth(),
+                shape = GlassmorphicShapes.TextField,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = colors.electricMint,
+                    unfocusedBorderColor = colors.borderDefault.copy(alpha = 0.5f),
+                    errorBorderColor = colors.highPrice,
+                    focusedLabelColor = colors.electricMint,
+                    unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    focusedLeadingIconColor = colors.electricMint,
+                    unfocusedLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    focusedContainerColor = Color.White.copy(alpha = 0.3f),
+                    unfocusedContainerColor = Color.White.copy(alpha = 0.2f),
+                    errorContainerColor = Color.White.copy(alpha = 0.2f),
+                    disabledContainerColor = Color.White.copy(alpha = 0.1f)
                 )
-            }
+            )
 
             // Remember me checkbox (login only)
             AnimatedVisibility(
@@ -477,13 +517,15 @@ private fun AuthFormCard(
                         checked = state.rememberMe,
                         onCheckedChange = { viewModel.toggleRememberMe() },
                         colors = CheckboxDefaults.colors(
-                            checkedColor = colors.electricMint
+                            checkedColor = colors.electricMint,
+                            uncheckedColor = colors.borderDefault
                         )
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = "זכור אותי",
-                        style = MaterialTheme.typography.bodyMedium
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
             }
@@ -498,9 +540,20 @@ private fun AuthFormCard(
                         viewModel.register()
                     }
                 },
-                enabled = state.isAuthenticated,
+                enabled = !state.isLoading, // Fixed: was using state.isAuthenticated
                 isLoading = state.isLoading,
                 modifier = Modifier.fillMaxWidth()
+            )
+
+            // Terms text
+            Text(
+                text = "בהמשך, אתה מסכים לתנאי השימוש ומדיניות הפרטיות",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp)
             )
         }
     }
