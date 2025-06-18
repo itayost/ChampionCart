@@ -162,7 +162,7 @@ fun ModernHomeScreen(
                 QuickActionsSection(
                     onScanClick = { navController.navigate(Screen.Search.route) },
                     onSearchClick = { navController.navigate(Screen.Search.route) },
-                    onStoresClick = { navController.navigate(Screen.Stores.route) },
+                    onStoresClick = { navController.navigate(Screen.Search.route) },
                     onDealsClick = { /* TODO: Navigate to deals */ }
                 )
             }

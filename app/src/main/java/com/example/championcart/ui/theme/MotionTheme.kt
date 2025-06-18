@@ -1,208 +1,107 @@
 package com.example.championcart.ui.theme
 
-import android.content.Context
-import android.os.BatteryManager
-import android.provider.Settings
-import androidx.compose.animation.core.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalInspectionMode
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.AnimationSpec
+import androidx.compose.animation.core.FastOutLinearInEasing
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.snap
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.State
+import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.Dp
 
 /**
  * Champion Cart - Motion Theme System
- * Intelligent motion management with accessibility and performance optimization
- * Electric Harmony animations that adapt to user preferences and device capabilities
+ * Adaptive animation framework with accessibility support
+ * Follows Material Design 3 expressive motion principles
  */
 
 /**
- * Motion preference levels
+ * Motion preferences for accessibility and user preference
  */
-enum class MotionPreference(val displayName: String) {
-    Full("Full animations"),           // All animations enabled
-    Reduced("Reduced motion"),         // Essential animations only
-    Minimal("Minimal motion"),         // Critical feedback only
-    None("No animations")             // Static interface
+enum class MotionPreference {
+    None,       // No animations (accessibility)
+    Minimal,    // Reduced motion
+    Reduced,    // Standard but simplified
+    Full        // Full expressive animations
 }
 
 /**
- * Motion complexity levels
- */
-enum class MotionComplexity {
-    Simple,     // Basic fade/slide animations
-    Standard,   // Standard spring animations
-    Complex,    // Multi-step animations with easing
-    Elaborate   // Complex choreographed sequences
-}
-
-/**
- * Performance mode for battery optimization
+ * Performance modes that affect animation complexity
  */
 enum class PerformanceMode {
-    HighPerformance,    // Full animations, all effects
-    Balanced,           // Standard animations, some effects
-    PowerSaver,         // Reduced animations, minimal effects
-    UltraPowerSaver     // Essential animations only
+    UltraPowerSaver,    // Minimal animations
+    PowerSaver,         // Reduced complexity
+    Balanced,           // Default mode
+    HighPerformance     // All effects enabled
 }
 
 /**
  * Motion configuration data class
  */
-@Immutable
 data class MotionConfig(
-    val motionPreference: MotionPreference,
-    val performanceMode: PerformanceMode,
-    val batteryLevel: Float,
-    val isLowPowerMode: Boolean,
-    val reduceMotion: Boolean,
-    val crossFadeEnabled: Boolean,
-    val parallaxEnabled: Boolean,
-    val particleEffectsEnabled: Boolean,
-    val hapticFeedbackEnabled: Boolean,
-    val autoReduceOnLowBattery: Boolean,
-    val respectSystemSettings: Boolean
-)
-
-/**
- * Default motion configuration
- */
-val DefaultMotionConfig = MotionConfig(
-    motionPreference = MotionPreference.Full,
-    performanceMode = PerformanceMode.Balanced,
-    batteryLevel = 1.0f,
-    isLowPowerMode = false,
-    reduceMotion = false,
-    crossFadeEnabled = true,
-    parallaxEnabled = true,
-    particleEffectsEnabled = true,
-    hapticFeedbackEnabled = true,
-    autoReduceOnLowBattery = true,
-    respectSystemSettings = true
-)
-
-/**
- * Motion configuration manager
- */
-class MotionConfigManager(private val context: Context) {
-    private val _motionConfig = MutableStateFlow(DefaultMotionConfig)
-    val motionConfig: StateFlow<MotionConfig> = _motionConfig.asStateFlow()
-
-    init {
-        updateFromSystemSettings()
-        updateBatteryStatus()
-    }
-
-    /**
-     * Update configuration from system accessibility settings
-     */
-    private fun updateFromSystemSettings() {
-        val currentConfig = _motionConfig.value
-
-        if (currentConfig.respectSystemSettings) {
-            val systemReduceMotion = try {
-                Settings.Global.getFloat(
-                    context.contentResolver,
-                    Settings.Global.ANIMATOR_DURATION_SCALE
-                ) == 0.0f
-            } catch (e: Settings.SettingNotFoundException) {
-                false
-            }
-
-            val systemTransitionScale = try {
-                Settings.Global.getFloat(
-                    context.contentResolver,
-                    Settings.Global.TRANSITION_ANIMATION_SCALE
-                )
-            } catch (e: Settings.SettingNotFoundException) {
-                1.0f
-            }
-
-            val motionPreference = when {
-                systemReduceMotion -> MotionPreference.None
-                systemTransitionScale < 0.5f -> MotionPreference.Minimal
-                systemTransitionScale < 1.0f -> MotionPreference.Reduced
-                else -> MotionPreference.Full
-            }
-
-            _motionConfig.value = currentConfig.copy(
-                motionPreference = motionPreference,
-                reduceMotion = systemReduceMotion
-            )
-        }
-    }
-
-    /**
-     * Update battery status and performance mode
-     */
-    private fun updateBatteryStatus() {
-        val batteryManager = context.getSystemService(Context.BATTERY_SERVICE) as? BatteryManager
-        val currentConfig = _motionConfig.value
-
-        if (batteryManager != null && currentConfig.autoReduceOnLowBattery) {
-            val batteryLevel = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY) / 100f
-            val isLowPowerMode = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_STATUS) ==
-                    BatteryManager.BATTERY_STATUS_UNKNOWN
-
-            val performanceMode = when {
-                batteryLevel < 0.15f || isLowPowerMode -> PerformanceMode.UltraPowerSaver
-                batteryLevel < 0.30f -> PerformanceMode.PowerSaver
-                batteryLevel < 0.60f -> PerformanceMode.Balanced
-                else -> PerformanceMode.HighPerformance
-            }
-
-            _motionConfig.value = currentConfig.copy(
-                batteryLevel = batteryLevel,
-                isLowPowerMode = isLowPowerMode,
-                performanceMode = performanceMode
-            )
-        }
-    }
-
-    /**
-     * Update motion preference manually
-     */
-    fun updateMotionPreference(preference: MotionPreference) {
-        _motionConfig.value = _motionConfig.value.copy(
-            motionPreference = preference,
-            respectSystemSettings = false
+    val motionPreference: MotionPreference = MotionPreference.Full,
+    val performanceMode: PerformanceMode = PerformanceMode.Balanced,
+    val reduceMotion: Boolean = false,
+    val hapticFeedbackEnabled: Boolean = true,
+    val parallaxEnabled: Boolean = true,
+    val particleEffectsEnabled: Boolean = true,
+    val glowEffectsEnabled: Boolean = true,
+    val crossFadeEnabled: Boolean = true,
+    val springAnimationsEnabled: Boolean = true
+) {
+    companion object {
+        val Default = MotionConfig()
+        val Reduced = MotionConfig(
+            motionPreference = MotionPreference.Reduced,
+            reduceMotion = true,
+            parallaxEnabled = false,
+            particleEffectsEnabled = false
         )
-    }
-
-    /**
-     * Update performance mode manually
-     */
-    fun updatePerformanceMode(mode: PerformanceMode) {
-        _motionConfig.value = _motionConfig.value.copy(performanceMode = mode)
-    }
-
-    /**
-     * Toggle specific motion features
-     */
-    fun toggleCrossFade(enabled: Boolean) {
-        _motionConfig.value = _motionConfig.value.copy(crossFadeEnabled = enabled)
-    }
-
-    fun toggleParallax(enabled: Boolean) {
-        _motionConfig.value = _motionConfig.value.copy(parallaxEnabled = enabled)
-    }
-
-    fun toggleParticleEffects(enabled: Boolean) {
-        _motionConfig.value = _motionConfig.value.copy(particleEffectsEnabled = enabled)
-    }
-
-    fun toggleHapticFeedback(enabled: Boolean) {
-        _motionConfig.value = _motionConfig.value.copy(hapticFeedbackEnabled = enabled)
+        val Minimal = MotionConfig(
+            motionPreference = MotionPreference.Minimal,
+            reduceMotion = true,
+            parallaxEnabled = false,
+            particleEffectsEnabled = false,
+            glowEffectsEnabled = false,
+            springAnimationsEnabled = false
+        )
     }
 }
 
 /**
- * Adaptive animation specifications based on motion preferences
+ * CompositionLocal for motion configuration
+ */
+val LocalMotionConfig = compositionLocalOf { MotionConfig.Default }
+
+/**
+ * Motion configuration provider
+ */
+@Composable
+fun ProvideMotionConfig(
+    config: MotionConfig,
+    content: @Composable () -> Unit
+) {
+    CompositionLocalProvider(
+        LocalMotionConfig provides config,
+        content = content
+    )
+}
+/**
+ * Adaptive animation specs based on user preferences
  */
 object AdaptiveAnimationSpecs {
+    // Float animations (most common)
     @Composable
-    fun <T> standard(): AnimationSpec<T> {
+    fun standardFloat(): AnimationSpec<Float> {
         val config = LocalMotionConfig.current
         return when (config.motionPreference) {
             MotionPreference.None -> snap()
@@ -212,9 +111,66 @@ object AdaptiveAnimationSpecs {
             )
             MotionPreference.Reduced -> tween(
                 durationMillis = DurationSpecs.Standard,
-                easing = DurationSpecs.StandardEasing
+                easing = FastOutSlowInEasing
             )
-            MotionPreference.Full -> SpringSpecs.Smooth
+            MotionPreference.Full -> spring(
+                dampingRatio = Spring.DampingRatioMediumBouncy,
+                stiffness = Spring.StiffnessMedium
+            )
+        }
+    }
+
+    // Dp animations
+    @Composable
+    fun standardDp(): AnimationSpec<Dp> {
+        val config = LocalMotionConfig.current
+        return when (config.motionPreference) {
+            MotionPreference.None -> snap()
+            MotionPreference.Minimal -> tween(
+                durationMillis = DurationSpecs.Fast,
+                easing = LinearEasing
+            )
+            MotionPreference.Reduced -> tween(
+                durationMillis = DurationSpecs.Standard,
+                easing = FastOutSlowInEasing
+            )
+            MotionPreference.Full -> spring(
+                dampingRatio = Spring.DampingRatioMediumBouncy,
+                stiffness = Spring.StiffnessMedium
+            )
+        }
+    }
+
+    // Color animations
+    @Composable
+    fun standardColor(): AnimationSpec<Color> {
+        val config = LocalMotionConfig.current
+        return when (config.motionPreference) {
+            MotionPreference.None -> snap()
+            MotionPreference.Minimal -> tween(
+                durationMillis = DurationSpecs.Fast,
+                easing = LinearEasing
+            )
+            MotionPreference.Reduced -> tween(
+                durationMillis = DurationSpecs.Standard,
+                easing = FastOutSlowInEasing
+            )
+            MotionPreference.Full -> tween(
+                durationMillis = DurationSpecs.Standard,
+                easing = FastOutSlowInEasing
+            )
+        }
+    }
+
+    // Generic specs for any type
+    @Composable
+    fun <T> standard(): AnimationSpec<T> {
+        val config = LocalMotionConfig.current
+        return when (config.motionPreference) {
+            MotionPreference.None -> snap()
+            MotionPreference.Minimal -> tween(DurationSpecs.Fast, easing = LinearEasing)
+            MotionPreference.Reduced -> tween(DurationSpecs.Standard, easing = FastOutSlowInEasing)
+            MotionPreference.Full -> tween(DurationSpecs.Standard, easing = FastOutSlowInEasing)
         }
     }
 
@@ -225,7 +181,7 @@ object AdaptiveAnimationSpecs {
             MotionPreference.None -> snap()
             MotionPreference.Minimal -> tween(DurationSpecs.VeryFast)
             MotionPreference.Reduced -> tween(DurationSpecs.Fast)
-            MotionPreference.Full -> SpringSpecs.Gentle
+            MotionPreference.Full -> tween(DurationSpecs.Standard, easing = LinearEasing)
         }
     }
 
@@ -236,7 +192,7 @@ object AdaptiveAnimationSpecs {
             MotionPreference.None -> snap()
             MotionPreference.Minimal -> tween(DurationSpecs.Fast)
             MotionPreference.Reduced -> tween(DurationSpecs.Standard)
-            MotionPreference.Full -> SpringSpecs.Bouncy
+            MotionPreference.Full -> tween(DurationSpecs.Standard, easing = FastOutLinearInEasing)
         }
     }
 
@@ -247,7 +203,7 @@ object AdaptiveAnimationSpecs {
             MotionPreference.None -> snap()
             MotionPreference.Minimal -> snap()
             MotionPreference.Reduced -> tween(DurationSpecs.Fast)
-            MotionPreference.Full -> SpringSpecs.Playful
+            MotionPreference.Full -> tween(DurationSpecs.Standard, easing = FastOutSlowInEasing)
         }
     }
 
@@ -261,8 +217,8 @@ object AdaptiveAnimationSpecs {
             MotionPreference.Full -> when (config.performanceMode) {
                 PerformanceMode.UltraPowerSaver -> tween(DurationSpecs.Fast)
                 PerformanceMode.PowerSaver -> tween(DurationSpecs.Standard)
-                PerformanceMode.Balanced -> SpringSpecs.Smooth
-                PerformanceMode.HighPerformance -> SpringSpecs.Bouncy
+                PerformanceMode.Balanced -> tween(DurationSpecs.SlowComplex, easing = FastOutSlowInEasing)
+                PerformanceMode.HighPerformance -> tween(DurationSpecs.Elaborate, easing = FastOutSlowInEasing)
             }
         }
     }
@@ -383,66 +339,46 @@ object MotionFeatures {
     fun shouldUseGlowEffects(): Boolean {
         val config = LocalMotionConfig.current
         return config.motionPreference == MotionPreference.Full &&
-                config.performanceMode in listOf(PerformanceMode.HighPerformance, PerformanceMode.Balanced)
-    }
-
-    @Composable
-    fun shouldUseFloatingEffects(): Boolean {
-        val config = LocalMotionConfig.current
-        return config.motionPreference == MotionPreference.Full &&
-                config.performanceMode == PerformanceMode.HighPerformance
+                config.glowEffectsEnabled &&
+                config.performanceMode != PerformanceMode.UltraPowerSaver
     }
 }
 
 /**
- * Motion-aware component behaviors
+ * Smart motion behavior selector
  */
-object AdaptiveMotionBehaviors {
+object SmartMotion {
     @Composable
-    fun buttonPress(): MotionBehavior {
+    fun getMotionBehavior(complexity: Int = 1): MotionBehavior {
         val config = LocalMotionConfig.current
         return when (config.motionPreference) {
             MotionPreference.None -> MotionBehavior.Static
-            MotionPreference.Minimal -> MotionBehavior.SimpleScale
-            MotionPreference.Reduced -> MotionBehavior.StandardScale
-            MotionPreference.Full -> MotionBehavior.BouncyScale
-        }
-    }
-
-    @Composable
-    fun cardHover(): MotionBehavior {
-        val config = LocalMotionConfig.current
-        return when (config.motionPreference) {
-            MotionPreference.None -> MotionBehavior.Static
-            MotionPreference.Minimal -> MotionBehavior.Static
-            MotionPreference.Reduced -> MotionBehavior.SimpleElevation
-            MotionPreference.Full -> MotionBehavior.FloatingElevation
-        }
-    }
-
-    @Composable
-    fun listItemEntry(): MotionBehavior {
-        val config = LocalMotionConfig.current
-        return when (config.motionPreference) {
-            MotionPreference.None -> MotionBehavior.Static
-            MotionPreference.Minimal -> MotionBehavior.SimpleFade
-            MotionPreference.Reduced -> MotionBehavior.SlideIn
-            MotionPreference.Full -> if (MotionFeatures.shouldUseStaggeredAnimations()) {
-                MotionBehavior.StaggeredSlideIn
-            } else {
-                MotionBehavior.SlideIn
+            MotionPreference.Minimal -> if (complexity > 2) MotionBehavior.SimpleFade else MotionBehavior.SimpleScale
+            MotionPreference.Reduced -> MotionBehavior.StandardSlide
+            MotionPreference.Full -> when (complexity) {
+                1 -> MotionBehavior.SpringSlide
+                2 -> MotionBehavior.BouncyScale
+                else -> MotionBehavior.StaggeredSlideIn
             }
         }
     }
 
     @Composable
-    fun pageTransition(): MotionBehavior {
+    fun selectTransition(screen: String): MotionBehavior {
         val config = LocalMotionConfig.current
-        return when (config.motionPreference) {
-            MotionPreference.None -> MotionBehavior.Static
-            MotionPreference.Minimal -> MotionBehavior.SimpleFade
-            MotionPreference.Reduced -> MotionBehavior.StandardSlide
-            MotionPreference.Full -> MotionBehavior.SpringSlide
+        return when (screen) {
+            "splash" -> MotionBehavior.SimpleFade
+            "home" -> if (config.motionPreference == MotionPreference.Full)
+                MotionBehavior.StaggeredSlideIn else MotionBehavior.StandardSlide
+            "search" -> MotionBehavior.SlideIn
+            "cart" -> MotionBehavior.StandardScale
+            "profile" -> MotionBehavior.SimpleFade
+            else -> when (config.motionPreference) {
+                MotionPreference.None -> MotionBehavior.Static
+                MotionPreference.Minimal -> MotionBehavior.SimpleFade
+                MotionPreference.Reduced -> MotionBehavior.StandardSlide
+                MotionPreference.Full -> MotionBehavior.SpringSlide
+            }
         }
     }
 }
@@ -505,16 +441,51 @@ object AccessibilityMotion {
         return if (config.reduceMotion) reducedSpec else defaultSpec
     }
 
+    // Float animation
     @Composable
-    fun <T> accessibleAnimation(
-        targetValue: T,
-        animationSpec: AnimationSpec<T>,
+    fun animateFloatAccessible(
+        targetValue: Float,
+        animationSpec: AnimationSpec<Float> = AdaptiveAnimationSpecs.standardFloat(),
         label: String = ""
-    ): State<T> {
+    ): State<Float> {
         val config = LocalMotionConfig.current
         val finalSpec = if (config.reduceMotion) snap() else animationSpec
 
-        return animateValueAsState(
+        return animateFloatAsState(
+            targetValue = targetValue,
+            animationSpec = finalSpec,
+            label = label
+        )
+    }
+
+    // Dp animation
+    @Composable
+    fun animateDpAccessible(
+        targetValue: Dp,
+        animationSpec: AnimationSpec<Dp> = AdaptiveAnimationSpecs.standardDp(),
+        label: String = ""
+    ): State<Dp> {
+        val config = LocalMotionConfig.current
+        val finalSpec = if (config.reduceMotion) snap() else animationSpec
+
+        return animateDpAsState(
+            targetValue = targetValue,
+            animationSpec = finalSpec,
+            label = label
+        )
+    }
+
+    // Color animation
+    @Composable
+    fun animateColorAccessible(
+        targetValue: Color,
+        animationSpec: AnimationSpec<Color> = AdaptiveAnimationSpecs.standardColor(),
+        label: String = ""
+    ): State<Color> {
+        val config = LocalMotionConfig.current
+        val finalSpec = if (config.reduceMotion) snap() else animationSpec
+
+        return animateColorAsState(
             targetValue = targetValue,
             animationSpec = finalSpec,
             label = label
@@ -530,76 +501,6 @@ object AccessibilityMotion {
     @Composable
     fun shouldAnimateProgress(): Boolean {
         val config = LocalMotionConfig.current
-        return config.motionPreference in listOf(MotionPreference.Full, MotionPreference.Reduced)
-    }
-}
-
-/**
- * Battery-aware motion optimization
- */
-object BatteryOptimizedMotion {
-    @Composable
-    fun shouldLimitAnimations(): Boolean {
-        val config = LocalMotionConfig.current
-        return config.batteryLevel < 0.20f || config.isLowPowerMode
-    }
-
-    @Composable
-    fun shouldDisableParticles(): Boolean {
-        val config = LocalMotionConfig.current
-        return config.batteryLevel < 0.30f ||
-                config.performanceMode in listOf(PerformanceMode.PowerSaver, PerformanceMode.UltraPowerSaver)
-    }
-
-    @Composable
-    fun shouldReduceBlur(): Boolean {
-        val config = LocalMotionConfig.current
-        return config.batteryLevel < 0.40f || config.performanceMode != PerformanceMode.HighPerformance
-    }
-
-    @Composable
-    fun getOptimalFrameRate(): Int {
-        val config = LocalMotionConfig.current
-        return when (config.performanceMode) {
-            PerformanceMode.UltraPowerSaver -> 30
-            PerformanceMode.PowerSaver -> 45
-            PerformanceMode.Balanced -> 60
-            PerformanceMode.HighPerformance -> 60
-        }
-    }
-}
-
-/**
- * Composition locals for motion configuration
- */
-val LocalMotionConfig = staticCompositionLocalOf { DefaultMotionConfig }
-val LocalMotionConfigManager = staticCompositionLocalOf<MotionConfigManager?> { null }
-
-/**
- * Motion theme provider
- */
-@Composable
-fun ProvideMotionTheme(
-    motionConfig: MotionConfig = DefaultMotionConfig,
-    content: @Composable () -> Unit
-) {
-    val context = LocalContext.current
-    val isInPreview = LocalInspectionMode.current
-
-    val configManager = remember(context) {
-        if (isInPreview) null else MotionConfigManager(context)
-    }
-
-    val finalConfig = if (configManager != null) {
-        configManager.motionConfig.collectAsState().value
-    } else {
-        motionConfig
-    }
-
-    CompositionLocalProvider(
-        LocalMotionConfig provides finalConfig,
-        LocalMotionConfigManager provides configManager
-    ) {
-        content()
+        return config.motionPreference != MotionPreference.None
     }
 }

@@ -1,43 +1,35 @@
 package com.example.championcart.presentation.components
 
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
-import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawWithCache
-import androidx.compose.ui.draw.scale
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.launch
 import com.example.championcart.ui.theme.*
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.material.icons.Icons
 
 /**
  * Glass Card component for lists
@@ -256,7 +248,9 @@ fun GlassmorphicChip(
     FilterChip(
         selected = selected,
         onClick = onClick,
-        label = content,
+        label = {
+            Row(content = content)  // Wrap the RowScope content in a Row
+        },
         modifier = modifier,
         leadingIcon = leadingIcon,
         trailingIcon = trailingIcon,
@@ -274,6 +268,58 @@ fun GlassmorphicChip(
             selectedBorderColor = MaterialTheme.colorScheme.extended.electricMint
         )
     )
+}
+
+@Composable
+fun GlassButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    gradient: List<Color>,
+    glowColor: Color,
+    content: @Composable RowScope.() -> Unit
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.96f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "buttonScale"
+    )
+
+    Surface(
+        onClick = onClick,
+        modifier = modifier
+            .scale(scale)
+            .shadow(
+                elevation = 8.dp,
+                shape = GlassmorphicShapes.Button,
+                spotColor = glowColor.copy(alpha = 0.3f),
+                ambientColor = glowColor.copy(alpha = 0.3f)
+            ),
+        shape = GlassmorphicShapes.Button,
+        color = Color.Transparent,
+        interactionSource = interactionSource
+    ) {
+        Box(
+            modifier = Modifier
+                .background(
+                    brush = Brush.linearGradient(colors = gradient),
+                    shape = GlassmorphicShapes.Button
+                )
+                .padding(horizontal = SpacingTokens.XL, vertical = SpacingTokens.M),
+            contentAlignment = Alignment.Center
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
+                content = content
+            )
+        }
+    }
 }
 
 /**
@@ -313,6 +359,54 @@ fun GlassmorphicIconButton(
                 modifier = Modifier.size(size * 0.5f)
             )
         }
+    }
+}
+
+/**
+ * Glassmorphic Bottom Sheet component
+ * A modal bottom sheet with glass effect for Champion Cart
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun GlassmorphicBottomSheet(
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
+    skipPartiallyExpanded: Boolean = false,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    val sheetState = rememberModalBottomSheetState(
+        skipPartiallyExpanded = skipPartiallyExpanded
+    )
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        modifier = modifier,
+        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+        contentColor = MaterialTheme.colorScheme.onSurface,
+        tonalElevation = 0.dp,
+        scrimColor = Color.Black.copy(alpha = 0.5f),
+        dragHandle = {
+            // Custom glass-style drag handle
+            Box(
+                modifier = Modifier
+                    .padding(vertical = SpacingTokens.M)
+                    .size(width = 48.dp, height = 4.dp)
+                    .clip(CircleShape)
+                    .background(
+                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                    )
+            )
+        },
+        shape = GlassmorphicShapes.BottomSheet
+    ) {
+        // Content directly without extra Box wrapper to avoid Composable context issues
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = SpacingTokens.XL), // Extra padding for gesture area
+            content = content
+        )
     }
 }
 

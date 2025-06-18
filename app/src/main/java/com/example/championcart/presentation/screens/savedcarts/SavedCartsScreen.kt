@@ -5,6 +5,8 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
@@ -12,6 +14,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -19,14 +22,14 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.championcart.domain.models.SavedCart
 import com.example.championcart.domain.models.SavedCartItem
 import com.example.championcart.domain.repository.AuthRepository
-import com.example.championcart.presentation.components.EmptyState
-import com.example.championcart.presentation.components.ErrorState
+import com.example.championcart.presentation.components.*
 import com.example.championcart.ui.theme.*
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -34,6 +37,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlin.reflect.typeOf
 
 data class SavedCartsUiState(
     val savedCarts: List<SavedCart> = emptyList(),
@@ -96,81 +100,49 @@ fun SavedCartsScreen(
     val uiState by viewModel.uiState.collectAsState()
     val haptics = LocalHapticFeedback.current
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                brush = Brush.linearGradient(
-                    colors = listOf(
-                        MaterialTheme.extendedColors.glassFrosted,
-                        MaterialTheme.extendedColors.cosmicPurple
-                    )
-                )
-            )
-    ) {
-        // Top App Bar
-        TopAppBar(
-            title = {
-                Text(
-                    text = "Saved Carts",
-                    style = AppTextStyles.hebrewHeadline,
-                    fontWeight = FontWeight.Bold
-                )
-            },
-            navigationIcon = {
-                IconButton(
-                    onClick = {
-                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                        onNavigateBack()
-                    }
-                ) {
-                    Icon(
-                        Icons.Default.ArrowBack,
-                        contentDescription = "Back",
-                        tint = MaterialTheme.colorScheme.onSurface
+    Scaffold(
+        topBar = {
+            GlassmorphicTopAppBar(
+                title = "Saved Carts",
+                onNavigationClick = onNavigateBack,
+                actions = {
+                    GlassmorphicIconButton(
+                        onClick = {
+                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                            viewModel.refresh()
+                        },
+                        icon = Icons.Default.Refresh,
+                        tint = MaterialTheme.colorScheme.extended.electricMint
                     )
                 }
-            },
-            actions = {
-                IconButton(
-                    onClick = {
-                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                        viewModel.refresh()
-                    }
-                ) {
-                    Icon(
-                        Icons.Default.Refresh,
-                        contentDescription = "Refresh",
-                        tint = MaterialTheme.extendedColors.electricMint
-                    )
-                }
-            },
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = Color.Transparent
             )
-        )
-
-        // Content
+        },
+        containerColor = MaterialTheme.colorScheme.background
+    ) { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = Dimensions.paddingMedium)
+                .padding(paddingValues)
         ) {
+            // Floating orbs background
+            FloatingOrbsBackground()
+
+            // Content
             when {
                 uiState.isLoading -> {
                     LoadingContent()
                 }
                 uiState.error != null -> {
-                    ErrorState(
-                        message = uiState.error!!,
-                        onRetry = { viewModel.refresh() }
+                    EmptyState(
+                        onAction = { viewModel.refresh() },
+                        modifier = Modifier.fillMaxSize(),
+                        type = EmptyStateType.NETWORK_ERROR
                     )
                 }
                 uiState.savedCarts.isEmpty() -> {
                     EmptyState(
-                        icon = Icons.Outlined.ShoppingCart,
-                        title = "No Saved Carts",
-                        message = "You haven't saved any shopping carts yet. Start shopping and save your carts for later!"
+                        type = EmptyStateType.EMPTY_CART,
+                        modifier = Modifier.fillMaxSize()
                     )
                 }
                 else -> {
@@ -195,21 +167,10 @@ private fun LoadingContent() {
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(Dimensions.spacingMedium)
-        ) {
-            CircularProgressIndicator(
-                color = MaterialTheme.extendedColors.electricMint,
-                strokeWidth = 3.dp,
-                modifier = Modifier.size(48.dp)
-            )
-            Text(
-                text = "Loading saved carts...",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
+        LoadingDialog(
+            isLoading = true,
+            message = "Loading saved carts..."
+        )
     }
 }
 
@@ -221,20 +182,26 @@ private fun SavedCartsContent(
     onCartSelected: (SavedCart) -> Unit
 ) {
     LazyColumn(
-        verticalArrangement = Arrangement.spacedBy(Dimensions.spacingMedium),
-        contentPadding = PaddingValues(vertical = Dimensions.spacingMedium)
+        verticalArrangement = Arrangement.spacedBy(SpacingTokens.M),
+        contentPadding = PaddingValues(SpacingTokens.L),
+        modifier = Modifier.fillMaxSize()
     ) {
-        items(savedCarts.size) { index ->
+        items(
+            items = savedCarts,
+            key = { savedCarts.indexOf(it) }
+        ) { savedCart ->
+            val index = savedCarts.indexOf(savedCart)
             SavedCartCard(
-                savedCart = savedCarts[index],
+                savedCart = savedCart,
                 isExpanded = expandedCartIndex == index,
                 onClick = { onCartClick(index) },
-                onSelect = { onCartSelected(savedCarts[index]) }
+                onSelect = { onCartSelected(savedCart) }
             )
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SavedCartCard(
     savedCart: SavedCart,
@@ -243,43 +210,53 @@ private fun SavedCartCard(
     onSelect: () -> Unit
 ) {
     val animatedElevation by animateDpAsState(
-        targetValue = if (isExpanded) Dimensions.elevationLarge else Dimensions.elevationMedium,
+        targetValue = if (isExpanded) 8.dp else 2.dp,
         animationSpec = tween(300),
         label = "elevation"
     )
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = ComponentShapes.Card,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.extendedColors.glassFrosted
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = animatedElevation
-        )
-    ) {
-        Column(
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            // Cart Header
-            SavedCartHeader(
-                cartName = savedCart.cartName,
-                city = savedCart.city,
-                itemCount = savedCart.items.size,
-                totalPrice = savedCart.items.sumOf { it.price * it.quantity },
-                isExpanded = isExpanded,
+    AnimatedContent(
+        targetState = isExpanded,
+        label = "card_expansion"
+    ) { expanded ->
+        if (expanded) {
+            // Expanded state - use GlassCard
+            GlassCard(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .animateContentSize(),
                 onClick = onClick
-            )
-
-            // Expandable content
-            AnimatedVisibility(
-                visible = isExpanded,
-                enter = expandVertically() + fadeIn(),
-                exit = shrinkVertically() + fadeOut()
             ) {
-                SavedCartDetails(
-                    items = savedCart.items,
-                    onSelect = onSelect
+                Column(
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    SavedCartHeader(
+                        cartName = savedCart.cartName,
+                        city = savedCart.city,
+                        itemCount = savedCart.items.size,
+                        totalPrice = savedCart.items.sumOf { it.price * it.quantity },
+                        isExpanded = true
+                    )
+
+                    SavedCartDetails(
+                        items = savedCart.items,
+                        onSelect = onSelect
+                    )
+                }
+            }
+        } else {
+            // Collapsed state - use GlassSelectableCard
+            GlassSelectableCard(
+                selected = false,
+                onClick = onClick,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                SavedCartHeader(
+                    cartName = savedCart.cartName,
+                    city = savedCart.city,
+                    itemCount = savedCart.items.size,
+                    totalPrice = savedCart.items.sumOf { it.price * it.quantity },
+                    isExpanded = false
                 )
             }
         }
@@ -292,83 +269,107 @@ private fun SavedCartHeader(
     city: String,
     itemCount: Int,
     totalPrice: Double,
-    isExpanded: Boolean,
-    onClick: () -> Unit
+    isExpanded: Boolean
 ) {
-    Surface(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick() },
-        color = Color.Transparent
+            .padding(SpacingTokens.L),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
+        // Left side - Cart info
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(Dimensions.paddingMedium),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier.weight(1f),
+            horizontalArrangement = Arrangement.spacedBy(SpacingTokens.M),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // Cart icon with glass background
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(
+                        MaterialTheme.colorScheme.extended.electricMint.copy(alpha = 0.1f)
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    Icons.Default.ShoppingCart,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.extended.electricMint,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+
             Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(Dimensions.spacingExtraSmall)
+                verticalArrangement = Arrangement.spacedBy(SpacingTokens.XXS)
             ) {
                 Text(
                     text = cartName,
-                    style = AppTextStyles.productNameLarge,
-                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
 
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingSmall),
+                    horizontalArrangement = Arrangement.spacedBy(SpacingTokens.S),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        Icons.Default.LocationOn,
-                        contentDescription = null,
-                        modifier = Modifier.size(Dimensions.iconSizeSmall),
-                        tint = MaterialTheme.extendedColors.electricMint
-                    )
-                    Text(
-                        text = city,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    // City chip
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(SpacingTokens.XS),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.LocationOn,
+                            contentDescription = null,
+                            modifier = Modifier.size(14.dp),
+                            tint = MaterialTheme.colorScheme.extended.electricMint
+                        )
+                        Text(
+                            text = city,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
 
                     Text(
                         text = "•",
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
                     Text(
                         text = "$itemCount items",
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
+        }
 
-            Column(
-                horizontalAlignment = Alignment.End,
-                verticalArrangement = Arrangement.spacedBy(Dimensions.spacingExtraSmall)
-            ) {
-                Text(
-                    text = "₪${String.format("%.2f", totalPrice)}",
-                    style = AppTextStyles.priceHero,
-                    color = MaterialTheme.extendedColors.electricMint,
-                    fontWeight = FontWeight.Bold
+        // Right side - Price and expand icon
+        Column(
+            horizontalAlignment = Alignment.End,
+            verticalArrangement = Arrangement.spacedBy(SpacingTokens.XXS)
+        ) {
+            AnimatedPriceCounter(
+                targetValue = totalPrice,
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.extended.electricMint
                 )
+            )
 
-                Icon(
-                    imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                    contentDescription = if (isExpanded) "Collapse" else "Expand",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(Dimensions.iconSizeSmall)
-                )
-            }
+            Icon(
+                imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                contentDescription = if (isExpanded) "Collapse" else "Expand",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(20.dp)
+            )
         }
     }
 }
@@ -381,57 +382,49 @@ private fun SavedCartDetails(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = Dimensions.paddingMedium)
-            .padding(bottom = Dimensions.paddingMedium)
+            .padding(horizontal = SpacingTokens.L)
+            .padding(bottom = SpacingTokens.L),
+        verticalArrangement = Arrangement.spacedBy(SpacingTokens.M)
     ) {
-        Divider(
-            modifier = Modifier.padding(bottom = Dimensions.spacingMedium),
-            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+        HorizontalDivider(
+            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
         )
 
         // Items list (show first 3, then "and X more")
         val displayItems = items.take(3)
         val remainingCount = items.size - 3
 
-        displayItems.forEach { item ->
-            SavedCartItemRow(item = item)
-        }
+        Column(
+            verticalArrangement = Arrangement.spacedBy(SpacingTokens.S)
+        ) {
+            displayItems.forEach { item ->
+                SavedCartItemRow(item = item)
+            }
 
-        if (remainingCount > 0) {
-            Text(
-                text = "and $remainingCount more items",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(
-                    vertical = Dimensions.spacingSmall,
-                    horizontal = Dimensions.paddingSmall
+            if (remainingCount > 0) {
+                Text(
+                    text = "and $remainingCount more items",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(start = SpacingTokens.S)
                 )
-            )
+            }
         }
-
-        Spacer(modifier = Modifier.height(Dimensions.spacingMedium))
 
         // Action button
-        Button(
+        PremiumButton(
+            text = "Load Cart",
             onClick = onSelect,
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.extendedColors.electricMint
-            ),
-            shape = ComponentShapes.Button
-        ) {
-            Icon(
-                Icons.Default.ShoppingCart,
-                contentDescription = null,
-                modifier = Modifier.size(Dimensions.iconSizeSmall)
-            )
-            Spacer(modifier = Modifier.width(Dimensions.spacingSmall))
-            Text(
-                text = "Load Cart",
-                style = AppTextStyles.buttonMedium,
-                fontWeight = FontWeight.Bold
-            )
-        }
+            icon = {
+                Icon(
+                    Icons.Default.ShoppingCart,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                    tint = Color.White
+                )
+            },
+            modifier = Modifier.fillMaxWidth()
+        )
     }
 }
 
@@ -442,21 +435,27 @@ private fun SavedCartItemRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = Dimensions.spacingExtraSmall),
+            .clip(GlassmorphicShapes.GlassCardSmall)
+            .background(
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            )
+            .padding(SpacingTokens.M),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Row(
             modifier = Modifier.weight(1f),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingSmall)
+            horizontalArrangement = Arrangement.spacedBy(SpacingTokens.M)
         ) {
-            Text(
-                text = "${item.quantity}x",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.extendedColors.electricMint,
-                fontWeight = FontWeight.Bold
+            // Quantity badge
+            GlassBadge(
+                count = item.quantity,
+                backgroundColor = MaterialTheme.colorScheme.extended.electricMint.copy(alpha = 0.2f),
+                textColor = MaterialTheme.colorScheme.extended.electricMint,
+                size = BadgeSize.MEDIUM
             )
+
             Text(
                 text = item.itemName,
                 style = MaterialTheme.typography.bodyMedium,
@@ -468,7 +467,7 @@ private fun SavedCartItemRow(
 
         Text(
             text = "₪${String.format("%.2f", item.price * item.quantity)}",
-            style = AppTextStyles.priceSmall,
+            style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontWeight = FontWeight.Medium
         )

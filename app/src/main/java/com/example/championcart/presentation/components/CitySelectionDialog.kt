@@ -112,7 +112,7 @@ internal fun CitySelector(
 @ExperimentalAnimationApi
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
-private fun CitySelectorButton(
+internal fun CitySelectorButton(
     cityInfo: CityInfo,
     isExpanded: Boolean,
     isLoading: Boolean,
@@ -222,7 +222,7 @@ private fun CitySelectorButton(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun CitySelectionDialog(
+internal fun CitySelectionDialog(
     cities: List<CityInfo>,
     currentCity: String,
     recentCities: List<String>,
@@ -402,7 +402,7 @@ private fun CitySelectionDialog(
 }
 
 @Composable
-private fun SearchCityBar(
+internal fun SearchCityBar(
     query: String,
     onQueryChange: (String) -> Unit,
     focusRequester: FocusRequester,
@@ -504,7 +504,7 @@ private fun SectionHeader(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun CityItem(
+internal fun CityItem(
     cityInfo: CityInfo,
     onClick: () -> Unit,
     isSelected: Boolean,
@@ -616,7 +616,7 @@ private fun CityItem(
 }
 
 @Composable
-private fun CityTag(
+internal fun CityTag(
     text: String,
     color: Color
 ) {
@@ -674,7 +674,7 @@ private fun StoreBreakdown(breakdown: Map<String, Int>) {
 }
 
 @Composable
-private fun EmptyCitySearch(query: String) {
+internal fun EmptyCitySearch(query: String) {
     Column(
         modifier = Modifier
             .fillMaxWidth()

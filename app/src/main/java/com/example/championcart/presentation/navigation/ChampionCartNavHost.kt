@@ -53,14 +53,16 @@ fun ChampionCartNavHost(
             exitTransition = { fadeOut(animationSpec = tween(300)) }
         ) {
             ModernSplashScreen(
-                onNavigateToAuth = {
-                    navController.navigate(Screen.Auth.route) {
-                        popUpTo(Screen.Splash.route) { inclusive = true }
-                    }
-                },
-                onNavigateToHome = {
-                    navController.navigate(Screen.Home.route) {
-                        popUpTo(Screen.Splash.route) { inclusive = true }
+                onSplashComplete = {
+                    // Check if user is logged in
+                    if (tokenManager.getToken() != null) {
+                        navController.navigate(Screen.Home.route) {
+                            popUpTo(Screen.Splash.route) { inclusive = true }
+                        }
+                    } else {
+                        navController.navigate(Screen.Auth.route) {
+                            popUpTo(Screen.Splash.route) { inclusive = true }
+                        }
                     }
                 }
             )
@@ -136,7 +138,14 @@ fun ChampionCartNavHost(
             enterTransition = { defaultEnterTransition() },
             exitTransition = { defaultExitTransition() }
         ) {
-            CartScreen()
+            CartScreen(
+                onNavigateBack = { navController.navigateUp() },
+                onNavigateToSearch = { navController.navigate(Screen.Search.route) },
+                onNavigateToResults = {
+                    // Navigate to search results or a results screen
+                    navController.navigate(Screen.Search.route)
+                }
+            )
         }
 
         // Profile Screen

@@ -53,7 +53,6 @@ fun CartScreen(
         topBar = {
             GlassmorphicTopAppBar(
                 title = "Shopping Cart",
-                subtitle = if (state.cartItems.isNotEmpty()) "${state.cartItems.size} items" else null,
                 onNavigationClick = onNavigateBack,
                 actions = {
                     // City selector chip
@@ -83,12 +82,12 @@ fun CartScreen(
                     isLoading = state.isFindingCheapest,
                     onFindCheapest = {
                         haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                        viewModel.findCheapestCart()
+                        viewModel.findCheapestPrices()
                     }
                 )
             }
         },
-        containerColor = MaterialTheme.colorScheme.extended.backgroundLight
+        containerColor = MaterialTheme.colorScheme.surfaceVariant
     ) { paddingValues ->
         Box(modifier = Modifier.fillMaxSize()) {
             // Background orbs
@@ -123,7 +122,7 @@ fun CartScreen(
                             },
                             onRemove = {
                                 haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                                viewModel.removeItem(item.id)
+                                viewModel.removeFromCart(item.id)
                             }
                         )
                     }
@@ -148,8 +147,11 @@ fun CartScreen(
     // City selection dialog
     if (state.showCityDialog) {
         CitySelectionDialog(
+            cities = state.availableCities.map { cityString ->
+                parseCityString(cityString)
+            },
             currentCity = state.selectedCity,
-            availableCities = state.availableCities,
+            recentCities = emptyList(), // You can add logic to track recent cities
             onCitySelected = viewModel::selectCity,
             onDismiss = viewModel::hideCityDialog
         )
@@ -513,16 +515,23 @@ private fun StoreSelectorContent(
             )
         }
 
-        // Store list
-        stores.forEach { storeWithPrice ->
-            StoreOptionCard(
-                store = storeWithPrice.store,
-                totalPrice = storeWithPrice.totalPrice,
-                isSelected = selectedStore?.id == storeWithPrice.store.id,
-                isBestDeal = stores.indexOf(storeWithPrice) == 0,
-                onSelect = { onStoreSelected(storeWithPrice.store) }
-            )
-            Spacer(modifier = Modifier.height(SpacingTokens.S))
+        // Store list using LazyColumn to fix Composable context error
+        LazyColumn(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(SpacingTokens.S)
+        ) {
+            items(
+                items = stores,
+                key = { it.store.id }
+            ) { storeWithPrice ->
+                StoreOptionCard(
+                    store = storeWithPrice.store,
+                    totalPrice = storeWithPrice.totalPrice,
+                    isSelected = selectedStore?.id == storeWithPrice.store.id,
+                    isBestDeal = stores.indexOf(storeWithPrice) == 0,
+                    onSelect = { onStoreSelected(storeWithPrice.store) }
+                )
+            }
         }
     }
 }
@@ -538,7 +547,6 @@ private fun BestDealCard(
     GlassInfoCard(
         icon = { Text("💰", fontSize = 20.sp) },
         title = "You save ₪${String.format("%.2f", savings)}",
-        subtitle = "Shopping at $bestStore",
         backgroundColor = MaterialTheme.colorScheme.extended.success.copy(alpha = 0.1f),
         modifier = Modifier
             .fillMaxWidth()
@@ -629,6 +637,62 @@ private fun getProductEmoji(productName: String): String {
         name.contains("עגבניה") || name.contains("tomato") -> "🍅"
         name.contains("תפוח") || name.contains("apple") -> "🍎"
         name.contains("בננה") || name.contains("banana") -> "🍌"
+        name.contains("בשר") || name.contains("meat") -> "🥩"
+        name.contains("עוף") || name.contains("chicken") -> "🍗"
+        name.contains("דג") || name.contains("fish") -> "🐟"
         else -> "📦"
     }
 }
+
+/**
+ * Parse city string to CityInfo object
+ */
+private fun parseCityString(cityString: String): CityInfo {
+    // Parse format: "Tel Aviv: 45 shufersal, 12 victory" or just "Tel Aviv"
+    val parts = cityString.split(":")
+    val cityName = parts[0].trim()
+
+    val storeBreakdown = mutableMapOf<String, Int>()
+    var totalStores = 0
+
+    if (parts.size > 1) {
+        val storeParts = parts[1].trim().split(",")
+        storeParts.forEach { storePart ->
+            val storeInfo = storePart.trim().split(" ")
+            if (storeInfo.size >= 2) {
+                val count = storeInfo[0].toIntOrNull() ?: 0
+                val chain = storeInfo[1]
+                storeBreakdown[chain] = count
+                totalStores += count
+            }
+        }
+    }
+
+    return CityInfo(
+        name = cityName,
+        nameHebrew = translateCityName(cityName),
+        totalStores = totalStores,
+        storeBreakdown = storeBreakdown,
+        isPopular = popularCities.contains(cityName)
+    )
+}
+
+/**
+ * Translate city name to Hebrew
+ */
+private fun translateCityName(cityName: String): String {
+    return when (cityName.lowercase()) {
+        "tel aviv" -> "תל אביב"
+        "jerusalem" -> "ירושלים"
+        "haifa" -> "חיפה"
+        "beer sheva" -> "באר שבע"
+        "rishon lezion" -> "ראשון לציון"
+        "petah tikva" -> "פתח תקווה"
+        "ashdod" -> "אשדוד"
+        "netanya" -> "נתניה"
+        else -> cityName
+    }
+}
+
+// Popular cities list
+private val popularCities = listOf("Tel Aviv", "Jerusalem", "Haifa", "Beer Sheva", "Rishon LeZion")

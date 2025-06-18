@@ -140,7 +140,7 @@ fun rememberResponsiveConfig(): ResponsiveConfig {
     val isLandscape = configuration.screenWidthDp > configuration.screenHeightDp
 
     // Determine screen size
-    val screenSize = when (windowSizeClass.windowWidthSizeClass) {
+    val screenSize = when (windowSizeClass.widthSizeClass) {
         WindowWidthSizeClass.Compact -> ScreenSize.Compact
         WindowWidthSizeClass.Medium -> ScreenSize.Medium
         WindowWidthSizeClass.Expanded -> ScreenSize.Expanded
