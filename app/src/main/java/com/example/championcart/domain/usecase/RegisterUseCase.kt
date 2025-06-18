@@ -25,12 +25,15 @@ class RegisterUseCase @Inject constructor(
         return try {
             // Attempt registration with repository
             authRepository.register(email, password).fold(
-                onSuccess = { authResponse ->
-                    // Save token to local storage (done by repository)
-                    // Create new user with simple data (server only provides email/password auth)
-                    val newUser = createNewUser(email)
-
-                    AuthResult.Success(newUser, authResponse)
+                onSuccess = { user ->
+                    // Create AuthResponse for the result
+                    val authResponse = AuthResponse(
+                        token = user.token,
+                        user = user,
+                        isGuest = false
+                    )
+                    // Fixed: Use correct constructor parameters
+                    AuthResult.Success(user = user, token = authResponse)
                 },
                 onFailure = { exception ->
                     AuthResult.Error(mapRegistrationError(exception))
@@ -79,11 +82,13 @@ class RegisterUseCase @Inject constructor(
     /**
      * Create new user with basic info (matching simplified User model)
      */
-    private fun createNewUser(email: String): User {
+    private fun createNewUser(email: String, token: String): User {
         return User(
             id = generateUserId(email),
             email = email,
-            isGuest = false
+            token = token,
+            tokenType = "Bearer",
+            name = email.substringBefore("@")
         )
     }
 
@@ -108,8 +113,4 @@ class RegisterUseCase @Inject constructor(
             else -> exception.message ?: "Registration failed. Please try again"
         }
     }
-
-    // REMOVED: Complex user profile creation with preferences
-    // Server doesn't support user preferences/profile storage
-    // These features would need to be implemented locally
 }

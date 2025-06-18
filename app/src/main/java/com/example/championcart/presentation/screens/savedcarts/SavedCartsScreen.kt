@@ -24,8 +24,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.championcart.domain.models.Cart
-import com.example.championcart.domain.models.SavedCart
-import com.example.championcart.domain.models.SavedCartItem
+import com.example.championcart.domain.models.CartItem
 import com.example.championcart.domain.repository.AuthRepository
 import com.example.championcart.presentation.components.*
 import com.example.championcart.ui.theme.*
@@ -91,7 +90,7 @@ class SavedCartsViewModel @Inject constructor(
 @Composable
 fun SavedCartsScreen(
     onNavigateBack: () -> Unit,
-    onCartSelected: (SavedCart) -> Unit = {},
+    onCartSelected: (Cart) -> Unit = {},
     viewModel: SavedCartsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -150,7 +149,7 @@ fun SavedCartsScreen(
                             haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                             viewModel.toggleCartExpansion(index)
                         },
-                        onCartSelected = onCartSelected
+                        onCartSelected = onCartSelected as (Cart) -> Unit
                     )
                 }
             }
@@ -176,7 +175,7 @@ private fun SavedCartsContent(
     savedCarts: List<Cart>,
     expandedCartIndex: Int?,
     onCartClick: (Int) -> Unit,
-    onCartSelected: (SavedCart) -> Unit
+    onCartSelected: (Cart) -> Unit
 ) {
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(SpacingTokens.M),
@@ -249,8 +248,8 @@ private fun SavedCartCard(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 SavedCartHeader(
-                    cartName = savedCart.cartName,
-                    city = savedCart.city,
+                    cartName = savedCart.name,
+                    city = savedCart.city.toString(),
                     itemCount = savedCart.items.size,
                     totalPrice = savedCart.items.sumOf { it.price * it.quantity },
                     isExpanded = false
@@ -373,7 +372,7 @@ private fun SavedCartHeader(
 
 @Composable
 private fun SavedCartDetails(
-    items: List<SavedCartItem>,
+    items: List<CartItem>,
     onSelect: () -> Unit
 ) {
     Column(
@@ -427,7 +426,7 @@ private fun SavedCartDetails(
 
 @Composable
 private fun SavedCartItemRow(
-    item: SavedCartItem
+    item: CartItem
 ) {
     Row(
         modifier = Modifier
@@ -454,7 +453,7 @@ private fun SavedCartItemRow(
             )
 
             Text(
-                text = item.itemName,
+                text = item.productName,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,

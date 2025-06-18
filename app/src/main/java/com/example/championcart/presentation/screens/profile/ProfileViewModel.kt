@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.championcart.data.local.preferences.TokenManager
 import com.example.championcart.domain.repository.AuthRepository
 import com.example.championcart.domain.models.*
+import com.example.championcart.presentation.screens.savedcarts.SavedCartsScreen
 import com.example.championcart.ui.theme.ThemePreference
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
@@ -159,8 +160,20 @@ class ProfileViewModel @Inject constructor(
             try {
                 authRepository.getUserSavedCarts().fold(
                     onSuccess = { carts ->
+                        // Convert List<Cart> to List<SavedCart> if needed
+                        val savedCarts = carts.map { cart ->
+                            SavedCart(
+                                id = cart.name, // Using name as ID
+                                name = cart.name,
+                                itemCount = cart.items.size,
+                                totalPrice = cart.items.sumOf { it.price * it.quantity },
+                                lastUpdated = System.currentTimeMillis(),
+                                city = cart.city.toString()
+                            )
+                        }
+
                         _state.update {
-                            it.copy(savedCarts = authRepository.getSavedCarts())
+                            it.copy(savedCarts = savedCarts)  // Now the types match
                         }
                     },
                     onFailure = { error ->

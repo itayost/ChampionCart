@@ -20,7 +20,7 @@ class LoginUseCase @Inject constructor(
                         isGuest = false
                     )
                     // Fixed: AuthResult.Success expects (user, authResponse) not (authResponse, token)
-                    AuthResult.Success(user, authResponse)
+                    AuthResult.Success(user = user, token = authResponse)
                 },
                 onFailure = { exception ->
                     AuthResult.Error(exception.message ?: "Login failed")
@@ -46,7 +46,7 @@ class LoginUseCase @Inject constructor(
                 isGuest = true
             )
             // Fixed: AuthResult.Success expects (user, authResponse)
-            AuthResult.Success(guestUser, authResponse)
+            AuthResult.Success(user = guestUser, token = authResponse)
         } catch (e: Exception) {
             AuthResult.Error(e.message ?: "Failed to login as guest")
         }

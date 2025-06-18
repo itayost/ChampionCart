@@ -8,13 +8,13 @@ import retrofit2.http.*
 interface ChampionCartApi {
 
     // Auth endpoints
-    @POST("auth/register")
+    @POST("/register")
     suspend fun register(@Body request: RegisterRequest): Response<AuthResponse>
 
-    @POST("auth/login")
+    @POST("/login")
     suspend fun login(@Body request: LoginRequest): Response<AuthResponse>
 
-    @GET("auth/validate")
+    @GET("/validate")
     suspend fun validateToken(): Response<AuthResponse>
 
     // Search endpoints

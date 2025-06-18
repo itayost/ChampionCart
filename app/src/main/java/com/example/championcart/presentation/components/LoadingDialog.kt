@@ -231,7 +231,7 @@ fun SkeletonLoader(
  * Shimmer brush for skeleton loading
  */
 @Composable
-private fun shimmerBrush(
+fun shimmerBrush(
     translateAnim: Float,
     baseColor: Color,
     highlightColor: Color

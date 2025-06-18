@@ -15,9 +15,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.*
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -33,6 +31,8 @@ import com.example.championcart.presentation.components.*
 import com.example.championcart.presentation.navigation.Screen
 import com.example.championcart.ui.theme.*
 import java.time.LocalTime
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 
 /**
  * Modern Home Screen with Electric Harmony Design
@@ -195,11 +195,11 @@ fun ModernHomeScreen(
                                     viewModel.addToCart(deal)
                                 },
                                 onFavoriteToggle = { /* TODO */ },
-                                modifier = Modifier.width(200.dp),
-                                onProductClick = TODO(),
-                                isFavorite = TODO(),
-                                isCompact = TODO(),
-                                selectedStoreId = TODO()
+                                onProductClick = {
+                                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    // TODO: Navigate to product detail
+                                },
+                                modifier = Modifier.width(200.dp)
                             )
                         }
                     }
@@ -228,14 +228,14 @@ fun ModernHomeScreen(
                             viewModel.addToCart(product)
                         },
                         onFavoriteToggle = { /* TODO */ },
+                        onProductClick = {
+                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                            // TODO: Navigate to product detail
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = SpacingTokens.L)
-                            .padding(bottom = SpacingTokens.M),
-                        onProductClick = TODO(),
-                        isFavorite = TODO(),
-                        isCompact = TODO(),
-                        selectedStoreId = TODO()
+                            .padding(bottom = SpacingTokens.M)
                     )
                 }
             }
@@ -257,11 +257,14 @@ fun ModernHomeScreen(
             // Loading state
             if (uiState.isLoading && uiState.popularProducts.isEmpty()) {
                 items(5) {
-                    ShimmerProductCard(
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .height(120.dp)
                             .padding(horizontal = SpacingTokens.L)
                             .padding(bottom = SpacingTokens.M)
+                            .clip(MaterialTheme.shapes.medium)
+                            .background(MaterialTheme.colorScheme.background)
                     )
                 }
             }
@@ -352,7 +355,7 @@ private fun HomeHeader(
             GlassmorphicIconButton(
                 onClick = onNotificationClick,
                 icon = Icons.Default.NotificationsNone,
-                badge = true
+                modifier = Modifier.size(48.dp)
             )
         }
     }
@@ -363,7 +366,7 @@ private fun StatsCard(
     totalSavings: Double,
     modifier: Modifier = Modifier
 ) {
-    GlassmorphicCard(
+    GlassCard(
         modifier = modifier.fillMaxWidth()
     ) {
         Column(
@@ -383,11 +386,6 @@ private fun StatsCard(
             )
         }
     }
-}
-
-@Composable
-fun GlassmorphicCard(modifier: Modifier, content: @Composable () -> Unit) {
-    TODO("Not yet implemented")
 }
 
 @Composable
@@ -425,12 +423,12 @@ private fun QuickActionsRow(
 
 @Composable
 private fun QuickActionButton(
-    icon: ImageVector,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
     label: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    GlassmorphicCard(
+    GlassCard(
         onClick = onClick,
         modifier = modifier
     ) {

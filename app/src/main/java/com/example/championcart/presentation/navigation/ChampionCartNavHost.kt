@@ -139,12 +139,7 @@ fun ChampionCartNavHost(
             exitTransition = { defaultExitTransition() }
         ) {
             CartScreen(
-                onNavigateBack = { navController.navigateUp() },
-                onNavigateToSearch = { navController.navigate(Screen.Search.route) },
-                onNavigateToResults = {
-                    // Navigate to search results or a results screen
-                    navController.navigate(Screen.Search.route)
-                }
+                    navController = navController
             )
         }
 

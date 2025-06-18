@@ -10,6 +10,7 @@ import com.example.championcart.domain.repository.CartRepository
 import com.example.championcart.domain.repository.PriceRepository
 import javax.inject.Inject
 import javax.inject.Singleton
+import com.example.championcart.domain.models.StoreInfo
 
 @Singleton
 class PriceRepositoryImpl @Inject constructor(

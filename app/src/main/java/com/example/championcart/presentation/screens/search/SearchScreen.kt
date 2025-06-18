@@ -386,7 +386,7 @@ private fun SearchResultsContent(
         LazyColumn(
             contentPadding = PaddingValues(
                 horizontal = SpacingTokens.L,
-                bottom = SpacingTokens.XL + 80.dp
+                vertical = SpacingTokens.L
             ),
             verticalArrangement = Arrangement.spacedBy(SpacingTokens.M)
         ) {
