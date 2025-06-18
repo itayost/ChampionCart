@@ -27,7 +27,35 @@ class PriceRepositoryImpl @Inject constructor(
     ): Result<List<GroupedProduct>> {
         return try {
             Log.d(TAG, "Searching products: query=$query, city=$city")
-            val response = api.searchProducts(query, city, 20)
+
+
+            val cityToUse = if (city.isNullOrBlank()) {
+                // Option 1: Get the first available city
+                val citiesResult = getCities()
+                if (citiesResult.isSuccess) {
+                    val cities = citiesResult.getOrNull()
+                    if (!cities.isNullOrEmpty()) {
+                        cities.first()
+                    } else {
+                        // Option 2: Use a default city
+                        "תל אביב" // Tel Aviv as default
+                    }
+                } else {
+                    // Option 2: Use a default city
+                    "תל אביב" // Tel Aviv as default
+                }
+            } else {
+                city
+            }
+
+            Log.d(TAG, "Using city: $cityToUse for search")
+
+            // Use the correct endpoint: /prices/by-item/{city}/{item_name}
+            val response = api.searchProductsByItem(
+                city = cityToUse,
+                itemName = query
+            )
+
             Log.d(TAG, "Search response received: ${response.size} products")
 
             val products = response.map { it.toDomainModel() }

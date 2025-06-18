@@ -18,6 +18,15 @@ interface ChampionCartApi {
     suspend fun validateToken(): Response<AuthResponse>
 
     // Search endpoints
+
+    // This is the correct endpoint the backend expects
+    @GET("/prices/by-item/{city}/{item_name}")
+    suspend fun searchProductsByItem(
+        @Path("city") city: String,
+        @Path("item_name") itemName: String
+    ): List<GroupedProductResponse>
+
+    // Keep these for future use when backend adds these endpoints
     @GET("search/products")
     suspend fun searchProducts(
         @Query("query") query: String,
@@ -47,6 +56,6 @@ interface ChampionCartApi {
     suspend fun getCheapestCart(@Body request: CheapestCartRequest): CheapestCartResponse
 
     // City endpoints
-    @GET("cities")
+    @GET("/cities-list")
     suspend fun getCities(): List<String>
 }

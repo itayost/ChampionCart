@@ -50,18 +50,32 @@ class SearchViewModel @Inject constructor(
                 onSuccess = { cities ->
                     _uiState.value = _uiState.value.copy(availableCities = cities)
                     if (cities.isNotEmpty() && _selectedCity.value == null) {
-                        _selectedCity.value = cities.first()
+                        val firstCity = cities.first()
+                        _selectedCity.value = firstCity
+                        // IMPORTANT: Also update the UI state with selected city
+                        _uiState.value = _uiState.value.copy(selectedCity = firstCity)
+                        Log.d(TAG, "Auto-selected city: $firstCity")
                     }
                 },
                 onFailure = {
                     Log.e(TAG, "Failed to load cities", it)
+                    // Set a default city if loading fails
+                    val defaultCity = "תל אביב"
+                    _selectedCity.value = defaultCity
+                    _uiState.value = _uiState.value.copy(
+                        selectedCity = defaultCity,
+                        availableCities = listOf(defaultCity)
+                    )
                 }
             )
         }
     }
 
     fun selectCity(city: String) {
+        Log.d(TAG, "City selected: $city")
         _selectedCity.value = city
+        _uiState.value = _uiState.value.copy(selectedCity = city)
+
         // Re-search with new city if there's an active query
         if (_searchQuery.value.isNotEmpty()) {
             performSearch(_searchQuery.value)
@@ -91,11 +105,24 @@ class SearchViewModel @Inject constructor(
 
     private fun performSearch(query: String) {
         viewModelScope.launch {
+            // Ensure we have a city selected
+            if (_selectedCity.value == null) {
+                Log.e(TAG, "No city selected, cannot perform search")
+                _uiState.value = _uiState.value.copy(
+                    isSearching = false,
+                    isLoading = false,
+                    error = "Please select a city first"
+                )
+                return@launch
+            }
+
             _uiState.value = _uiState.value.copy(
                 isSearching = true,
                 isLoading = true,
                 error = null
             )
+
+            Log.d(TAG, "Performing search: query='$query', city='${_selectedCity.value}'")
 
             val result = searchProductsUseCase(
                 query = query,
