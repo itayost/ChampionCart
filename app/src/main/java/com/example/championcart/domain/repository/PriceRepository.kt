@@ -1,6 +1,5 @@
 package com.example.championcart.domain.repository
 
-import com.example.championcart.data.models.request.CartItem
 import com.example.championcart.domain.models.*
 
 interface PriceRepository {
@@ -17,7 +16,7 @@ interface PriceRepository {
     ): Result<List<Product>>
 
     suspend fun getCheapestCart(
-        items: List<CartItem>,
+        items: List<com.example.championcart.data.models.request.CartItem>,
         city: String
     ): Result<CheapestCart>
 
@@ -31,4 +30,6 @@ interface PriceRepository {
         products: List<CartProduct>,
         city: String
     ): Result<CheapestCart>
+
+    suspend fun getCities(): Result<List<String>>
 }

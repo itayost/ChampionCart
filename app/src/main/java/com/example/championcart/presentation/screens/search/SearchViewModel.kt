@@ -1,284 +1,301 @@
 package com.example.championcart.presentation.screens.search
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.championcart.data.local.preferences.TokenManager
 import com.example.championcart.domain.models.GroupedProduct
 import com.example.championcart.domain.models.Product
-import com.example.championcart.domain.models.SortOption
 import com.example.championcart.domain.repository.CartRepository
 import com.example.championcart.domain.repository.PriceRepository
 import com.example.championcart.domain.usecase.SearchProductsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-
-data class SearchState(
-    val searchQuery: String = "",
-    val groupedProducts: List<GroupedProduct> = emptyList(),
-    val isLoading: Boolean = false,
-    val error: String? = null,
-    val hasSearched: Boolean = false,
-    val selectedCity: String = "Tel Aviv",
-    val sortOption: SortOption = SortOption.RELEVANCE,
-    val recentSearches: List<String> = emptyList(),
-    val popularSearches: List<String> = emptyList(),
-    val showIdenticalOnly: Boolean = false
-)
 
 @HiltViewModel
 class SearchViewModel @Inject constructor(
     private val searchProductsUseCase: SearchProductsUseCase,
     private val priceRepository: PriceRepository,
-    private val cartRepository: CartRepository,
-    private val tokenManager: TokenManager
+    private val cartRepository: CartRepository
 ) : ViewModel() {
 
-    private val _state = MutableStateFlow(SearchState())
-    val state: StateFlow<SearchState> = _state.asStateFlow()
+    companion object {
+        private const val TAG = "SearchViewModel"
+        private const val SEARCH_DEBOUNCE_DELAY = 500L
+    }
+
+    private val _uiState = MutableStateFlow(SearchUiState())
+    val uiState: StateFlow<SearchUiState> = _uiState.asStateFlow()
+
+    private val _selectedCity = MutableStateFlow<String?>(null)
+    val selectedCity: StateFlow<String?> = _selectedCity.asStateFlow()
+
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+
+    private var searchJob: Job? = null
 
     init {
-        loadInitialData()
+        loadCities()
     }
 
-    private fun loadInitialData() {
+    private fun loadCities() {
         viewModelScope.launch {
-            // Load recent searches from local storage
-            val recentSearches = listOf("חלב", "לחם", "ביצים", "במבה", "קפה", "שמן זית")
-
-            // Load popular searches (could be from analytics)
-            val popularSearches = listOf(
-                "חלב תנובה 3%",
-                "לחם אחיד",
-                "ביצים L",
-                "במבה אוסם",
-                "קוטג' 5%",
-                "שמן זית"
-            )
-
-            // Get selected city from preferences
-            val savedCity = tokenManager.getSelectedCity()
-
-            _state.update {
-                it.copy(
-                    recentSearches = recentSearches,
-                    popularSearches = popularSearches,
-                    selectedCity = savedCity
-                )
-            }
-        }
-    }
-
-    fun updateSearchQuery(query: String) {
-        _state.update {
-            it.copy(
-                searchQuery = query,
-                error = null
-            )
-        }
-    }
-
-    fun searchProducts() {
-        val query = _state.value.searchQuery.trim()
-        if (query.isEmpty()) return
-
-        viewModelScope.launch {
-            _state.update { it.copy(isLoading = true, error = null) }
-
-            try {
-                val result = if (_state.value.showIdenticalOnly) {
-                    priceRepository.getIdenticalProducts(
-                        city = _state.value.selectedCity,
-                        productName = query,
-                        limit = 50
-                    )
-                } else {
-                    priceRepository.searchProducts(
-                        city = _state.value.selectedCity,
-                        productName = query,
-                        groupByCode = true,
-                        limit = 50
-                    )
-                }
-
-                result.fold(
-                    onSuccess = { products ->
-                        val sortedProducts = sortProducts(products, _state.value.sortOption)
-                        _state.update {
-                            it.copy(
-                                groupedProducts = sortedProducts,
-                                isLoading = false,
-                                hasSearched = true,
-                                error = null
-                            )
-                        }
-                        saveRecentSearch(query)
-                    },
-                    onFailure = { exception ->
-                        _state.update {
-                            it.copy(
-                                isLoading = false,
-                                error = "Search failed: ${exception.message}"
-                            )
-                        }
+            priceRepository.getCities().fold(
+                onSuccess = { cities ->
+                    _uiState.value = _uiState.value.copy(availableCities = cities)
+                    if (cities.isNotEmpty() && _selectedCity.value == null) {
+                        _selectedCity.value = cities.first()
                     }
-                )
-            } catch (e: Exception) {
-                _state.update {
-                    it.copy(
-                        isLoading = false,
-                        error = "Search error: ${e.message}"
-                    )
+                },
+                onFailure = {
+                    Log.e(TAG, "Failed to load cities", it)
                 }
-            }
-        }
-    }
-
-    fun searchFromSuggestion(query: String) {
-        _state.update { it.copy(searchQuery = query) }
-        searchProducts()
-    }
-
-    fun toggleIdenticalOnly() {
-        _state.update {
-            it.copy(showIdenticalOnly = !it.showIdenticalOnly)
-        }
-
-        // Re-search if we have a query
-        if (_state.value.searchQuery.isNotEmpty()) {
-            searchProducts()
-        }
-    }
-
-    fun updateSort(sortOption: SortOption) {
-        _state.update { currentState ->
-            val sortedProducts = sortProducts(currentState.groupedProducts, sortOption)
-            currentState.copy(
-                sortOption = sortOption,
-                groupedProducts = sortedProducts
             )
         }
     }
 
     fun selectCity(city: String) {
-        _state.update {
-            it.copy(
-                selectedCity = city,
-                error = null
-            )
-        }
-
-        // Re-search if we have results
-        if (_state.value.hasSearched && _state.value.searchQuery.isNotEmpty()) {
-            searchProducts()
-        }
-
-        // Save city preference
-        viewModelScope.launch {
-            tokenManager.saveSelectedCity(city)
+        _selectedCity.value = city
+        // Re-search with new city if there's an active query
+        if (_searchQuery.value.isNotEmpty()) {
+            performSearch(_searchQuery.value)
         }
     }
 
-    fun addToCart(groupedProduct: GroupedProduct) {
+    fun onSearchQueryChanged(query: String) {
+        _searchQuery.value = query
+
+        // Cancel previous search
+        searchJob?.cancel()
+
+        if (query.isBlank()) {
+            _uiState.value = _uiState.value.copy(
+                searchResults = emptyList(),
+                isSearching = false
+            )
+            return
+        }
+
+        // Debounce search
+        searchJob = viewModelScope.launch {
+            delay(SEARCH_DEBOUNCE_DELAY)
+            performSearch(query)
+        }
+    }
+
+    private fun performSearch(query: String) {
         viewModelScope.launch {
-            try {
-                // Find the best price (lowest)
-                val bestPrice = groupedProduct.prices.minByOrNull { it.price }
+            _uiState.value = _uiState.value.copy(
+                isSearching = true,
+                isLoading = true,
+                error = null
+            )
 
-                if (bestPrice != null) {
-                    // Convert GroupedProduct to Product for CartRepository
-                    val product = Product(
-                        itemCode = groupedProduct.itemCode,
-                        itemName = groupedProduct.itemName,
-                        chain = bestPrice.chain,
-                        price = bestPrice.price,
-                        storeId = bestPrice.storeId,
-                        timestamp = bestPrice.timestamp,
-                        relevanceScore = groupedProduct.relevanceScore,
-                        weight = groupedProduct.weight,
-                        unit = groupedProduct.unit,
-                        pricePerUnit = groupedProduct.pricePerUnit
+            val result = searchProductsUseCase(
+                query = query,
+                selectedCity = _selectedCity.value
+            )
+
+            result.fold(
+                onSuccess = { products ->
+                    Log.d(TAG, "Search successful: ${products.size} products found")
+                    _uiState.value = _uiState.value.copy(
+                        searchResults = products,
+                        groupedProducts = products,
+                        isSearching = false,
+                        isLoading = false,
+                        hasSearched = true,
+                        searchQuery = query,
+                        selectedCity = _selectedCity.value,
+                        recentSearches = updateRecentSearches(query)
                     )
-
-                    // Add to cart using correct CartRepository method
-                    val result = cartRepository.addToCart(product = product, quantity = 1)
-
-                    result.fold(
-                        onSuccess = {
-                            // Could show success message here
-                            // _state.update { it.copy(successMessage = "Added to cart") }
-                        },
-                        onFailure = { exception ->
-                            _state.update {
-                                it.copy(error = "Failed to add to cart: ${exception.message}")
-                            }
-                        }
+                },
+                onFailure = { error ->
+                    Log.e(TAG, "Search failed", error)
+                    _uiState.value = _uiState.value.copy(
+                        isSearching = false,
+                        isLoading = false,
+                        error = error.message ?: "Search failed"
                     )
-                } else {
-                    _state.update {
-                        it.copy(error = "No price information available for this product")
+                }
+            )
+        }
+    }
+
+    private fun updateRecentSearches(query: String): List<String> {
+        val current = _uiState.value.recentSearches.toMutableList()
+        current.remove(query)
+        current.add(0, query)
+        return current.take(5)
+    }
+
+    fun clearSearch() {
+        _searchQuery.value = ""
+        _uiState.value = _uiState.value.copy(
+            searchResults = emptyList(),
+            isSearching = false,
+            error = null
+        )
+    }
+
+    fun applyFilter(filter: SearchFilter) {
+        _uiState.value = _uiState.value.copy(activeFilter = filter)
+        sortResults()
+    }
+
+    fun toggleSortOrder() {
+        val newOrder = when (_uiState.value.sortOrder) {
+            SortOrder.PRICE_LOW_TO_HIGH -> SortOrder.PRICE_HIGH_TO_LOW
+            SortOrder.PRICE_HIGH_TO_LOW -> SortOrder.NAME_A_TO_Z
+            SortOrder.NAME_A_TO_Z -> SortOrder.NAME_Z_TO_A
+            SortOrder.NAME_Z_TO_A -> SortOrder.PRICE_LOW_TO_HIGH
+        }
+        _uiState.value = _uiState.value.copy(sortOrder = newOrder)
+        sortResults()
+    }
+
+    private fun sortResults() {
+        val sorted = when (_uiState.value.sortOrder) {
+            SortOrder.PRICE_LOW_TO_HIGH -> {
+                _uiState.value.searchResults.sortedBy {
+                    it.prices.minByOrNull { price -> price.price }?.price ?: Double.MAX_VALUE
+                }
+            }
+            SortOrder.PRICE_HIGH_TO_LOW -> {
+                _uiState.value.searchResults.sortedByDescending {
+                    it.prices.maxByOrNull { price -> price.price }?.price ?: 0.0
+                }
+            }
+            SortOrder.NAME_A_TO_Z -> {
+                _uiState.value.searchResults.sortedBy { it.itemName }
+            }
+            SortOrder.NAME_Z_TO_A -> {
+                _uiState.value.searchResults.sortedByDescending { it.itemName }
+            }
+        }
+
+        _uiState.value = _uiState.value.copy(searchResults = sorted)
+    }
+
+    fun addToCart(product: GroupedProduct) {
+        viewModelScope.launch {
+            // Find the best price store
+            val bestStore = product.prices.minByOrNull { it.price }
+            if (bestStore != null) {
+                val cartProduct = Product(
+                    itemCode = product.itemCode,
+                    itemName = product.itemName,
+                    chain = bestStore.chain,
+                    storeId = bestStore.storeId,
+                    price = bestStore.price,
+                    city = bestStore.city
+                )
+
+                cartRepository.addToCart(cartProduct).fold(
+                    onSuccess = {
+                        Log.d(TAG, "Product added to cart: ${product.itemName}")
+                        _uiState.value = _uiState.value.copy(
+                            showAddedToCart = true,
+                            lastAddedProduct = product.itemName
+                        )
+                    },
+                    onFailure = {
+                        Log.e(TAG, "Failed to add to cart", it)
+                        _uiState.value = _uiState.value.copy(
+                            error = "Failed to add to cart"
+                        )
                     }
-                }
-            } catch (e: Exception) {
-                _state.update {
-                    it.copy(error = "Failed to add to cart: ${e.message}")
-                }
+                )
             }
         }
     }
 
+    fun dismissAddedToCart() {
+        _uiState.value = _uiState.value.copy(showAddedToCart = false)
+    }
+
+    fun searchProducts(query: String) {
+        onSearchQueryChanged(query)
+    }
+
+    fun updateSearchQuery(query: String) {
+        _searchQuery.value = query
+    }
+
+    fun toggleIdenticalOnly() {
+        _uiState.value = _uiState.value.copy(showIdenticalOnly = !_uiState.value.showIdenticalOnly)
+        if (_searchQuery.value.isNotEmpty()) {
+            performSearch(_searchQuery.value)
+        }
+    }
+
     fun retry() {
-        if (_state.value.searchQuery.isNotEmpty()) {
-            searchProducts()
-        } else {
-            clearError()
+        if (_searchQuery.value.isNotEmpty()) {
+            performSearch(_searchQuery.value)
         }
     }
 
     fun clearResults() {
-        _state.update {
-            it.copy(
-                groupedProducts = emptyList(),
-                hasSearched = false,
-                searchQuery = "",
-                error = null
-            )
+        _uiState.value = _uiState.value.copy(
+            searchResults = emptyList(),
+            groupedProducts = emptyList(),
+            hasSearched = false
+        )
+    }
+
+    fun updateSort(sortOption: String) {
+        val newOrder = when (sortOption) {
+            "price_low_high" -> SortOrder.PRICE_LOW_TO_HIGH
+            "price_high_low" -> SortOrder.PRICE_HIGH_TO_LOW
+            "name_a_z" -> SortOrder.NAME_A_TO_Z
+            "name_z_a" -> SortOrder.NAME_Z_TO_A
+            else -> SortOrder.PRICE_LOW_TO_HIGH
         }
+        _uiState.value = _uiState.value.copy(sortOrder = newOrder, sortOption = sortOption)
+        sortResults()
     }
 
-    fun clearError() {
-        _state.update { it.copy(error = null) }
+    fun searchFromSuggestion(suggestion: String) {
+        onSearchQueryChanged(suggestion)
     }
+}
 
-    private fun sortProducts(products: List<GroupedProduct>, sortOption: SortOption): List<GroupedProduct> {
-        return when (sortOption) {
-            SortOption.RELEVANCE -> products.sortedByDescending { it.relevanceScore ?: 0.0 }
-            SortOption.PRICE_LOW_TO_HIGH -> products.sortedBy { it.lowestPrice ?: Double.MAX_VALUE }
-            SortOption.PRICE_HIGH_TO_LOW -> products.sortedByDescending { it.lowestPrice ?: 0.0 }
-            SortOption.NAME_A_TO_Z -> products.sortedBy { it.itemName }
-            SortOption.NAME_Z_TO_A -> products.sortedByDescending { it.itemName }
-            SortOption.SAVINGS_HIGH_TO_LOW -> products.sortedByDescending { it.savings }
-        }
-    }
+data class SearchUiState(
+    val searchResults: List<GroupedProduct> = emptyList(),
+    val groupedProducts: List<GroupedProduct> = emptyList(),
+    val isSearching: Boolean = false,
+    val isLoading: Boolean = false,
+    val hasSearched: Boolean = false,
+    val error: String? = null,
+    val searchQuery: String = "",
+    val recentSearches: List<String> = emptyList(),
+    val popularSearches: List<String> = listOf("חלב", "לחם", "ביצים", "גבינה", "יוגורט"),
+    val activeFilter: SearchFilter = SearchFilter.ALL,
+    val sortOrder: SortOrder = SortOrder.PRICE_LOW_TO_HIGH,
+    val sortOption: String = "price_low_high",
+    val availableCities: List<String> = emptyList(),
+    val selectedCity: String? = null,
+    val showAddedToCart: Boolean = false,
+    val lastAddedProduct: String? = null,
+    val showIdenticalOnly: Boolean = false
+)
 
-    private fun saveRecentSearch(query: String) {
-        viewModelScope.launch {
-            val currentRecent = _state.value.recentSearches.toMutableList()
+enum class SearchFilter {
+    ALL,
+    ON_SALE,
+    NEW_PRODUCTS,
+    POPULAR
+}
 
-            // Remove if already exists
-            currentRecent.remove(query)
-
-            // Add to beginning
-            currentRecent.add(0, query)
-
-            // Keep only last 10
-            val updatedRecent = currentRecent.take(10)
-
-            _state.update { it.copy(recentSearches = updatedRecent) }
-
-            // Save to local storage (could add to TokenManager later)
-            // tokenManager.saveRecentSearches(updatedRecent)
-        }
-    }
+enum class SortOrder {
+    PRICE_LOW_TO_HIGH,
+    PRICE_HIGH_TO_LOW,
+    NAME_A_TO_Z,
+    NAME_Z_TO_A
 }

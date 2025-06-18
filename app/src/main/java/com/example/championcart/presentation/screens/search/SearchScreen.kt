@@ -87,11 +87,9 @@ fun SearchScreen(
             SearchHeader(
                 searchQuery = state.searchQuery,
                 onSearchQueryChange = viewModel::updateSearchQuery,
-                onSearch = {
-                    keyboardController?.hide()
-                    focusManager.clearFocus()
-                    viewModel.searchProducts()
-                },
+                onSearch = { viewModel.searchProducts(
+                    query = TODO()
+                ) },
                 onBack = onNavigateBack,
                 focusRequester = searchFocusRequester,
                 modifier = Modifier.padding(SpacingTokens.L)

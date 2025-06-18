@@ -1,120 +1,51 @@
 package com.example.championcart.domain.usecase
 
-import com.example.championcart.domain.models.*
+import com.example.championcart.domain.models.AuthResponse
+import com.example.championcart.domain.models.AuthResult
 import com.example.championcart.domain.repository.AuthRepository
 import javax.inject.Inject
 
 class LoginUseCase @Inject constructor(
     private val authRepository: AuthRepository
 ) {
-    /**
-     * Login user with email and password
-     * Returns AuthResult with user and token on success
-     */
-    suspend operator fun invoke(email: String, password: String): AuthResult {
-        // Validate input first
-        val validation = validateLogin(email, password)
-        if (validation is LoginValidation.Invalid) {
-            return AuthResult.Error(validation.message)
-        }
-
+    suspend fun execute(email: String, password: String): AuthResult {
         return try {
-            // Attempt login with repository
-            authRepository.login(email, password).fold(
-                onSuccess = { authResponse ->
-                    // Save token to local storage (done by repository)
-                    // Create user from login info (server only provides email/password auth)
-                    val user = User(
-                        id = generateUserId(email),
-                        email = email,
+            val result = authRepository.login(email, password)
+
+            result.fold(
+                onSuccess = { user ->
+                    val authResponse = AuthResponse(
+                        token = user.token,
+                        user = user,
                         isGuest = false
                     )
-                    AuthResult.Success(user, authResponse)
+                    AuthResult.Success(authResponse)
                 },
                 onFailure = { exception ->
-                    AuthResult.Error(mapAuthError(exception))
+                    AuthResult.Error(exception.message ?: "Login failed")
                 }
             )
         } catch (e: Exception) {
-            AuthResult.Error("Login failed: ${e.message}")
+            AuthResult.Error(e.message ?: "Unknown error occurred")
         }
     }
 
-    /**
-     * Login with stored credentials (auto-login)
-     */
-    suspend fun loginWithStoredToken(): AuthResult {
+    suspend fun loginAsGuest(): AuthResult {
         return try {
-            val token = authRepository.getAuthToken()
-            if (token.isNullOrBlank()) {
-                return AuthResult.Error("No stored credentials found")
-            }
-
-            // Verify token is still valid by getting user profile
-            authRepository.getUserProfile().fold(
-                onSuccess = { user ->
-                    val authResponse = AuthResponse(accessToken = token)
-                    AuthResult.Success(user, authResponse)
-                },
-                onFailure = {
-                    // Token might be expired, clear it
-                    authRepository.clearAuthToken()
-                    AuthResult.Error("Session expired, please login again")
-                }
-            )
-        } catch (e: Exception) {
-            AuthResult.Error("Auto-login failed: ${e.message}")
-        }
-    }
-
-    /**
-     * Continue as guest user (local session only)
-     */
-    suspend fun continueAsGuest(): AuthResult {
-        return try {
-            val guestUser = User(
-                id = "guest-${System.currentTimeMillis()}",
+            val guestUser = com.example.championcart.domain.models.User(
+                id = "guest",
                 email = "guest@championcart.com",
+                token = "",
+                name = "Guest User"
+            )
+            val authResponse = AuthResponse(
+                token = "",
+                user = guestUser,
                 isGuest = true
             )
-
-            val guestToken = AuthResponse(accessToken = "guest-token")
-            AuthResult.Success(guestUser, guestToken)
+            AuthResult.Success(authResponse)
         } catch (e: Exception) {
-            AuthResult.Error("Failed to create guest session: ${e.message}")
+            AuthResult.Error(e.message ?: "Failed to login as guest")
         }
-    }
-
-    /**
-     * Validate login input
-     */
-    private fun validateLogin(email: String, password: String): LoginValidation {
-        return when {
-            email.isBlank() -> LoginValidation.Invalid("Email cannot be empty")
-            password.isBlank() -> LoginValidation.Invalid("Password cannot be empty")
-            !email.isValidEmail() -> LoginValidation.Invalid("Please enter a valid email address")
-            password.length < 3 -> LoginValidation.Invalid("Password is too short")
-            else -> LoginValidation.Valid
-        }
-    }
-
-    /**
-     * Map server errors to user-friendly messages
-     */
-    private fun mapAuthError(exception: Throwable): String {
-        return when {
-            exception.message?.contains("401") == true -> "Invalid email or password"
-            exception.message?.contains("404") == true -> "User not found"
-            exception.message?.contains("network", ignoreCase = true) == true -> "Network error. Please check your connection"
-            exception.message?.contains("timeout", ignoreCase = true) == true -> "Request timed out. Please try again"
-            else -> "Login failed. Please try again"
-        }
-    }
-
-    /**
-     * Generate user ID from email for fallback cases
-     */
-    private fun generateUserId(email: String): String {
-        return "user-${email.hashCode().toString().replace("-", "")}"
     }
 }

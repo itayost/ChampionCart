@@ -102,6 +102,7 @@ dependencies {
 
     // DataStore (for preferences)
     implementation("androidx.datastore:datastore-preferences:1.0.0")
+    implementation ("androidx.security:security-crypto:1.1.0-alpha06")
 
     // Accompanist libraries for modern UI
     implementation("com.google.accompanist:accompanist-permissions:0.32.0")

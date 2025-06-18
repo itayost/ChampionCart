@@ -2,18 +2,20 @@ package com.example.championcart.data.repository
 
 import android.util.Log
 import com.example.championcart.data.api.ChampionCartApi
-import com.example.championcart.data.models.request.CartItem
+import com.example.championcart.data.models.request.CartItem as RequestCartItem
 import com.example.championcart.data.models.request.CheapestCartRequest
 import com.example.championcart.data.models.response.*
 import com.example.championcart.domain.models.*
+import com.example.championcart.domain.repository.CartRepository
 import com.example.championcart.domain.repository.PriceRepository
+import com.example.championcart.presentation.screens.cart.StoreInfo
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class PriceRepositoryImpl @Inject constructor(
     private val api: ChampionCartApi
-) : PriceRepository {
+) : PriceRepository, CartRepository {
 
     companion object {
         private const val TAG = "PriceRepository"
@@ -21,12 +23,11 @@ class PriceRepositoryImpl @Inject constructor(
 
     override suspend fun searchProducts(
         query: String,
-        city: String?,
-        limit: Int
+        city: String?
     ): Result<List<GroupedProduct>> {
         return try {
-            Log.d(TAG, "Searching products: query=$query, city=$city, limit=$limit")
-            val response = api.searchProducts(query, city, limit)
+            Log.d(TAG, "Searching products: query=$query, city=$city")
+            val response = api.searchProducts(query, city, 20)
             Log.d(TAG, "Search response received: ${response.size} products")
 
             val products = response.map { it.toDomainModel() }
@@ -38,8 +39,46 @@ class PriceRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun searchProductsV2(
+        query: String,
+        city: String?,
+        store: String?,
+        exactMatch: Boolean
+    ): Result<List<Product>> {
+        return try {
+            Log.d(TAG, "Searching products V2: query=$query, city=$city, store=$store")
+            val response = api.searchProductsV2(query, city, store, exactMatch)
+            Log.d(TAG, "Search V2 response received: ${response.size} products")
+
+            // Convert grouped products to single products
+            val products = mutableListOf<Product>()
+            for (grouped in response) {
+                val prices = grouped.prices
+                if (prices != null) {
+                    for (price in prices) {
+                        products.add(
+                            Product(
+                                itemCode = grouped.itemCode,
+                                itemName = grouped.itemName,
+                                chain = price.chain,
+                                storeId = price.storeId,
+                                price = price.price,
+                                city = price.city,
+                                lowestPrice = grouped.priceComparison?.bestDeal?.price
+                            )
+                        )
+                    }
+                }
+            }
+            Result.success(products)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error searching products V2", e)
+            Result.failure(e)
+        }
+    }
+
     override suspend fun getCheapestCart(
-        items: List<CartItem>,
+        items: List<RequestCartItem>,
         city: String
     ): Result<CheapestCart> {
         return try {
@@ -58,9 +97,14 @@ class PriceRepositoryImpl @Inject constructor(
         return try {
             Log.d(TAG, "Fetching saved carts")
             val response = api.getSavedCarts()
-            Log.d(TAG, "Received ${response.size} saved carts")
-            val carts = response.map { it.toDomainModel() }
-            Result.success(carts)
+            if (response.isSuccessful) {
+                val carts = response.body()?.map { it.toDomainModel() } ?: emptyList()
+                Log.d(TAG, "Received ${carts.size} saved carts")
+                Result.success(carts)
+            } else {
+                Log.e(TAG, "Failed to get saved carts: ${response.code()}")
+                Result.failure(Exception("Failed to get saved carts: ${response.code()}"))
+            }
         } catch (e: Exception) {
             Log.e(TAG, "Error fetching saved carts", e)
             Result.failure(e)
@@ -71,9 +115,14 @@ class PriceRepositoryImpl @Inject constructor(
         return try {
             Log.d(TAG, "Saving cart: ${cart.name}")
             val request = cart.toRequest()
-            api.saveCart(request)
-            Log.d(TAG, "Cart saved successfully")
-            Result.success(Unit)
+            val response = api.saveCart(request)
+            if (response.isSuccessful) {
+                Log.d(TAG, "Cart saved successfully")
+                Result.success(Unit)
+            } else {
+                Log.e(TAG, "Failed to save cart: ${response.code()}")
+                Result.failure(Exception("Failed to save cart: ${response.code()}"))
+            }
         } catch (e: Exception) {
             Log.e(TAG, "Error saving cart", e)
             Result.failure(e)
@@ -90,6 +139,105 @@ class PriceRepositoryImpl @Inject constructor(
             Log.e(TAG, "Error deleting cart", e)
             Result.failure(e)
         }
+    }
+
+    override suspend fun getCheapestCartForProducts(
+        products: List<CartProduct>,
+        city: String
+    ): Result<CheapestCart> {
+        return try {
+            val items = products.map {
+                RequestCartItem(
+                    itemName = it.itemName,
+                    quantity = it.quantity
+                )
+            }
+            getCheapestCart(items, city)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error getting cheapest cart for products", e)
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun getCities(): Result<List<String>> {
+        return try {
+            Log.d(TAG, "Fetching cities list")
+            val cities = api.getCities()
+            Log.d(TAG, "Received ${cities.size} cities")
+            Result.success(cities)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error fetching cities", e)
+            Result.failure(e)
+        }
+    }
+
+    // CartRepository implementation
+    private val cartItems = mutableListOf<CartItem>()
+
+    override suspend fun getCartItems(): Result<List<CartItem>> {
+        return Result.success(cartItems.toList())
+    }
+
+    override suspend fun addToCart(product: Product): Result<Unit> {
+        return try {
+            val existingItem = cartItems.find { it.productId == product.itemCode }
+            if (existingItem != null) {
+                val index = cartItems.indexOf(existingItem)
+                cartItems[index] = existingItem.copy(quantity = existingItem.quantity + 1)
+            } else {
+                cartItems.add(
+                    CartItem(
+                        id = product.itemCode,
+                        productId = product.itemCode,
+                        productName = product.itemName,
+                        quantity = 1,
+                        price = product.price,
+                        selectedStore = StoreInfo(
+                            chain = product.chain,
+                            storeId = product.storeId,
+                            city = product.city
+                        )
+                    )
+                )
+            }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun removeFromCart(productId: String): Result<Unit> {
+        return try {
+            cartItems.removeAll { it.id == productId || it.productId == productId }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun updateQuantity(productId: String, quantity: Int): Result<Unit> {
+        return try {
+            val index = cartItems.indexOfFirst { it.id == productId || it.productId == productId }
+            if (index != -1) {
+                cartItems[index] = cartItems[index].copy(quantity = quantity)
+            }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun clearCart(): Result<Unit> {
+        return try {
+            cartItems.clear()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun getCartItemCount(): Result<Int> {
+        return Result.success(cartItems.sumOf { it.quantity })
     }
 }
 
@@ -207,8 +355,8 @@ private fun Cart.toRequest(): com.example.championcart.data.models.request.CartR
     return com.example.championcart.data.models.request.CartRequest(
         name = name,
         items = items.map {
-            com.example.championcart.data.models.request.CartItem(
-                productName = it.productName,
+            RequestCartItem(
+                itemName = it.productName,
                 quantity = it.quantity
             )
         }

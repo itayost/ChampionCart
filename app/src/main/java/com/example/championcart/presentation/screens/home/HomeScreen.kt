@@ -201,18 +201,15 @@ fun ModernHomeScreen(
 
                 item {
                     LazyRow(
-                        contentPadding = PaddingValues(horizontal = SpacingTokens.L),
-                        horizontalArrangement = Arrangement.spacedBy(SpacingTokens.M)
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        contentPadding = PaddingValues(horizontal = 16.dp)
                     ) {
-                        items(state.featuredDeals) { product ->
-                            CompactProductCard(
+                        items(state.featuredDeals.size) { index ->
+                            val product = state.featuredDeals[index]
+                            DealCard(
                                 product = product,
-                                onProductClick = {
-                                    navController.navigate("${Screen.ProductDetail.route}/${product.itemCode}")
-                                },
-                                onAddToCart = { storePrice ->
-                                    viewModel.addToCart(product, storePrice)
-                                }
+                                onProductClick = { navController.navigate("product/${product.itemCode}") },
+                                onAddToCart = { viewModel.addToCart(product) }
                             )
                         }
                     }
@@ -231,24 +228,18 @@ fun ModernHomeScreen(
                     )
                 }
 
-                items(state.popularProducts) { product ->
-                    ListProductCard(
-                        product = product,
-                        onAddToCart = { storePrice ->
-                            viewModel.addToCart(product, storePrice)
-                        },
-                        onProductClick = {
-                            navController.navigate("${Screen.ProductDetail.route}/${product.itemCode}")
-                        },
-                        onFavoriteToggle = {
-                            // TODO: Implement favorite toggle
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = SpacingTokens.L)
-                            .padding(bottom = SpacingTokens.M),
-                        isFavorite = false // TODO: Get from state
-                    )
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    contentPadding = PaddingValues(horizontal = 16.dp)
+                ) {
+                    items(state.popularProducts.size) { index ->
+                        val product = state.popularProducts[index]
+                        ProductCard(
+                            product = product,
+                            onProductClick = { viewModel.addToCart(product) },
+                            onNavigateToProduct = { navController.navigate("product/${product.itemCode}") }
+                        )
+                    }
                 }
             }
 

@@ -1,84 +1,37 @@
 package com.example.championcart.di
 
-import android.content.Context
-import com.example.championcart.data.api.ChampionCartApi
-import com.example.championcart.data.local.CartManager
-import com.example.championcart.data.local.preferences.TokenManager
 import com.example.championcart.data.repository.AuthRepositoryImpl
-import com.example.championcart.data.repository.CartRepositoryImpl
 import com.example.championcart.data.repository.PriceRepositoryImpl
-import com.example.championcart.data.repository.UserRepositoryImpl
 import com.example.championcart.domain.repository.AuthRepository
 import com.example.championcart.domain.repository.CartRepository
 import com.example.championcart.domain.repository.PriceRepository
-import com.example.championcart.domain.repository.UserRepository
+import dagger.Binds
 import dagger.Module
-import dagger.Provides
 import dagger.hilt.InstallIn
-import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
-object RepositoryModule {
+abstract class RepositoryModule {
 
-    @Provides
+    @Binds
     @Singleton
-    fun provideTokenManager(
-        @ApplicationContext context: Context
-    ): TokenManager {
-        return TokenManager(context)
-    }
+    abstract fun bindAuthRepository(
+        authRepositoryImpl: AuthRepositoryImpl
+    ): AuthRepository
 
-    @Provides
+    @Binds
     @Singleton
-    fun provideAuthRepository(
-        api: ChampionCartApi,
-        tokenManager: TokenManager
-    ): AuthRepository {
-        return AuthRepositoryImpl(
-            api = api,
-            tokenManager = tokenManager
-        )
-    }
+    abstract fun bindPriceRepository(
+        priceRepositoryImpl: PriceRepositoryImpl
+    ): PriceRepository
 
-    @Provides
+    // If PriceRepositoryImpl also implements CartRepository
+    // Otherwise, you need to create CartRepositoryImpl
+    @Binds
     @Singleton
-    fun providePriceRepository(
-        api: ChampionCartApi
-    ): PriceRepository {
-        return PriceRepositoryImpl(
-            api = api
-        )
-    }
-
-    @Provides
-    @Singleton
-    fun provideCartManager(
-        @ApplicationContext context: Context
-    ): CartManager {
-        return CartManager.getInstance(context)
-    }
-
-    @Provides
-    @Singleton
-    fun provideCartRepository(
-        @ApplicationContext context: Context,
-        cartManager: CartManager,
-        priceRepository: PriceRepository
-    ): CartRepository {
-        return CartRepositoryImpl(
-            cartManager = cartManager,
-            priceRepository = priceRepository
-        )
-    }
-
-    @Provides
-    @Singleton
-    fun provideUserRepository(
-        @ApplicationContext context: Context
-    ): UserRepository {
-        return UserRepositoryImpl()
-    }
+    abstract fun bindCartRepository(
+        priceRepositoryImpl: PriceRepositoryImpl
+    ): CartRepository
 }

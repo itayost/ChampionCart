@@ -23,12 +23,10 @@ data class RegisterRequest(
  * Matches: POST /login response
  */
 data class AuthResponse(
-    val accessToken: String,
-    val tokenType: String = "bearer"
-) {
-    val fullToken: String
-        get() = "$tokenType $accessToken"
-}
+    val token: String,
+    val user: User,
+    val isGuest: Boolean = false
+)
 
 /**
  * Auth result wrapper for use cases
@@ -36,7 +34,6 @@ data class AuthResponse(
 sealed class AuthResult {
     data class Success(val user: User, val token: AuthResponse) : AuthResult()
     data class Error(val message: String) : AuthResult()
-    object Loading : AuthResult()
 }
 
 /**

@@ -5,14 +5,10 @@ package com.example.championcart.domain.models
  * Server only handles email/password authentication
  */
 data class User(
-    val id: String,
+    val id: String = "",
     val email: String,
-    val isGuest: Boolean = false
-) {
-    val displayName: String
-        get() = if (email.isNotBlank()) {
-            email.substringBefore("@")
-        } else {
-            "User"
-        }
-}
+    val token: String,
+    val tokenType: String = "Bearer",
+    val name: String? = null,
+    val phoneNumber: String? = null
+)

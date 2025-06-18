@@ -153,7 +153,7 @@ class AuthViewModel @Inject constructor(
 
                 result.fold(
                     onSuccess = { authResponse ->
-                        Log.d("AuthViewModel", "Login successful: ${authResponse.accessToken.take(20)}...")
+                        Log.d("AuthViewModel", "Login successful: ${authResponse.token.take(20)}...")
                         _state.update {
                             it.copy(
                                 isLoading = false,

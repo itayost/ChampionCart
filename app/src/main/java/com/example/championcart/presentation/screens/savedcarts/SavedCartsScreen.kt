@@ -9,23 +9,21 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.championcart.domain.models.Cart
 import com.example.championcart.domain.models.SavedCart
 import com.example.championcart.domain.models.SavedCartItem
 import com.example.championcart.domain.repository.AuthRepository
@@ -37,10 +35,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import kotlin.reflect.typeOf
 
 data class SavedCartsUiState(
-    val savedCarts: List<SavedCart> = emptyList(),
+    val savedCarts: List<Cart> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null,
     val expandedCartIndex: Int? = null
@@ -62,7 +59,7 @@ class SavedCartsViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
 
-            authRepository.getUserSavedCarts().fold(
+            authRepository.getSavedCarts().fold(
                 onSuccess = { savedCarts ->
                     _uiState.value = _uiState.value.copy(
                         savedCarts = savedCarts,
@@ -176,7 +173,7 @@ private fun LoadingContent() {
 
 @Composable
 private fun SavedCartsContent(
-    savedCarts: List<SavedCart>,
+    savedCarts: List<Cart>,
     expandedCartIndex: Int?,
     onCartClick: (Int) -> Unit,
     onCartSelected: (SavedCart) -> Unit
@@ -204,7 +201,7 @@ private fun SavedCartsContent(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SavedCartCard(
-    savedCart: SavedCart,
+    savedCart: Cart,
     isExpanded: Boolean,
     onClick: () -> Unit,
     onSelect: () -> Unit

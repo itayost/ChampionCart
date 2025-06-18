@@ -6,14 +6,14 @@ import com.example.championcart.data.local.preferences.TokenManager
 import com.example.championcart.data.models.request.LoginRequest
 import com.example.championcart.data.models.request.RegisterRequest
 import com.example.championcart.data.models.request.SaveCartRequest
-import com.example.championcart.data.models.response.ApiErrorResponse
-import com.example.championcart.domain.models.*
+import com.example.championcart.data.models.response.AuthResponse
+import com.example.championcart.domain.models.Cart
+import com.example.championcart.domain.models.CartItem
+import com.example.championcart.domain.models.User
 import com.example.championcart.domain.repository.AuthRepository
-import com.example.championcart.domain.repository.AuthState
-import com.example.championcart.utils.Constants
 import com.google.gson.Gson
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -24,254 +24,261 @@ class AuthRepositoryImpl @Inject constructor(
     private val tokenManager: TokenManager
 ) : AuthRepository {
 
-    private val _authState = MutableStateFlow<AuthState>(AuthState.Unauthenticated)
+    // Add isAuthenticated StateFlow
+    private val _isAuthenticated = MutableStateFlow(false)
+    override val isAuthenticated: StateFlow<Boolean> = _isAuthenticated.asStateFlow()
 
-    override suspend fun login(email: String, password: String): Result<AuthResponse> {
+    companion object {
+        private const val TAG = "AuthRepository"
+    }
+
+    override suspend fun register(email: String, password: String): Result<User> {
         return try {
-            _authState.value = AuthState.Loading
+            Log.d(TAG, "Attempting registration for email: $email")
+            val request = RegisterRequest(email = email, password = password)
+            val response = api.register(request)
 
-            Log.d("AuthRepository", "Starting login request for email: $email")
-            Log.d("AuthRepository", "API Base URL: ${Constants.BASE_URL}")
-
-            val response = api.login(LoginRequest(email, password))
-
-            Log.d("AuthRepository", "Response received - Code: ${response.code()}")
-            Log.d("AuthRepository", "Response headers: ${response.headers()}")
+            Log.d(TAG, "Registration response - Code: ${response.code()}")
+            Log.d(TAG, "Response headers: ${response.headers()}")
 
             if (response.isSuccessful) {
                 val authResponse = response.body()
                 if (authResponse != null) {
-                    Log.d("AuthRepository", "Login successful - Token: ${authResponse.accessToken.take(20)}...")
+                    Log.d(TAG, "Registration successful - Token: ${authResponse.accessToken?.take(20)}...")
 
-                    // Create domain AuthResponse using server response
-                    val domainAuthResponse = AuthResponse(
-                        accessToken = authResponse.accessToken,
-                        tokenType = authResponse.tokenType
+                    // Save token
+                    tokenManager.saveToken(authResponse.accessToken ?: "")
+                    tokenManager.saveTokenType(authResponse.tokenType ?: "Bearer")
+
+                    val user = User(
+                        id = email, // Use email as ID for now
+                        email = email,
+                        token = authResponse.accessToken ?: "",
+                        tokenType = authResponse.tokenType ?: "Bearer"
                     )
 
-                    // Save token and user info
-                    saveAuthToken(domainAuthResponse)
-                    tokenManager.saveUserEmail(email)
+                    _isAuthenticated.value = true
 
-                    _authState.value = AuthState.Authenticated
-                    Result.success(domainAuthResponse)
+                    Result.success(user)
                 } else {
-                    Log.e("AuthRepository", "Empty response body")
-                    _authState.value = AuthState.Unauthenticated
-                    Result.failure(Exception("Empty response body"))
+                    Log.e(TAG, "Registration response body is null")
+                    Result.failure(Exception("Registration failed: Empty response"))
                 }
             } else {
                 val errorBody = response.errorBody()?.string()
-                Log.e("AuthRepository", "Login failed - Code: ${response.code()}")
-                Log.e("AuthRepository", "Error body: $errorBody")
+                Log.e(TAG, "Registration failed - Code: ${response.code()}, Error: $errorBody")
 
-                _authState.value = AuthState.Unauthenticated
-
-                // Parse specific error messages
                 val errorMessage = when (response.code()) {
-                    401 -> "Invalid email or password"
-                    404 -> "User not found"
-                    500 -> "Server error. Please try again later"
-                    else -> parseErrorMessage(errorBody)
+                    400 -> "Invalid email or password format"
+                    409 -> "Email already registered"
+                    else -> "Registration failed: ${response.code()}"
                 }
 
                 Result.failure(Exception(errorMessage))
             }
         } catch (e: Exception) {
-            Log.e("AuthRepository", "Login exception: ${e.message}", e)
-            Log.e("AuthRepository", "Exception type: ${e.javaClass.simpleName}")
-
-            _authState.value = AuthState.Unauthenticated
-
-            // Better error messages for common issues
-            val errorMessage = when {
-                e is java.net.UnknownHostException -> "No internet connection"
-                e is java.net.SocketTimeoutException -> "Connection timeout. Please try again"
-                e is javax.net.ssl.SSLException -> "Secure connection failed"
-                else -> e.message ?: "Unknown error occurred"
-            }
-
-            Result.failure(Exception(errorMessage))
+            Log.e(TAG, "Registration error", e)
+            Result.failure(Exception("Network error: ${e.message}"))
         }
     }
 
-    override suspend fun register(email: String, password: String): Result<AuthResponse> {
+    override suspend fun login(email: String, password: String): Result<User> {
         return try {
-            _authState.value = AuthState.Loading
+            Log.d(TAG, "Attempting login for email: $email")
+            val request = LoginRequest(email = email, password = password)
+            val response = api.login(request)
 
-            val response = api.register(RegisterRequest(email, password))
+            Log.d(TAG, "Login response received")
 
             if (response.isSuccessful) {
-                val registerResponse = response.body()
-                if (registerResponse != null) {
-                    Log.d("AuthRepository", "Registration successful for: $email")
+                val authResponse = response.body()
+                if (authResponse != null && authResponse.accessToken != null) {
+                    Log.d(TAG, "Login successful - Token received")
 
-                    // Auto-login after successful registration
-                    return login(email, password)
+                    // Save token
+                    tokenManager.saveToken(authResponse.accessToken)
+                    tokenManager.saveTokenType(authResponse.tokenType ?: "Bearer")
+
+                    val user = User(
+                        id = email, // Use email as ID for now
+                        email = email,
+                        token = authResponse.accessToken,
+                        tokenType = authResponse.tokenType ?: "Bearer"
+                    )
+
+                    _isAuthenticated.value = true
+
+                    Result.success(user)
                 } else {
-                    _authState.value = AuthState.Unauthenticated
-                    Result.failure(Exception("Empty response body"))
+                    Log.e(TAG, "Login response missing token")
+                    Result.failure(Exception("Login failed: No token received"))
                 }
             } else {
-                _authState.value = AuthState.Unauthenticated
                 val errorBody = response.errorBody()?.string()
-                Result.failure(Exception("Registration failed: ${parseErrorMessage(errorBody)}"))
+                Log.e(TAG, "Login failed - Error: $errorBody")
+
+                val errorMessage = when {
+                    errorBody?.contains("Invalid credentials") == true -> "Invalid email or password"
+                    errorBody?.contains("User not found") == true -> "Account not found"
+                    else -> "Login failed"
+                }
+
+                Result.failure(Exception(errorMessage))
             }
         } catch (e: Exception) {
-            Log.e("AuthRepository", "Registration error", e)
-            _authState.value = AuthState.Unauthenticated
+            Log.e(TAG, "Login error", e)
+            Result.failure(Exception("Network error: ${e.message}"))
+        }
+    }
+
+    override suspend fun logout(): Result<Unit> {
+        return try {
+            Log.d(TAG, "Logging out")
+            tokenManager.clearToken()
+            _isAuthenticated.value = false
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e(TAG, "Logout error", e)
             Result.failure(e)
         }
     }
 
-    override suspend fun logout() {
-        try {
-            clearAuthToken()
-            _authState.value = AuthState.Unauthenticated
-            Log.d("AuthRepository", "User logged out")
-        } catch (e: Exception) {
-            Log.e("AuthRepository", "Logout error", e)
-        }
-    }
-
-    override suspend fun getCurrentUser(): User? {
+    override suspend fun getCurrentUser(): Result<User?> {
         return try {
             val token = tokenManager.getToken()
-            val email = tokenManager.getUserEmail()
-
-            if (token != null && email != null) {
-                // Create a basic user from stored info
-                User(
-                    id = "user_${email.hashCode()}",
-                    email = email
-                )
+            if (token.isNullOrEmpty()) {
+                Log.d(TAG, "No token found")
+                Result.success(null)
             } else {
-                null
+                Log.d(TAG, "Validating token")
+                val response = api.validateToken()
+
+                if (response.isSuccessful && response.body() != null) {
+                    val authResponse = response.body()!!
+                    val email = extractEmailFromToken(token)
+                    val user = User(
+                        id = email ?: "user",
+                        email = email ?: "user@example.com",
+                        token = token,
+                        tokenType = tokenManager.getTokenType() ?: "Bearer"
+                    )
+                    _isAuthenticated.value = true
+                    Result.success(user)
+                } else {
+                    Log.d(TAG, "Token validation failed")
+                    tokenManager.clearToken()
+                    _isAuthenticated.value = false
+                    Result.success(null)
+                }
             }
         } catch (e: Exception) {
-            Log.e("AuthRepository", "Get current user error", e)
-            null
+            Log.e(TAG, "Get current user error", e)
+            tokenManager.clearToken()
+            _isAuthenticated.value = false
+            Result.success(null)
         }
-    }
-
-    override suspend fun isAuthenticated(): Boolean {
-        return tokenManager.getToken() != null
     }
 
     override suspend fun getAuthToken(): String? {
         return tokenManager.getToken()
     }
 
-    override suspend fun saveAuthToken(token: AuthResponse) {
-        tokenManager.saveToken(token.accessToken)
-    }
-
-    override suspend fun clearAuthToken() {
-        tokenManager.clearToken()
-        // Clear user email if available (TokenManager might not have this method)
-        try {
-            // If TokenManager has clearUserEmail method, use it
-            val clearMethod = tokenManager::class.java.getMethod("clearUserEmail")
-            clearMethod.invoke(tokenManager)
+    private fun extractEmailFromToken(token: String): String? {
+        return try {
+            val parts = token.split(".")
+            if (parts.size == 3) {
+                val payload = String(android.util.Base64.decode(parts[1], android.util.Base64.URL_SAFE))
+                val gson = Gson()
+                val claims = gson.fromJson(payload, Map::class.java)
+                claims["sub"] as? String
+            } else null
         } catch (e: Exception) {
-            // Method might not exist, that's okay
-            Log.d("AuthRepository", "TokenManager doesn't have clearUserEmail method")
+            Log.e(TAG, "Error extracting email from token", e)
+            null
         }
     }
 
-    override fun observeAuthState(): Flow<AuthState> {
-        return _authState.asStateFlow()
+    override suspend fun updateProfile(name: String?, phoneNumber: String?): Result<User> {
+        // Not implemented in current API
+        return Result.failure(Exception("Profile update not available"))
     }
 
-    override suspend fun refreshToken(): Result<AuthResponse> {
-        // The server API doesn't provide a refresh token endpoint
-        return Result.failure(Exception("Token refresh not supported by server"))
+    override suspend fun changePassword(oldPassword: String, newPassword: String): Result<Unit> {
+        // Not implemented in current API
+        return Result.failure(Exception("Password change not available"))
     }
 
-    override suspend fun getUserProfile(): Result<User> {
+    override suspend fun resetPassword(email: String): Result<Unit> {
+        // Not implemented in current API
+        return Result.failure(Exception("Password reset not available"))
+    }
+
+    override suspend fun deleteAccount(): Result<Unit> {
+        // Not implemented in current API
+        return Result.failure(Exception("Account deletion not available"))
+    }
+
+    override suspend fun getSavedCarts(): Result<List<Cart>> {
         return try {
-            val currentUser = getCurrentUser()
-            if (currentUser != null) {
-                Result.success(currentUser)
-            } else {
-                Result.failure(Exception("No authenticated user"))
-            }
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
+            Log.d(TAG, "Fetching saved carts")
+            val response = api.getSavedCarts()
 
-    override suspend fun updateUserProfile(user: User): Result<User> {
-        // This would need a server endpoint to update user profile
-        return Result.failure(Exception("User profile update not supported by server"))
-    }
+            if (response.isSuccessful) {
+                val cartResponses = response.body() ?: emptyList()
+                Log.d(TAG, "Received ${cartResponses.size} saved carts")
 
-    override suspend fun getUserSavedCarts(): Result<List<SavedCart>> {
-        return try {
-            val email = tokenManager.getUserEmail()
-            if (email != null) {
-                val response = api.getSavedCarts(email)
-                if (response.isSuccessful) {
-                    val savedCartsResponse = response.body()
-                    if (savedCartsResponse != null) {
-                        val savedCarts = savedCartsResponse.savedCarts.map { cartResponse ->
-                            SavedCart(
-                                cartName = cartResponse.cartName,
-                                city = cartResponse.city,
-                                items = cartResponse.items.map { itemResponse ->
-                                    SavedCartItem(
-                                        itemName = itemResponse.itemName,
-                                        quantity = itemResponse.quantity,
-                                        price = itemResponse.price
-                                    )
-                                }
+                val carts = cartResponses.map { cartResponse ->
+                    Cart(
+                        name = cartResponse.name,
+                        city = cartResponse.city,
+                        items = cartResponse.items.map { item ->
+                            CartItem(
+                                productName = item.productName,
+                                quantity = item.quantity,
+                                price = item.price ?: 0.0
                             )
                         }
-                        Result.success(savedCarts)
-                    } else {
-                        Result.failure(Exception("Empty response body"))
-                    }
-                } else {
-                    val errorBody = response.errorBody()?.string()
-                    Result.failure(Exception("Get saved carts failed: ${parseErrorMessage(errorBody)}"))
+                    )
                 }
+
+                Result.success(carts)
             } else {
-                Result.failure(Exception("No authenticated user"))
+                Log.e(TAG, "Failed to fetch saved carts: ${response.errorBody()?.string()}")
+                Result.failure(Exception("Failed to fetch saved carts"))
             }
         } catch (e: Exception) {
-            Log.e("AuthRepository", "Get saved carts error", e)
+            Log.e(TAG, "Error fetching saved carts", e)
             Result.failure(e)
         }
     }
 
-    override suspend fun saveUserCart(request: SaveCartRequest): Result<Unit> {
+    override suspend fun saveCart(request: SaveCartRequest): Result<Unit> {
         return try {
+            Log.d(TAG, "Saving cart: ${request.name}")
             val response = api.saveCart(request)
+
             if (response.isSuccessful) {
+                Log.d(TAG, "Cart saved successfully")
                 Result.success(Unit)
             } else {
-                val errorBody = response.errorBody()?.string()
-                Result.failure(Exception("Save cart failed: ${parseErrorMessage(errorBody)}"))
+                Log.e(TAG, "Failed to save cart: ${response.errorBody()?.string()}")
+                Result.failure(Exception("Failed to save cart"))
             }
         } catch (e: Exception) {
-            Log.e("AuthRepository", "Save cart error", e)
+            Log.e(TAG, "Error saving cart", e)
             Result.failure(e)
         }
     }
 
-    // ============ PRIVATE HELPER METHODS ============
-
-    private fun parseErrorMessage(errorBody: String?): String {
+    override suspend fun deleteCart(cartName: String): Result<Unit> {
         return try {
-            if (errorBody.isNullOrEmpty()) {
-                "An error occurred"
-            } else {
-                val errorResponse = Gson().fromJson(errorBody, ApiErrorResponse::class.java)
-                errorResponse?.detail ?: "An error occurred"
-            }
+            Log.d(TAG, "Deleting cart: $cartName")
+            api.deleteCart(cartName)
+            Log.d(TAG, "Cart deleted successfully")
+            Result.success(Unit)
         } catch (e: Exception) {
-            Log.e("AuthRepository", "Error parsing error message: ${e.message}")
-            "An error occurred"
+            Log.e(TAG, "Error deleting cart", e)
+            Result.failure(e)
         }
     }
 }

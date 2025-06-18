@@ -192,29 +192,82 @@ class ProfileViewModel @Inject constructor(
         _state.update { it.copy(showThemeSelector = false) }
     }
 
+
+    private fun getSelectedCity(): String {
+        return _uiState.value.selectedCity
+    }
+
+    private fun getLanguage(): String {
+        return _uiState.value.language
+    }
+
+    private fun getTheme(): String {
+        return _uiState.value.theme
+    }
+
+    private fun getNotificationsEnabled(): Boolean {
+        return _uiState.value.notificationsEnabled
+    }
+
+    private suspend fun getUserSavedCarts(): Result<List<Cart>> {
+        return authRepository.getSavedCarts()
+    }
+
+    private fun clearUserEmail() {
+        // Clear from preferences if needed
+        _uiState.value = _uiState.value.copy(email = null)
+    }
+
+    private fun saveSelectedCity(city: String) {
+        // Save to preferences if needed
+        _uiState.value = _uiState.value.copy(selectedCity = city)
+    }
+
+    private fun saveLanguage(language: String) {
+        // Save to preferences if needed
+        _uiState.value = _uiState.value.copy(language = language)
+    }
+
+    private fun saveTheme(theme: String) {
+        // Save to preferences if needed
+        _uiState.value = _uiState.value.copy(theme = theme)
+    }
+
+    private fun saveNotificationsEnabled(enabled: Boolean) {
+        // Save to preferences if needed
+        _uiState.value = _uiState.value.copy(notificationsEnabled = enabled)
+    }
+
+    // Fix line 52 - add this method:
+    fun getUserEmail(): String {
+        return _uiState.value.email ?: ""
+    }
+
+    // Fix line 57 - make sure you have the email before calling substringBefore:
+    private fun updateUserName() {
+        val email = _uiState.value.email
+        if (email != null) {
+            val userName = email.substringBefore("@")
+            _uiState.value = _uiState.value.copy(name = userName)
+        }
+    }
+
+    // Fix line 66 - logout method:
     fun logout() {
         viewModelScope.launch {
-            try {
-                authRepository.logout()
-                tokenManager.clearToken()
-                tokenManager.clearUserEmail()
-
-                _state.update {
-                    it.copy(
-                        showLogoutDialog = false,
-                        userName = "Guest",
-                        userEmail = "",
-                        isGuest = true,
-                        userStats = UserStats(),
-                        savedCarts = emptyList(),
-                        error = null
+            authRepository.logout().fold(
+                onSuccess = {
+                    _uiState.value = _uiState.value.copy(
+                        isLoggedIn = false,
+                        showLogoutDialog = false
+                    )
+                },
+                onFailure = { error ->
+                    _uiState.value = _uiState.value.copy(
+                        error = error.message
                     )
                 }
-            } catch (e: Exception) {
-                _state.update {
-                    it.copy(error = "Failed to logout: ${e.message}")
-                }
-            }
+            )
         }
     }
 
