@@ -4,6 +4,7 @@ import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -25,6 +26,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
@@ -41,23 +43,7 @@ import com.example.championcart.ui.theme.*
 import kotlinx.coroutines.delay
 import java.time.LocalTime
 
-/**
- * LoginRegisterScreen - Using Champion Cart's Premium UI System
- */
-
-// Add these modifier extensions
-fun Modifier.gradientBackground(
-    colors: List<Color> = listOf(Color.Transparent)
-) = composed {
-    this.background(
-        brush = Brush.linearGradient(
-            colors = colors,
-            start = Offset(0f, 0f),
-            end = Offset(1000f, 1000f)
-        )
-    )
-}
-
+// Animation modifier extensions
 fun Modifier.modernPressAnimation(
     enabled: Boolean = true
 ) = composed {
@@ -117,41 +103,6 @@ fun Modifier.organicEntrance(
         }
 }
 
-fun Modifier.electricGlow(
-    glowColor: Color,
-    intensity: Float = 1f
-) = composed {
-    this.drawWithCache {
-        onDrawBehind {
-            // Simple glow effect using shadow
-            drawCircle(
-                color = glowColor.copy(alpha = 0.3f * intensity),
-                radius = size.minDimension / 2 + 20f
-            )
-        }
-    }
-}
-
-private fun Modifier.composed(factory: @Composable() (Modifier.() -> Unit)): Modifier {
-    TODO("Not yet implemented")
-}
-
-fun Modifier.attentionBounce() = composed {
-    val infiniteTransition = rememberInfiniteTransition(label = "bounce")
-    val offset by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = -8f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(300),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "bounce_offset"
-    )
-
-    this.offset(y = offset.dp)
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginRegisterScreen(
     onNavigateToHome: () -> Unit,
@@ -159,10 +110,13 @@ fun LoginRegisterScreen(
     viewModel: AuthViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
-    val snackbarHostState = remember { SnackbarHostState() }
     val haptics = LocalHapticFeedback.current
-    val scope = rememberCoroutineScope()
-    val colors = LocalExtendedColors.current
+    val focusManager = LocalFocusManager.current
+    val configuration = LocalConfiguration.current
+
+    // Calculate responsive sizes based on screen height
+    val screenHeight = configuration.screenHeightDp.dp
+    val isSmallScreen = screenHeight < 700.dp
 
     // Time-based greeting
     val greeting = remember {
@@ -175,92 +129,65 @@ fun LoginRegisterScreen(
         }
     }
 
-    val subtitle = remember(state.isLoginMode) {
-        if (state.isLoginMode) "היכנס כדי להתחיל לחסוך" else "הצטרף למהפכת החיסכון"
-    }
-
-    // Handle authentication success
     LaunchedEffect(state.isAuthenticated) {
         if (state.isAuthenticated) {
-            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-            delay(300)
             onNavigateToHome()
         }
     }
 
-    // Handle errors
-    LaunchedEffect(state.error) {
-        state.error?.let { error ->
-            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-            snackbarHostState.showSnackbar(
-                message = error,
-                duration = SnackbarDuration.Short
-            )
-            viewModel.clearError()
-        }
-    }
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .clickable(
+                indication = null,
+                interactionSource = remember { MutableInteractionSource() }
+            ) { focusManager.clearFocus() }
+    ) {
+        // Background
+        FloatingOrbsBackground()
 
-    // Loading dialog
-    if (state.isLoading) {
-        LoadingDialog(
-            isLoading = true,
-            message = if (state.isLoginMode) "נכנס..." else "יוצר חשבון..."
-        )
-    }
-
-    Box(modifier = Modifier.fillMaxSize()) {
-        // Gradient background
-        Box(
+        // Fixed height content - no scrolling
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .gradientBackground(
-                    colors = listOf(
-                        colors.gradientStart.copy(alpha = 0.8f),
-                        colors.gradientMiddle.copy(alpha = 0.6f),
-                        colors.gradientEnd.copy(alpha = 0.8f)
-                    )
-                )
-        )
+                .statusBarsPadding()
+                .navigationBarsPadding()
+                .padding(horizontal = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.SpaceBetween // Distribute space evenly
+        ) {
+            // Top spacing
+            Spacer(modifier = Modifier.height(if (isSmallScreen) 16.dp else 32.dp))
 
-        // Using existing FloatingOrbsBackground
-        FloatingOrbsBackground(
-            modifier = Modifier.fillMaxSize(),
-            orbCount = 3,
-            alpha = 0.6f
-        )
+            // Header Section - Fixed size
+            AuthHeader(
+                greeting = greeting,
+                subtitle = if (state.isLoginMode) "התחבר לחשבון שלך" else "צור חשבון חדש",
+                isSmallScreen = isSmallScreen,
+                modifier = Modifier.organicEntrance(delay = 0)
+            )
 
-        Scaffold(
-            containerColor = Color.Transparent,
-            snackbarHost = { SnackbarHost(snackbarHostState) }
-        ) { paddingValues ->
-            Column(
+            // Form Section - Flexible size
+            Box(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-                    .padding(horizontal = 16.dp)
-                    .verticalScroll(rememberScrollState()),
-                horizontalAlignment = Alignment.CenterHorizontally
+                    .weight(1f) // Take available space
+                    .fillMaxWidth(),
+                contentAlignment = Alignment.Center
             ) {
-                Spacer(modifier = Modifier.height(48.dp))
-
-                // Auth Header
-                AuthHeader(
-                    greeting = greeting,
-                    subtitle = subtitle,
-                    modifier = Modifier.organicEntrance(delay = 0)
-                )
-
-                Spacer(modifier = Modifier.height(32.dp))
-
-                // Auth Form Card
                 AuthFormCard(
                     state = state,
                     viewModel = viewModel,
+                    isSmallScreen = isSmallScreen,
                     modifier = Modifier.organicEntrance(delay = 200)
                 )
+            }
 
-                Spacer(modifier = Modifier.height(16.dp))
-
+            // Bottom Section - Fixed size
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.padding(bottom = if (isSmallScreen) 16.dp else 24.dp)
+            ) {
                 // Guest Mode Button
                 GuestModeButton(
                     onClick = {
@@ -269,10 +196,14 @@ fun LoginRegisterScreen(
                     },
                     modifier = Modifier.organicEntrance(delay = 400)
                 )
-
-                Spacer(modifier = Modifier.height(32.dp))
             }
         }
+
+        // Loading Dialog
+        LoadingDialog(
+            isLoading = state.isLoading,
+            message = if (state.isLoginMode) "מתחבר..." else "יוצר חשבון..."
+        )
     }
 }
 
@@ -280,6 +211,7 @@ fun LoginRegisterScreen(
 private fun AuthHeader(
     greeting: String,
     subtitle: String,
+    isSmallScreen: Boolean,
     modifier: Modifier = Modifier
 ) {
     val colors = LocalExtendedColors.current
@@ -287,12 +219,12 @@ private fun AuthHeader(
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(if (isSmallScreen) 8.dp else 12.dp)
     ) {
         // Logo
         Card(
             modifier = Modifier
-                .size(96.dp)
+                .size(if (isSmallScreen) 72.dp else 96.dp)
                 .modernPressAnimation(),
             shape = CircleShape,
             colors = CardDefaults.cardColors(
@@ -307,7 +239,7 @@ private fun AuthHeader(
                 Icon(
                     Icons.Default.ShoppingCart,
                     contentDescription = null,
-                    modifier = Modifier.size(48.dp),
+                    modifier = Modifier.size(if (isSmallScreen) 36.dp else 48.dp),
                     tint = Color.White
                 )
             }
@@ -315,14 +247,14 @@ private fun AuthHeader(
 
         Text(
             text = greeting,
-            style = MaterialTheme.typography.headlineMedium,
+            style = if (isSmallScreen) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center
         )
 
         Text(
             text = subtitle,
-            style = MaterialTheme.typography.bodyLarge,
+            style = if (isSmallScreen) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.bodyLarge,
             textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
         )
@@ -333,15 +265,16 @@ private fun AuthHeader(
 private fun AuthFormCard(
     state: AuthState,
     viewModel: AuthViewModel,
+    isSmallScreen: Boolean,
     modifier: Modifier = Modifier
 ) {
     val focusManager = LocalFocusManager.current
     val colors = LocalExtendedColors.current
 
-    // Use Box for proper layering instead of Card with glassmorphic
     Box(
         modifier = modifier
             .fillMaxWidth()
+            .wrapContentHeight()
             .clip(GlassmorphicShapes.GlassCardLarge)
     ) {
         // Glass background layer
@@ -354,12 +287,12 @@ private fun AuthFormCard(
                 )
         )
 
-        // Content layer on top
+        // Content layer
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(if (isSmallScreen) 16.dp else 24.dp),
+            verticalArrangement = Arrangement.spacedBy(if (isSmallScreen) 12.dp else 16.dp)
         ) {
             // Mode toggle
             AuthModeToggle(
@@ -367,6 +300,7 @@ private fun AuthFormCard(
                 onToggle = viewModel::toggleMode
             )
 
+            // Email field
             OutlinedTextField(
                 value = state.email,
                 onValueChange = viewModel::updateEmail,
@@ -397,7 +331,6 @@ private fun AuthFormCard(
                     unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
                     focusedLeadingIconColor = colors.electricMint,
                     unfocusedLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    // For outlined text fields, use container colors like this:
                     focusedContainerColor = Color.White.copy(alpha = 0.3f),
                     unfocusedContainerColor = Color.White.copy(alpha = 0.2f),
                     errorContainerColor = Color.White.copy(alpha = 0.2f),
@@ -418,14 +351,10 @@ private fun AuthFormCard(
                     )
                 },
                 trailingIcon = {
-                    IconButton(
-                        onClick = viewModel::togglePasswordVisibility
-                    ) {
+                    IconButton(onClick = viewModel::togglePasswordVisibility) {
                         Icon(
-                            imageVector = if (state.showPassword) Icons.Default.VisibilityOff
-                            else Icons.Default.Visibility,
-                            contentDescription = null,
-                            tint = colors.electricMint
+                            if (state.showPassword) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                            contentDescription = if (state.showPassword) "הסתר סיסמה" else "הצג סיסמה"
                         )
                     }
                 },
@@ -436,11 +365,12 @@ private fun AuthFormCard(
                     imeAction = if (state.isLoginMode) ImeAction.Done else ImeAction.Next
                 ),
                 keyboardActions = KeyboardActions(
-                    onDone = {
-                        if (state.isLoginMode) {
-                            viewModel.login()
-                        }
-                    }
+                    onNext = if (!state.isLoginMode) {
+                        { focusManager.moveFocus(FocusDirection.Down) }
+                    } else null,
+                    onDone = if (state.isLoginMode) {
+                        { viewModel.login() }
+                    } else null
                 ),
                 isError = state.passwordError != null,
                 supportingText = state.passwordError?.let { { Text(it) } },
@@ -463,45 +393,51 @@ private fun AuthFormCard(
                 )
             )
 
-            // Confirm password for registration
-            OutlinedTextField(
-                value = state.confirmPassword,
-                onValueChange = viewModel::updateConfirmPassword,
-                label = { Text("אשר סיסמה") },
-                leadingIcon = {
-                    Icon(
-                        Icons.Default.Lock,
-                        contentDescription = null,
-                        tint = colors.electricMint
+            // Confirm password for registration ONLY
+            AnimatedVisibility(
+                visible = !state.isLoginMode,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut()
+            ) {
+                OutlinedTextField(
+                    value = state.confirmPassword,
+                    onValueChange = viewModel::updateConfirmPassword,
+                    label = { Text("אשר סיסמה") },
+                    leadingIcon = {
+                        Icon(
+                            Icons.Default.Lock,
+                            contentDescription = null,
+                            tint = colors.electricMint
+                        )
+                    },
+                    visualTransformation = if (state.showPassword) VisualTransformation.None
+                    else PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Password,
+                        imeAction = ImeAction.Done
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onDone = { viewModel.register() }
+                    ),
+                    isError = state.confirmPasswordError != null,
+                    supportingText = state.confirmPasswordError?.let { { Text(it) } },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = GlassmorphicShapes.TextField,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = colors.electricMint,
+                        unfocusedBorderColor = colors.borderDefault.copy(alpha = 0.5f),
+                        errorBorderColor = colors.highPrice,
+                        focusedLabelColor = colors.electricMint,
+                        unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        focusedLeadingIconColor = colors.electricMint,
+                        unfocusedLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        focusedContainerColor = Color.White.copy(alpha = 0.3f),
+                        unfocusedContainerColor = Color.White.copy(alpha = 0.2f),
+                        errorContainerColor = Color.White.copy(alpha = 0.2f),
+                        disabledContainerColor = Color.White.copy(alpha = 0.1f)
                     )
-                },
-                visualTransformation = if (state.showPassword) VisualTransformation.None
-                else PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Password,
-                    imeAction = ImeAction.Done
-                ),
-                keyboardActions = KeyboardActions(
-                    onDone = { viewModel.register() }
-                ),
-                isError = state.confirmPasswordError != null,
-                supportingText = state.confirmPasswordError?.let { { Text(it) } },
-                modifier = Modifier.fillMaxWidth(),
-                shape = GlassmorphicShapes.TextField,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = colors.electricMint,
-                    unfocusedBorderColor = colors.borderDefault.copy(alpha = 0.5f),
-                    errorBorderColor = colors.highPrice,
-                    focusedLabelColor = colors.electricMint,
-                    unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    focusedLeadingIconColor = colors.electricMint,
-                    unfocusedLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    focusedContainerColor = Color.White.copy(alpha = 0.3f),
-                    unfocusedContainerColor = Color.White.copy(alpha = 0.2f),
-                    errorContainerColor = Color.White.copy(alpha = 0.2f),
-                    disabledContainerColor = Color.White.copy(alpha = 0.1f)
                 )
-            )
+            }
 
             // Remember me checkbox (login only)
             AnimatedVisibility(
@@ -540,24 +476,26 @@ private fun AuthFormCard(
                         viewModel.register()
                     }
                 },
-                enabled = !state.isLoading, // Fixed: was using state.isAuthenticated
+                enabled = !state.isLoading,
                 isLoading = state.isLoading,
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // Terms text
+            // Terms text (smaller on small screens)
             Text(
                 text = "בהמשך, אתה מסכים לתנאי השימוש ומדיניות הפרטיות",
-                style = MaterialTheme.typography.bodySmall,
+                style = if (isSmallScreen) MaterialTheme.typography.labelSmall else MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 8.dp)
+                    .padding(top = if (isSmallScreen) 4.dp else 8.dp)
             )
         }
     }
 }
+
+// ... Rest of the components (AuthModeToggle, ToggleButton, GuestModeButton, PrimaryActionButton) remain the same ...
 
 @Composable
 private fun AuthModeToggle(

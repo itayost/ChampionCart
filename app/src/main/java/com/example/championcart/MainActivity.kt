@@ -18,7 +18,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         // Enable edge-to-edge
-        enableEdgeToEdge()
+        //enableEdgeToEdge()
 
         setContent {
             // ENABLE ALL YOUR EXISTING DESIGN SYSTEMS
