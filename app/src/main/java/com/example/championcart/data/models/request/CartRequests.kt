@@ -2,20 +2,23 @@ package com.example.championcart.data.models.request
 
 import com.google.gson.annotations.SerializedName
 
-
 /**
- * Cheapest cart request matching server API
- * POST /cheapest-cart-all-chains
+ * Request to save a cart
  */
-data class CheapestCartRequest(
-    @SerializedName("city")
-    val city: String,
+data class CartRequest(
+    @SerializedName("name")
+    val name: String,
     @SerializedName("items")
     val items: List<CartItem>
 )
 
 /**
- * Cart item for API requests
+ * Request to save a cart (alias for backward compatibility)
+ */
+typealias SaveCartRequest = CartRequest
+
+/**
+ * Item in a cart (for requests)
  */
 data class CartItem(
     @SerializedName("item_name")
@@ -25,16 +28,11 @@ data class CartItem(
 )
 
 /**
- * Save cart request matching server API
- * POST /save-cart
+ * Request for cheapest cart calculation
  */
-data class SaveCartRequest(
-    @SerializedName("cart_name")
-    val cartName: String,
-    @SerializedName("email")
-    val email: String,
-    @SerializedName("city")
-    val city: String,
+data class CheapestCartRequest(
     @SerializedName("items")
-    val items: List<CartItem>
+    val items: List<CartItem>,
+    @SerializedName("city")
+    val city: String
 )

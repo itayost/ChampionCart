@@ -1,67 +1,34 @@
 package com.example.championcart.domain.repository
 
+import com.example.championcart.data.models.request.CartItem
 import com.example.championcart.domain.models.*
 
 interface PriceRepository {
-    /**
-     * Search products by name and city
-     * Matches: GET /prices/by-item/{city}/{item_name}
-     */
     suspend fun searchProducts(
-        city: String,
-        productName: String,
-        groupByCode: Boolean = true,
-        limit: Int? = 50
+        query: String,
+        city: String?
     ): Result<List<GroupedProduct>>
 
-    /**
-     * Get identical products across chains
-     * Matches: GET /prices/identical-products/{city}/{item_name}
-     */
-    suspend fun getIdenticalProducts(
-        city: String,
-        productName: String,
-        limit: Int? = 50
-    ): Result<List<GroupedProduct>>
-
-    /**
-     * Find cheapest cart across all chains
-     * Matches: POST /cheapest-cart-all-chains
-     */
-    suspend fun findCheapestCart(
-        city: String,
-        items: List<CartProduct>
-    ): Result<CheapestCartResult>
-
-    /**
-     * Get list of all available cities
-     * Matches: GET /cities-list
-     */
-    suspend fun getCitiesList(): Result<List<String>>
-
-    /**
-     * Get cities with store counts
-     * Matches: GET /cities-list-with-stores
-     */
-    suspend fun getCitiesWithStores(): Result<List<String>>
-
-    /**
-     * Get all prices for a specific store
-     * Matches: GET /prices/{db_name}/store/{snif_key}
-     */
-    suspend fun getStoreProducts(
-        dbName: String,  // "shufersal" or "victory"
-        snifKey: String  // Store identifier
+    suspend fun searchProductsV2(
+        query: String,
+        city: String?,
+        store: String?,
+        exactMatch: Boolean
     ): Result<List<Product>>
 
-    /**
-     * Get all prices for a specific item code
-     * Matches: GET /prices/{db_name}/item_code/{item_code}
-     */
-    suspend fun getProductByItemCode(
-        dbName: String,  // "shufersal" or "victory"
-        itemCode: String // Product barcode
-    ): Result<List<Product>>
+    suspend fun getCheapestCart(
+        items: List<CartItem>,
+        city: String
+    ): Result<CheapestCart>
 
-    // REMOVED: searchProductsWithFilters() - server doesn't support advanced filtering
+    suspend fun getSavedCarts(): Result<List<Cart>>
+
+    suspend fun saveCart(cart: Cart): Result<Unit>
+
+    suspend fun deleteCart(cartName: String): Result<Unit>
+
+    suspend fun getCheapestCartForProducts(
+        products: List<CartProduct>,
+        city: String
+    ): Result<CheapestCart>
 }

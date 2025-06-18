@@ -7,7 +7,6 @@ import com.example.championcart.data.models.request.CheapestCartRequest
 import com.example.championcart.data.models.response.*
 import com.example.championcart.domain.models.*
 import com.example.championcart.domain.repository.PriceRepository
-import com.google.gson.Gson
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -16,208 +15,100 @@ class PriceRepositoryImpl @Inject constructor(
     private val api: ChampionCartApi
 ) : PriceRepository {
 
+    companion object {
+        private const val TAG = "PriceRepository"
+    }
+
     override suspend fun searchProducts(
-        city: String,
-        productName: String,
-        groupByCode: Boolean,
-        limit: Int?
+        query: String,
+        city: String?,
+        limit: Int
     ): Result<List<GroupedProduct>> {
         return try {
-            val response = api.searchProducts(city, productName, groupByCode, limit)
+            Log.d(TAG, "Searching products: query=$query, city=$city, limit=$limit")
+            val response = api.searchProducts(query, city, limit)
+            Log.d(TAG, "Search response received: ${response.size} products")
 
-            if (response.isSuccessful) {
-                val responseBody = response.body()
-                Log.d("PriceRepository", "Search response: ${Gson().toJson(responseBody)}")
-
-                responseBody?.let { items ->
-                    val groupedProducts = items.map { it.toDomainModel() }
-                    Result.success(groupedProducts)
-                } ?: Result.failure(Exception("Empty response body"))
-            } else {
-                val errorBody = response.errorBody()?.string()
-                Result.failure(Exception("Search failed: ${parseErrorMessage(errorBody)}"))
-            }
+            val products = response.map { it.toDomainModel() }
+            Log.d(TAG, "Successfully mapped ${products.size} products")
+            Result.success(products)
         } catch (e: Exception) {
-            Log.e("PriceRepository", "Search error", e)
+            Log.e(TAG, "Error searching products", e)
             Result.failure(e)
         }
     }
 
-    override suspend fun getIdenticalProducts(
-        city: String,
-        productName: String,
-        limit: Int?
-    ): Result<List<GroupedProduct>> {
+    override suspend fun getCheapestCart(
+        items: List<CartItem>,
+        city: String
+    ): Result<CheapestCart> {
         return try {
-            val response = api.getIdenticalProducts(city, productName, limit)
-
-            if (response.isSuccessful) {
-                val responseBody = response.body()
-                Log.d("PriceRepository", "Identical products response: ${Gson().toJson(responseBody)}")
-
-                responseBody?.let { items ->
-                    val groupedProducts = items.map { it.toDomainModel() }
-                    Result.success(groupedProducts)
-                } ?: Result.failure(Exception("Empty response body"))
-            } else {
-                val errorBody = response.errorBody()?.string()
-                Result.failure(Exception("Get identical products failed: ${parseErrorMessage(errorBody)}"))
-            }
+            Log.d(TAG, "Getting cheapest cart for ${items.size} items in $city")
+            val request = CheapestCartRequest(items = items, city = city)
+            val response = api.getCheapestCart(request)
+            Log.d(TAG, "Cheapest cart response: store=${response.store}, total=${response.total}")
+            Result.success(response.toDomainModel())
         } catch (e: Exception) {
-            Log.e("PriceRepository", "Get identical products error", e)
+            Log.e(TAG, "Error getting cheapest cart", e)
             Result.failure(e)
         }
     }
 
-    override suspend fun findCheapestCart(
-        city: String,
-        items: List<CartProduct>
-    ): Result<CheapestCartResult> {
+    override suspend fun getSavedCarts(): Result<List<Cart>> {
         return try {
-            val request = CheapestCartRequest(
-                city = city,
-                items = items.map { CartItem(it.itemName, it.quantity) }
-            )
-
-            val response = api.findCheapestCart(request)
-
-            if (response.isSuccessful) {
-                val responseBody = response.body()
-                Log.d("PriceRepository", "Cheapest cart response: ${Gson().toJson(responseBody)}")
-
-                responseBody?.let { cartResponse ->
-                    val result = cartResponse.toDomainModel()
-                    Result.success(result)
-                } ?: Result.failure(Exception("Empty response body"))
-            } else {
-                val errorBody = response.errorBody()?.string()
-                Result.failure(Exception("Find cheapest cart failed: ${parseErrorMessage(errorBody)}"))
-            }
+            Log.d(TAG, "Fetching saved carts")
+            val response = api.getSavedCarts()
+            Log.d(TAG, "Received ${response.size} saved carts")
+            val carts = response.map { it.toDomainModel() }
+            Result.success(carts)
         } catch (e: Exception) {
-            Log.e("PriceRepository", "Find cheapest cart error", e)
+            Log.e(TAG, "Error fetching saved carts", e)
             Result.failure(e)
         }
     }
 
-    override suspend fun getCitiesList(): Result<List<String>> {
+    override suspend fun saveCart(cart: Cart): Result<Unit> {
         return try {
-            val response = api.getCitiesList()
-
-            if (response.isSuccessful) {
-                val cities = response.body() ?: emptyList()
-                Log.d("PriceRepository", "Cities list response: $cities")
-                Result.success(cities)
-            } else {
-                val errorBody = response.errorBody()?.string()
-                Result.failure(Exception("Get cities list failed: ${parseErrorMessage(errorBody)}"))
-            }
+            Log.d(TAG, "Saving cart: ${cart.name}")
+            val request = cart.toRequest()
+            api.saveCart(request)
+            Log.d(TAG, "Cart saved successfully")
+            Result.success(Unit)
         } catch (e: Exception) {
-            Log.e("PriceRepository", "Get cities list error", e)
+            Log.e(TAG, "Error saving cart", e)
             Result.failure(e)
         }
     }
 
-    override suspend fun getCitiesWithStores(): Result<List<String>> {
+    override suspend fun deleteCart(cartName: String): Result<Unit> {
         return try {
-            val response = api.getCitiesWithStores()
-
-            if (response.isSuccessful) {
-                val cities = response.body() ?: emptyList()
-                Log.d("PriceRepository", "Cities with stores response: $cities")
-                Result.success(cities)
-            } else {
-                val errorBody = response.errorBody()?.string()
-                Result.failure(Exception("Get cities with stores failed: ${parseErrorMessage(errorBody)}"))
-            }
+            Log.d(TAG, "Deleting cart: $cartName")
+            api.deleteCart(cartName)
+            Log.d(TAG, "Cart deleted successfully")
+            Result.success(Unit)
         } catch (e: Exception) {
-            Log.e("PriceRepository", "Get cities with stores error", e)
+            Log.e(TAG, "Error deleting cart", e)
             Result.failure(e)
-        }
-    }
-
-    override suspend fun getStoreProducts(
-        dbName: String,
-        snifKey: String
-    ): Result<List<Product>> {
-        return try {
-            val response = api.getStoreProducts(dbName, snifKey)
-
-            if (response.isSuccessful) {
-                val responseBody = response.body()
-                Log.d("PriceRepository", "Store products response: ${Gson().toJson(responseBody)}")
-
-                responseBody?.let { items ->
-                    val products = items.map { it.toDomainModel() }
-                    Result.success(products)
-                } ?: Result.failure(Exception("Empty response body"))
-            } else {
-                val errorBody = response.errorBody()?.string()
-                Result.failure(Exception("Get store products failed: ${parseErrorMessage(errorBody)}"))
-            }
-        } catch (e: Exception) {
-            Log.e("PriceRepository", "Get store products error", e)
-            Result.failure(e)
-        }
-    }
-
-    override suspend fun getProductByItemCode(
-        dbName: String,
-        itemCode: String
-    ): Result<List<Product>> {
-        return try {
-            val response = api.getProductByItemCode(dbName, itemCode)
-
-            if (response.isSuccessful) {
-                val responseBody = response.body()
-                Log.d("PriceRepository", "Product by item code response: ${Gson().toJson(responseBody)}")
-
-                responseBody?.let { items ->
-                    val products = items.map { it.toDomainModel() }
-                    Result.success(products)
-                } ?: Result.failure(Exception("Empty response body"))
-            } else {
-                val errorBody = response.errorBody()?.string()
-                Result.failure(Exception("Get product by item code failed: ${parseErrorMessage(errorBody)}"))
-            }
-        } catch (e: Exception) {
-            Log.e("PriceRepository", "Get product by item code error", e)
-            Result.failure(e)
-        }
-    }
-
-    // ============ HELPER FUNCTIONS ============
-
-    private fun parseErrorMessage(errorBody: String?): String {
-        return try {
-            if (errorBody != null) {
-                val gson = Gson()
-                val errorResponse = gson.fromJson(errorBody, ApiErrorResponse::class.java)
-                errorResponse.detail
-            } else {
-                "Unknown error"
-            }
-        } catch (e: Exception) {
-            errorBody ?: "Unknown error"
         }
     }
 }
 
-// ============ EXTENSION FUNCTIONS TO CONVERT API MODELS TO DOMAIN MODELS ============
+// Extension functions for converting between data and domain models
 
 private fun GroupedProductResponse.toDomainModel(): GroupedProduct {
-    // Handle both grouped products and single products
+    // Check if this is a single product (has direct price fields) or grouped product (has prices array)
     val pricesList = if (prices != null) {
-        // This is a grouped product with prices array
+        // This is a grouped product with multiple prices
         prices.map { it.toDomainModel() }
     } else if (chain != null && storeId != null && price != null) {
-        // This is a single product - create a single price entry
+        // This is a single product with direct price fields
         listOf(
             StorePrice(
                 chain = chain,
                 storeId = storeId,
                 price = price,
-                originalName = itemName,
-                timestamp = timestamp ?: ""
+                city = city,
+                storeName = storeName
             )
         )
     } else {
@@ -229,12 +120,10 @@ private fun GroupedProductResponse.toDomainModel(): GroupedProduct {
         itemCode = itemCode,
         itemName = itemName,
         prices = pricesList,
-        crossChain = crossChain ?: false,
-        relevanceScore = relevanceScore ?: 0.0,
-        priceComparison = priceComparison?.toDomainModel(),
-        weight = weight,
-        unit = unit,
-        pricePerUnit = pricePerUnit
+        quantity = quantity,
+        unitOfMeasure = unitOfMeasure,
+        manufacturer = manufacturer,
+        priceComparison = priceComparison?.toDomainModel()
     )
 }
 
@@ -243,57 +132,85 @@ private fun StorePriceResponse.toDomainModel(): StorePrice {
         chain = chain,
         storeId = storeId,
         price = price,
-        originalName = originalName,
-        timestamp = timestamp
+        city = city,
+        storeName = storeName,
+        lastUpdated = lastUpdated
     )
 }
 
 private fun PriceComparisonResponse.toDomainModel(): PriceComparison {
     return PriceComparison(
-        bestDeal = bestDeal?.toDomainModel() ?: PriceDeal("", 0.0, ""), // Add null safety
-        worstDeal = worstDeal?.toDomainModel() ?: PriceDeal("", 0.0, ""), // Add null safety
+        bestDeal = bestDeal?.toDomainModel() ?: PriceDeal("", 0.0),
+        worstDeal = worstDeal?.toDomainModel() ?: PriceDeal("", 0.0),
         savings = savings ?: 0.0,
         savingsPercent = savingsPercent ?: 0.0,
-        identicalProduct = identicalProduct ?: false
+        identicalProduct = identicalProduct ?: false,
+        priceRange = priceRange?.toDomainModel()
     )
 }
 
 private fun PriceDealResponse.toDomainModel(): PriceDeal {
     return PriceDeal(
-        chain = chain,
+        store = store,
         price = price,
-        storeId = storeId
+        city = city
     )
 }
 
-private fun ProductResponse.toDomainModel(): Product {
-    return Product(
+private fun PriceRangeResponse.toDomainModel(): PriceRange {
+    return PriceRange(
+        min = min ?: 0.0,
+        max = max ?: 0.0,
+        avg = avg ?: 0.0
+    )
+}
+
+private fun CheapestCartResponse.toDomainModel(): CheapestCart {
+    return CheapestCart(
+        store = store,
+        city = city,
+        total = total,
+        items = items.map { it.toDomainModel() }
+    )
+}
+
+private fun CheapestCartItemResponse.toDomainModel(): CheapestCartItem {
+    return CheapestCartItem(
         itemCode = itemCode,
         itemName = itemName,
-        chain = chain ?: "",
-        storeId = storeId ?: snifKey ?: "",
-        price = price ?: itemPrice,
-        timestamp = timestamp,
-        relevanceScore = relevanceScore,
-        weight = weight,
-        unit = unit,
-        pricePerUnit = pricePerUnit
+        requestedQuantity = requestedQuantity,
+        availableQuantity = availableQuantity,
+        price = price,
+        totalPrice = totalPrice
     )
 }
 
-private fun CheapestCartResponse.toDomainModel(): CheapestCartResult {
-    return CheapestCartResult(
-        chain = chain,
-        storeId = storeId,
-        totalPrice = totalPrice,
-        worstPrice = worstPrice,
-        savings = savings,
-        savingsPercent = savingsPercent,
-        city = city,
-        items = items.map { CartProduct(it.itemName, it.quantity) },
-        itemPrices = itemPrices,
-        allStores = allStores.map {
-            StoreOption(it.chain, it.storeId, it.totalPrice)
+private fun CartResponse.toDomainModel(): Cart {
+    return Cart(
+        name = name,
+        items = items.map { it.toDomainModel() },
+        total = total ?: 0.0,
+        store = store,
+        city = city
+    )
+}
+
+private fun CartItemResponse.toDomainModel(): CartItem {
+    return CartItem(
+        productName = productName,
+        quantity = quantity,
+        price = price ?: 0.0
+    )
+}
+
+private fun Cart.toRequest(): com.example.championcart.data.models.request.CartRequest {
+    return com.example.championcart.data.models.request.CartRequest(
+        name = name,
+        items = items.map {
+            com.example.championcart.data.models.request.CartItem(
+                productName = it.productName,
+                quantity = it.quantity
+            )
         }
     )
 }

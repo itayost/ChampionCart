@@ -3,51 +3,8 @@ package com.example.championcart.data.models.response
 import com.google.gson.annotations.SerializedName
 
 /**
- * Single product response - matches server responses for:
- * - GET /prices/{db_name}/store/{snif_key}
- * - GET /prices/{db_name}/item_code/{item_code}
- * - GET /prices/by-item/{city}/{item_name} (without grouping)
- */
-data class ProductResponse(
-    // Fields from store/item_code endpoints
-    @SerializedName("snif_key")
-    val snifKey: String? = null,
-    @SerializedName("item_code")
-    val itemCode: String,
-    @SerializedName("item_name")
-    val itemName: String,
-    @SerializedName("item_price")
-    val itemPrice: Double? = null,
-    @SerializedName("timestamp")
-    val timestamp: String,
-
-    // Fields from search endpoints (without grouping)
-    @SerializedName("chain")
-    val chain: String? = null,
-    @SerializedName("store_id")
-    val storeId: String? = null,
-    @SerializedName("price")
-    val price: Double? = null,
-    @SerializedName("relevance_score")
-    val relevanceScore: Double? = null,
-    @SerializedName("weight")
-    val weight: Double? = null,
-    @SerializedName("unit")
-    val unit: String? = null,
-    @SerializedName("price_per_unit")
-    val pricePerUnit: Double? = null
-) {
-    // Helper to get actual price regardless of field name
-    fun getActualPrice(): Double = price ?: itemPrice ?: 0.0
-
-    // Helper to get actual store ID
-    fun getActualStoreId(): String = storeId ?: snifKey ?: ""
-}
-
-/**
- * Grouped product response - matches server response for:
- * - GET /prices/by-item/{city}/{item_name}?group_by_code=true
- * - GET /prices/identical-products/{city}/{item_name}
+ * Response for grouped products from search endpoint
+ * Can represent either a grouped product (with prices array) or a single product (with direct price fields)
  */
 data class GroupedProductResponse(
     @SerializedName("item_code")
@@ -58,40 +15,30 @@ data class GroupedProductResponse(
     // For grouped products:
     @SerializedName("prices")
     val prices: List<StorePriceResponse>? = null,
+    @SerializedName("quantity")
+    val quantity: String? = null,
+    @SerializedName("unit_of_measure")
+    val unitOfMeasure: String? = null,
+    @SerializedName("manufacturer")
+    val manufacturer: String? = null,
     @SerializedName("price_comparison")
     val priceComparison: PriceComparisonResponse? = null,
 
-    // For single products (direct fields):
+    // For single products (when returned directly from search):
     @SerializedName("chain")
     val chain: String? = null,
     @SerializedName("store_id")
     val storeId: String? = null,
     @SerializedName("price")
     val price: Double? = null,
-    @SerializedName("timestamp")
-    val timestamp: String? = null,
-
-    // Common fields:
-    @SerializedName("cross_chain")
-    val crossChain: Boolean? = false,
-    @SerializedName("relevance_score")
-    val relevanceScore: Double? = 0.0,
-    @SerializedName("weight")
-    val weight: Double? = null,
-    @SerializedName("unit")
-    val unit: String? = null,
-    @SerializedName("price_per_unit")
-    val pricePerUnit: Double? = null,
-    @SerializedName("multi_store")
-    val multiStore: Boolean? = false,
-    @SerializedName("store_count")
-    val storeCount: Int? = 1,
-    @SerializedName("chain_count")
-    val chainCount: Int? = 1
+    @SerializedName("city")
+    val city: String? = null,
+    @SerializedName("store_name")
+    val storeName: String? = null
 )
 
 /**
- * Store price within grouped product - matches server structure exactly
+ * Store price information
  */
 data class StorePriceResponse(
     @SerializedName("chain")
@@ -100,38 +47,54 @@ data class StorePriceResponse(
     val storeId: String,
     @SerializedName("price")
     val price: Double,
-    @SerializedName("original_name")
-    val originalName: String,
-    @SerializedName("timestamp")
-    val timestamp: String
+    @SerializedName("city")
+    val city: String? = null,
+    @SerializedName("store_name")
+    val storeName: String? = null,
+    @SerializedName("last_updated")
+    val lastUpdated: String? = null
 )
 
 /**
- * Price comparison information - matches server structure exactly
+ * Price comparison information
  */
 data class PriceComparisonResponse(
     @SerializedName("best_deal")
-    val bestDeal: PriceDealResponse?,
+    val bestDeal: PriceDealResponse? = null,
     @SerializedName("worst_deal")
-    val worstDeal: PriceDealResponse?,
+    val worstDeal: PriceDealResponse? = null,
     @SerializedName("savings")
-    val savings: Double?,
+    val savings: Double? = null,
     @SerializedName("savings_percent")
-    val savingsPercent: Double?,
+    val savingsPercent: Double? = null,
     @SerializedName("identical_product")
     val identicalProduct: Boolean? = false,
-    //@SerializedName("price_range")
-    //val priceRange: PriceRangeResponse? = null
+    @SerializedName("price_range")
+    val priceRange: PriceRangeResponse? = null
 )
 
 /**
- * Individual price deal - matches server structure exactly
+ * Price deal information (best/worst)
  */
 data class PriceDealResponse(
-    @SerializedName("chain")
-    val chain: String,
+    @SerializedName("store")
+    val store: String,
     @SerializedName("price")
     val price: Double,
-    @SerializedName("store_id")
-    val storeId: String
+    @SerializedName("city")
+    val city: String? = null
 )
+
+/**
+ * Price range information
+ */
+data class PriceRangeResponse(
+    @SerializedName("min")
+    val min: Double?,
+    @SerializedName("max")
+    val max: Double?,
+    @SerializedName("avg")
+    val avg: Double?
+)
+
+// Cart-related response classes moved to CartResponses.kt
