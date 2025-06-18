@@ -195,7 +195,7 @@ fun SearchTopAppBar(
 /**
  * Collapsing TopAppBar with parallax effect
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalAnimationApi::class)
 @Composable
 fun CollapsingTopAppBar(
     title: String,
@@ -241,7 +241,7 @@ fun CollapsingTopAppBar(
                 AnimatedContent(
                     targetState = collapsed,
                     transitionSpec = {
-                        fadeIn() with fadeOut()
+                        fadeIn() togetherWith fadeOut()
                     }
                 ) { isCollapsed ->
                     Text(

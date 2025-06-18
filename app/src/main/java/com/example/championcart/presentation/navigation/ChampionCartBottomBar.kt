@@ -7,16 +7,17 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
@@ -24,7 +25,48 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
+import com.example.championcart.presentation.navigation.Screen
 import com.example.championcart.ui.theme.*
+
+/**
+ * Bottom navigation items - 4 main screens
+ */
+enum class BottomNavItem(
+    val screen: Screen,
+    val icon: ImageVector,
+    val selectedIcon: ImageVector,
+    val label: String,
+    val labelHebrew: String
+) {
+    HOME(
+        screen = Screen.Home,
+        icon = Icons.Default.Home,
+        selectedIcon = Icons.Filled.Home,
+        label = "Home",
+        labelHebrew = "בית"
+    ),
+    SEARCH(
+        screen = Screen.Search,
+        icon = Icons.Default.Search,
+        selectedIcon = Icons.Filled.Search,
+        label = "Search",
+        labelHebrew = "חיפוש"
+    ),
+    CART(
+        screen = Screen.Cart,
+        icon = Icons.Default.ShoppingCart,
+        selectedIcon = Icons.Filled.ShoppingCart,
+        label = "Cart",
+        labelHebrew = "עגלה"
+    ),
+    PROFILE(
+        screen = Screen.Profile,
+        icon = Icons.Default.Person,
+        selectedIcon = Icons.Filled.Person,
+        label = "Profile",
+        labelHebrew = "פרופיל"
+    )
+}
 
 /**
  * Modern bottom navigation bar with Electric Harmony design
@@ -50,37 +92,24 @@ fun ChampionCartBottomBar(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(Dimensions.bottomNavHeight)
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            Color.Transparent,
-                            MaterialTheme.colorScheme.background.copy(alpha = 0.95f)
-                        ),
-                        startY = 0f,
-                        endY = 100f
-                    )
-                )
+                .height(NavigationTokens.BottomBarHeight)
         ) {
-            // Glass morphism background
+            // Glassmorphic background
             Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(Dimensions.bottomNavHeight)
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
-                    .clip(ComponentShapes.BottomSheet)
-                    .background(MaterialTheme.extendedColors.glassFrosted)
-                    .shadow(
-                        elevation = Dimensions.elevationMedium,
-                        shape = ComponentShapes.BottomSheet,
-                        spotColor = MaterialTheme.extendedColors.electricMintGlow
+                    .fillMaxSize()
+                    .glassmorphic(
+                        intensity = GlassIntensity.Heavy,
+                        shape = GlassmorphicShapes.BottomNav
                     )
             )
 
+            // Navigation items
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
+                    .fillMaxHeight()
+                    .padding(horizontal = SpacingTokens.M),
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -126,81 +155,44 @@ private fun BottomNavItemView(
     val scale by animateFloatAsState(
         targetValue = if (isSelected) 1.1f else 1f,
         animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMedium
+            dampingRatio = SpringSpecs.DampingRatioMediumBounce,
+            stiffness = SpringSpecs.StiffnessMedium
         ),
         label = "scale"
     )
 
-    val iconRotation by animateFloatAsState(
-        targetValue = if (isSelected) 360f else 0f,
-        animationSpec = tween(
-            durationMillis = 600,
-            easing = FastOutSlowInEasing
-        ),
-        label = "rotation"
-    )
-
     val contentColor by animateColorAsState(
         targetValue = if (isSelected) {
-            MaterialTheme.extendedColors.electricMint
+            MaterialTheme.colorScheme.extended.electricMint
         } else {
             MaterialTheme.colorScheme.onSurfaceVariant
         },
-        animationSpec = tween(300),
-        label = "color"
+        animationSpec = spring(),
+        label = "contentColor"
     )
 
     Box(
         modifier = Modifier
-            .size(64.dp)
+            .scale(scale)
             .clip(CircleShape)
             .clickable(
                 interactionSource = interactionSource,
-                indication = null
-            ) { onClick() },
+                indication = null,
+                onClick = onClick
+            )
+            .padding(SpacingTokens.S),
         contentAlignment = Alignment.Center
     ) {
-        // Selected background glow
-        AnimatedVisibility(
-            visible = isSelected,
-            enter = scaleIn(
-                animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioMediumBouncy,
-                    stiffness = Spring.StiffnessMedium
-                )
-            ) + fadeIn(),
-            exit = scaleOut() + fadeOut()
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .background(
-                        brush = Brush.radialGradient(
-                            colors = listOf(
-                                MaterialTheme.extendedColors.electricMintGlow,
-                                Color.Transparent
-                            )
-                        )
-                    )
-            )
-        }
-
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-            modifier = Modifier.scale(scale)
+            verticalArrangement = Arrangement.spacedBy(SpacingTokens.XXS)
         ) {
+            // Icon with badge
             Box {
                 Icon(
-                    imageVector = if (isSelected) item.selectedIcon else item.unselectedIcon,
-                    contentDescription = item.contentDescription,
-                    modifier = Modifier
-                        .size(24.dp)
-                        .graphicsLayer {
-                            rotationZ = if (isSelected) iconRotation else 0f
-                        },
+                    imageVector = if (isSelected) item.selectedIcon else item.icon,
+                    contentDescription = item.labelHebrew,
+                    modifier = Modifier.size(SizingTokens.IconM),
                     tint = contentColor
                 )
 
@@ -215,18 +207,17 @@ private fun BottomNavItemView(
                 }
             }
 
-            // Label with fade animation
+            // Label
             AnimatedVisibility(
                 visible = isSelected,
                 enter = fadeIn() + expandVertically(),
                 exit = fadeOut() + shrinkVertically()
             ) {
                 Text(
-                    text = item.label,
+                    text = item.labelHebrew,
                     style = MaterialTheme.typography.labelSmall,
                     color = contentColor,
-                    fontWeight = FontWeight.Medium,
-                    modifier = Modifier.padding(top = 4.dp)
+                    fontWeight = FontWeight.Medium
                 )
             }
         }
@@ -244,11 +235,11 @@ private fun CartBadge(
         modifier = modifier
             .size(20.dp)
             .clip(CircleShape)
-            .background(MaterialTheme.extendedColors.errorRed)
+            .background(MaterialTheme.colorScheme.extended.neonCoral)
             .animateContentSize(
                 animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioMediumBouncy,
-                    stiffness = Spring.StiffnessMedium
+                    dampingRatio = SpringSpecs.DampingRatioMediumBounce,
+                    stiffness = SpringSpecs.StiffnessMedium
                 )
             ),
         contentAlignment = Alignment.Center
@@ -272,7 +263,6 @@ private fun shouldShowBottomBar(currentRoute: String?): Boolean {
         Screen.Home.route,
         Screen.Search.route,
         Screen.Cart.route,
-        Screen.Stores.route,
         Screen.Profile.route
     )
 }

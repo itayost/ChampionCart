@@ -12,7 +12,6 @@ import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
-import com.example.championcart.ui.theme.extendedColors
 import kotlin.math.*
 import kotlin.random.Random
 
@@ -39,7 +38,7 @@ fun FloatingOrbsBackground(
     alpha: Float = 0.6f
 ) {
     val density = LocalDensity.current
-    val colors = MaterialTheme.extendedColors
+    val colors = MaterialTheme.colorScheme
 
     // Create stable orbs that persist across recompositions
     val orbs = remember {
@@ -50,10 +49,10 @@ fun FloatingOrbsBackground(
                 baseY = Random.nextFloat(),
                 size = Random.nextFloat() * 80f + 40f, // 40-120dp
                 color = when (index % 4) {
-                    0 -> colors.electricMint
-                    1 -> colors.cosmicPurple
-                    2 -> colors.neonCoral
-                    else -> colors.success
+                    0 -> colors.primary
+                    1 -> colors.secondary
+                    2 -> colors.tertiary
+                    else -> colors.error
                 },
                 speed = Random.nextFloat() * 0.5f + 0.3f, // 0.3-0.8
                 amplitude = Random.nextFloat() * 50f + 30f, // 30-80dp
@@ -155,7 +154,7 @@ private fun DrawScope.drawFloatingOrb(
 fun HeroOrbs(
     modifier: Modifier = Modifier
 ) {
-    val colors = MaterialTheme.extendedColors
+    val colors = MaterialTheme.colorScheme
 
     // Main animation
     val infiniteTransition = rememberInfiniteTransition(label = "hero_orbs")
@@ -193,9 +192,9 @@ fun HeroOrbs(
             )
 
             val orbColor = when (index) {
-                0 -> colors.electricMint
-                1 -> colors.cosmicPurple
-                else -> colors.neonCoral
+                0 -> colors.primary
+                1 -> colors.secondary
+                else -> colors.tertiary
             }
 
             drawFloatingOrb(
@@ -214,7 +213,7 @@ fun HeroOrbs(
 @Composable
 fun CardBackgroundOrbs(
     modifier: Modifier = Modifier,
-    primaryColor: Color = MaterialTheme.extendedColors.electricMint
+    primaryColor: Color = MaterialTheme.colorScheme.primary
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "card_orbs")
     val time by infiniteTransition.animateFloat(

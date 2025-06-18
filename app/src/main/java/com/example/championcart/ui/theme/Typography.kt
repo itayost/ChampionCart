@@ -397,6 +397,30 @@ object AppTextStyles {
         color = Color(0xFF9E9E9E)
     )
 
+        val productNameSmall = TextStyle(
+            fontFamily = InterFontFamily,
+            fontWeight = FontWeight(500),
+            fontSize = 14.sp,
+            lineHeight = 20.sp,
+            letterSpacing = 0.sp
+        )
+
+        val storeNameSmall = TextStyle(
+            fontFamily = InterFontFamily,
+            fontWeight = FontWeight(500),
+            fontSize = 12.sp,
+            lineHeight = 16.sp,
+            letterSpacing = 0.1.sp
+        )
+
+        val buttonTextSmall = TextStyle(
+            fontFamily = InterFontFamily,
+            fontWeight = FontWeight(600),
+            fontSize = 12.sp,
+            lineHeight = 16.sp,
+            letterSpacing = 0.1.sp
+        )
+
     // Product & Store Names - Enhanced hierarchy
     val productNameLarge = TextStyle(
         fontFamily = InterFontFamily,

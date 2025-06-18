@@ -42,6 +42,7 @@ class ProfileViewModel @Inject constructor(
     init {
         loadUserProfile()
         loadLocalPreferences()
+        loadSavedCarts()
     }
 
     private fun loadUserProfile() {
@@ -54,9 +55,9 @@ class ProfileViewModel @Inject constructor(
                     val userName = userEmail
                         .substringBefore("@")
                         .split(".", "_", "-")
-                        .firstOrNull()
-                        ?.replaceFirstChar { it.uppercase() }
-                        ?: "User"
+                        .joinToString(" ") { part ->
+                            part.replaceFirstChar { it.uppercase() }
+                        }
 
                     _state.update {
                         it.copy(
@@ -100,10 +101,19 @@ class ProfileViewModel @Inject constructor(
             try {
                 // Load from TokenManager/SharedPreferences
                 val savedCity = tokenManager.getSelectedCity()
+                val savedLanguage = tokenManager.getLanguage() ?: "en"
+                val savedTheme = tokenManager.getTheme() ?: "system"
+                val notificationsEnabled = tokenManager.getNotificationsEnabled()
+
                 val preferences = UserPreferences(
                     defaultCity = savedCity,
-                    language = Language.ENGLISH, // Could add to TokenManager later
-                    theme = ThemePreference.SYSTEM // Could add to TokenManager later
+                    language = Language.values().find { it.code == savedLanguage } ?: Language.ENGLISH,
+                    theme = when (savedTheme) {
+                        "light" -> ThemePreference.LIGHT
+                        "dark" -> ThemePreference.DARK
+                        else -> ThemePreference.SYSTEM
+                    },
+                    notificationsEnabled = notificationsEnabled,
                 )
 
                 _state.update {
@@ -121,6 +131,30 @@ class ProfileViewModel @Inject constructor(
                         selectedCity = "Tel Aviv"
                     )
                 }
+            }
+        }
+    }
+
+    private fun loadSavedCarts() {
+        if (_state.value.isGuest) return
+
+        viewModelScope.launch {
+            try {
+                authRepository.getUserSavedCarts().fold(
+                    onSuccess = { carts ->
+                        _state.update {
+                            it.copy(savedCarts = carts)
+                        }
+                    },
+                    onFailure = { error ->
+                        // Don't show error for saved carts, just use empty list
+                        _state.update {
+                            it.copy(savedCarts = emptyList())
+                        }
+                    }
+                )
+            } catch (e: Exception) {
+                // Silent fail for saved carts
             }
         }
     }
@@ -162,6 +196,7 @@ class ProfileViewModel @Inject constructor(
             try {
                 authRepository.logout()
                 tokenManager.clearToken()
+                tokenManager.clearUserEmail()
 
                 _state.update {
                     it.copy(
@@ -211,8 +246,8 @@ class ProfileViewModel @Inject constructor(
     fun updateLanguage(language: Language) {
         viewModelScope.launch {
             try {
-                // For now just update local state
-                // Could add tokenManager.saveLanguage(language.code) later
+                tokenManager.saveLanguage(language.code)
+
                 val updatedPreferences = _state.value.userPreferences.copy(
                     language = language
                 )
@@ -235,8 +270,13 @@ class ProfileViewModel @Inject constructor(
     fun updateTheme(theme: ThemePreference) {
         viewModelScope.launch {
             try {
-                // For now just update local state
-                // Could add tokenManager.saveTheme(theme) later
+                val themeCode = when (theme) {
+                    ThemePreference.LIGHT -> "light"
+                    ThemePreference.DARK -> "dark"
+                    ThemePreference.SYSTEM -> "system"
+                }
+                tokenManager.saveTheme(themeCode)
+
                 val updatedPreferences = _state.value.userPreferences.copy(
                     theme = theme
                 )
@@ -259,6 +299,8 @@ class ProfileViewModel @Inject constructor(
     fun toggleNotifications(enabled: Boolean) {
         viewModelScope.launch {
             try {
+                tokenManager.saveNotificationsEnabled(enabled)
+
                 val updatedPreferences = _state.value.userPreferences.copy(
                     notificationsEnabled = enabled
                 )
@@ -271,28 +313,7 @@ class ProfileViewModel @Inject constructor(
                 }
             } catch (e: Exception) {
                 _state.update {
-                    it.copy(error = "Error saving notification preference: ${e.message}")
-                }
-            }
-        }
-    }
-
-    fun togglePriceAlerts(enabled: Boolean) {
-        viewModelScope.launch {
-            try {
-                val updatedPreferences = _state.value.userPreferences.copy(
-                    priceAlertsEnabled = enabled
-                )
-
-                _state.update {
-                    it.copy(
-                        userPreferences = updatedPreferences,
-                        error = null
-                    )
-                }
-            } catch (e: Exception) {
-                _state.update {
-                    it.copy(error = "Error saving price alerts preference: ${e.message}")
+                    it.copy(error = "Error updating notification settings: ${e.message}")
                 }
             }
         }
@@ -300,5 +321,11 @@ class ProfileViewModel @Inject constructor(
 
     fun clearError() {
         _state.update { it.copy(error = null) }
+    }
+
+    fun refresh() {
+        loadUserProfile()
+        loadLocalPreferences()
+        loadSavedCarts()
     }
 }

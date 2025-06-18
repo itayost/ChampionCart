@@ -111,7 +111,7 @@ fun GlassmorphicSearchBar(
             placeholder = {
                 Text(
                     text = placeholder,
-                    style = AppTextStyles.inputHint,
+                    style = AppTextStyles.hebrewBodyMedium,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
             },
@@ -150,7 +150,7 @@ fun GlassmorphicSearchBar(
                 cursorColor = MaterialTheme.colorScheme.extended.electricMint
             ),
             shape = GlassmorphicShapes.SearchField,
-            textStyle = AppTextStyles.inputText.withSmartHebrewSupport(query)
+            textStyle = AppTextStyles.hebrewBodyMedium.withSmartHebrewSupport(query)
         )
     }
 

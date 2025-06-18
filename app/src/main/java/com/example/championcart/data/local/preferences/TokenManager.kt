@@ -131,4 +131,33 @@ class TokenManager(context: Context) {
     fun isLoggedIn(): Boolean {
         return !getToken().isNullOrBlank() && !getUserEmail().isNullOrBlank()
     }
+
+    // Language preference
+    fun saveLanguage(languageCode: String) {
+        prefs.edit().putString(Constants.KEY_USER_LANGUAGE, languageCode).apply()
+    }
+
+    fun getLanguage(): String? {
+        return prefs.getString(Constants.KEY_USER_LANGUAGE, null)
+    }
+
+    // Theme preference
+    fun saveTheme(theme: String) {
+        prefs.edit().putString(Constants.KEY_USER_THEME, theme).apply()
+    }
+
+    fun getTheme(): String? {
+        return prefs.getString(Constants.KEY_USER_THEME, null)
+    }
+
+    // Notification preferences
+    fun saveNotificationsEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(Constants.KEY_NOTIFICATIONS_ENABLED, enabled).apply()
+    }
+
+    fun getNotificationsEnabled(): Boolean {
+        return prefs.getBoolean(Constants.KEY_NOTIFICATIONS_ENABLED, true)
+    }
+
+
 }

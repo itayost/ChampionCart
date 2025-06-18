@@ -1,26 +1,56 @@
 package com.example.championcart.presentation.components
 
-import androidx.compose.animation.core.*
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
-import androidx.compose.ui.draw.*
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.*
-import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.example.championcart.ui.theme.*
+import com.example.championcart.ui.theme.LocalExtendedColors
 
 /**
  * Champion Cart - Premium Glass Components
@@ -37,7 +67,7 @@ fun Modifier.premiumGlass(
     glowColor: Color? = null,
     shape: Shape = RoundedCornerShape(24.dp)
 ) = composed {
-    val colors = MaterialTheme.extendedColors
+    val colors = LocalExtendedColors.current // FIXED: Using LocalExtendedColors.current
 
     this
         .clip(shape)
@@ -77,71 +107,50 @@ fun GlassCard(
 ) {
     val haptics = LocalHapticFeedback.current
     val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
 
-    // Hover animation
-    var isPressed by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.96f else 1f,
+        targetValue = if (isPressed) 0.98f else 1f,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMedium
+            stiffness = Spring.StiffnessHigh
         ),
         label = "card_scale"
-    )
-
-    val glowAlpha by animateFloatAsState(
-        targetValue = if (isPressed) 0.8f else 0.4f,
-        animationSpec = tween(300),
-        label = "glow_alpha"
     )
 
     Box(
         modifier = modifier
             .scale(scale)
             .premiumGlass(
-                glowColor = glowColor?.copy(alpha = glowAlpha),
-                shape = shape
+                shape = shape,
+                glowColor = glowColor
             )
-            .let { mod ->
+            .then(
                 if (onClick != null) {
-                    mod.clickable(
+                    Modifier.clickable(
                         interactionSource = interactionSource,
                         indication = null
                     ) {
                         haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                         onClick()
                     }
-                } else mod
-            }
-            .padding(20.dp),
+                } else Modifier
+            ),
         content = content
     )
-
-    // Handle press state
-    LaunchedEffect(interactionSource) {
-        interactionSource.interactions.collect { interaction ->
-            when (interaction) {
-                is androidx.compose.foundation.interaction.PressInteraction.Press -> {
-                    isPressed = true
-                }
-                is androidx.compose.foundation.interaction.PressInteraction.Release,
-                is androidx.compose.foundation.interaction.PressInteraction.Cancel -> {
-                    isPressed = false
-                }
-            }
-        }
-    }
 }
 
 /**
- * Glass surface for headers and hero sections
+ * Hero glass card with animated background orbs
  */
 @Composable
-fun GlassHeroSection(
+fun HeroGlassCard(
     modifier: Modifier = Modifier,
     backgroundOrbs: Boolean = true,
     content: @Composable BoxScope.() -> Unit
 ) {
+    val colors = LocalExtendedColors.current // FIXED
+
     Box(
         modifier = modifier
     ) {
@@ -149,7 +158,7 @@ fun GlassHeroSection(
         if (backgroundOrbs) {
             CardBackgroundOrbs(
                 modifier = Modifier.fillMaxSize(),
-                primaryColor = MaterialTheme.extendedColors.electricMint
+                primaryColor = colors.electricMint
             )
         }
 
@@ -160,7 +169,7 @@ fun GlassHeroSection(
                 .premiumGlass(
                     alpha = 0.12f,
                     borderAlpha = 0.25f,
-                    glowColor = MaterialTheme.extendedColors.electricMintGlow,
+                    glowColor = colors.electricMintGlow,
                     shape = RoundedCornerShape(32.dp)
                 )
                 .padding(24.dp),
@@ -176,16 +185,20 @@ fun GlassHeroSection(
 fun GlassButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    gradient: List<Color> = listOf(
-        MaterialTheme.extendedColors.electricMint,
-        MaterialTheme.extendedColors.cosmicPurple
-    ),
-    glowColor: Color = MaterialTheme.extendedColors.electricMintGlow,
+    gradient: List<Color>? = null,
+    glowColor: Color? = null,
     shape: Shape = RoundedCornerShape(28.dp),
     content: @Composable RowScope.() -> Unit
 ) {
+    val colors = LocalExtendedColors.current // FIXED
     val haptics = LocalHapticFeedback.current
     val interactionSource = remember { MutableInteractionSource() }
+
+    // Default gradient if not provided
+    val defaultGradient = listOf(
+        colors.electricMint,
+        colors.cosmicPurple
+    )
 
     var isPressed by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
@@ -211,27 +224,35 @@ fun GlassButton(
         modifier = modifier
             .scale(scale)
             .glowEffect(
-                glowColor = glowColor.copy(alpha = glowAlpha),
-                blurRadius = 16.dp
+                glowColor = glowColor ?: colors.electricMintGlow, // FIXED
+                blurRadius = 16.dp,
+                alpha = glowAlpha
             ),
         colors = ButtonDefaults.buttonColors(
             containerColor = Color.Transparent
         ),
         shape = shape,
         interactionSource = interactionSource,
-        elevation = ButtonDefaults.buttonElevation(
-            defaultElevation = 8.dp,
-            pressedElevation = 4.dp
-        )
+        contentPadding = PaddingValues(0.dp)
     ) {
         Box(
             modifier = Modifier
-                .fillMaxWidth()
+                .fillMaxSize()
                 .background(
-                    brush = Brush.linearGradient(gradient),
-                    shape = shape
+                    brush = Brush.linearGradient(
+                        colors = gradient ?: defaultGradient // FIXED
+                    )
                 )
-                .padding(horizontal = 16.dp, vertical = 8.dp),
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onPress = {
+                            isPressed = true
+                            tryAwaitRelease()
+                            isPressed = false
+                        }
+                    )
+                }
+                .padding(horizontal = 24.dp, vertical = 12.dp),
             contentAlignment = Alignment.Center
         ) {
             Row(
@@ -241,87 +262,117 @@ fun GlassButton(
             )
         }
     }
+}
 
-    // Handle press state
-    LaunchedEffect(interactionSource) {
-        interactionSource.interactions.collect { interaction ->
-            when (interaction) {
-                is androidx.compose.foundation.interaction.PressInteraction.Press -> {
-                    isPressed = true
-                }
-                is androidx.compose.foundation.interaction.PressInteraction.Release,
-                is androidx.compose.foundation.interaction.PressInteraction.Cancel -> {
-                    isPressed = false
-                }
+/**
+ * Floating glass chip for selections
+ */
+@Composable
+fun GlassChip(
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    label: @Composable () -> Unit
+) {
+    val colors = LocalExtendedColors.current // FIXED
+
+    val backgroundColor by animateColorAsState(
+        targetValue = if (selected) {
+            colors.electricMint.copy(alpha = 0.2f)
+        } else {
+            colors.glassLight
+        },
+        animationSpec = tween(300),
+        label = "chip_background"
+    )
+
+    val borderColor by animateColorAsState(
+        targetValue = if (selected) {
+            colors.electricMint
+        } else {
+            colors.borderGlass
+        },
+        animationSpec = tween(300),
+        label = "chip_border"
+    )
+
+    Surface(
+        onClick = onClick,
+        modifier = modifier,
+        shape = CircleShape,
+        color = backgroundColor,
+        border = BorderStroke(
+            width = 1.dp,
+            color = borderColor
+        )
+    ) {
+        Box(
+            modifier = Modifier.padding(
+                horizontal = 16.dp,
+                vertical = 8.dp
+            ),
+            contentAlignment = Alignment.Center
+        ) {
+            label()
+        }
+    }
+}
+
+/**
+ * Glass loading indicator
+ */
+@Composable
+fun GlassLoadingCard(
+    message: String? = null,
+    modifier: Modifier = Modifier
+) {
+    val colors = LocalExtendedColors.current // FIXED
+
+    GlassCard(
+        modifier = modifier,
+        glowColor = colors.electricMintGlow // FIXED
+    ) {
+        Column(
+            modifier = Modifier.padding(32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            CircularProgressIndicator(
+                color = colors.electricMint, // FIXED
+                strokeWidth = 3.dp
+            )
+
+            message?.let {
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                )
             }
         }
     }
 }
 
 /**
- * Enhanced glow effect
+ * Glow effect modifier helper
  */
 fun Modifier.glowEffect(
     glowColor: Color,
-    blurRadius: Dp = 12.dp
-) = this.drawBehind {
-    val glowRadiusPx = blurRadius.toPx()
-
-    // Create multiple glow layers for better effect
-    repeat(3) { i ->
-        drawRect(
-            color = glowColor.copy(alpha = 0.1f / (i + 1)),
-            size = androidx.compose.ui.geometry.Size(
-                size.width + glowRadiusPx * (i + 1),
-                size.height + glowRadiusPx * (i + 1)
-            ),
-            topLeft = Offset(
-                -glowRadiusPx * (i + 1) / 2,
-                -glowRadiusPx * (i + 1) / 2
+    blurRadius: Dp = 16.dp,
+    alpha: Float = 1f
+) = composed {
+    this.drawWithCache {
+        onDrawBehind {
+            drawCircle(
+                brush = Brush.radialGradient(
+                    colors = listOf(
+                        glowColor.copy(alpha = alpha * 0.3f),
+                        glowColor.copy(alpha = 0f)
+                    ),
+                    radius = size.minDimension / 2 + blurRadius.toPx()
+                ),
+                radius = size.minDimension / 2 + blurRadius.toPx()
             )
-        )
+        }
     }
-}
-
-/**
- * Glass search bar
- */
-@Composable
-fun GlassSearchBar(
-    query: String,
-    onQueryChange: (String) -> Unit,
-    placeholder: String = "Search...",
-    modifier: Modifier = Modifier,
-    leadingIcon: @Composable (() -> Unit)? = null,
-    trailingIcon: @Composable (() -> Unit)? = null
-) {
-    OutlinedTextField(
-        value = query,
-        onValueChange = onQueryChange,
-        modifier = modifier
-            .fillMaxWidth()
-            .premiumGlass(
-                alpha = 0.1f,
-                borderAlpha = 0.2f,
-                shape = RoundedCornerShape(28.dp)
-            ),
-        placeholder = {
-            Text(
-                text = placeholder,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-            )
-        },
-        leadingIcon = leadingIcon,
-        trailingIcon = trailingIcon,
-        shape = RoundedCornerShape(28.dp),
-        colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = MaterialTheme.extendedColors.electricMint,
-            unfocusedBorderColor = Color.Transparent,
-            cursorColor = MaterialTheme.extendedColors.electricMint,
-            focusedTextColor = MaterialTheme.colorScheme.onSurface,
-            unfocusedTextColor = MaterialTheme.colorScheme.onSurface
-        ),
-        singleLine = true
-    )
 }

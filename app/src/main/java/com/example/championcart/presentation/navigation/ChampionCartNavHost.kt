@@ -13,11 +13,11 @@ import androidx.navigation.compose.composable
 import com.example.championcart.data.local.preferences.TokenManager
 import com.example.championcart.presentation.screens.auth.LoginRegisterScreen
 import com.example.championcart.presentation.screens.cart.CartScreen
-import com.example.championcart.presentation.screens.home.HomeScreen
+import com.example.championcart.presentation.screens.home.ModernHomeScreen
 import com.example.championcart.presentation.screens.profile.ProfileScreen
 import com.example.championcart.presentation.screens.search.SearchScreen
 import com.example.championcart.presentation.screens.product.ProductDetailScreen
-import com.example.championcart.presentation.screens.splash.SplashScreen
+import com.example.championcart.presentation.screens.splash.ModernSplashScreen
 
 /**
  * Main navigation host for the Champion Cart app
@@ -52,7 +52,7 @@ fun ChampionCartNavHost(
             enterTransition = { fadeIn(animationSpec = tween(300)) },
             exitTransition = { fadeOut(animationSpec = tween(300)) }
         ) {
-            SplashScreen(
+            ModernSplashScreen(
                 onNavigateToAuth = {
                     navController.navigate(Screen.Auth.route) {
                         popUpTo(Screen.Splash.route) { inclusive = true }
@@ -108,7 +108,7 @@ fun ChampionCartNavHost(
                 }
             }
         ) {
-            HomeScreen(navController)
+            ModernHomeScreen(navController)
         }
 
         // Search Screen

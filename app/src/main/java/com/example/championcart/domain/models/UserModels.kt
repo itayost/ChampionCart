@@ -1,5 +1,7 @@
 package com.example.championcart.domain.models
 
+import com.example.championcart.ui.theme.ThemePreference
+
 /**
  * Local-only user statistics - no server integration yet
  * Default/empty values until server implementation
@@ -20,7 +22,7 @@ data class UserStats(
 data class UserPreferences(
     val defaultCity: String = "Tel Aviv",
     val language: Language = Language.ENGLISH,
-    val theme: ThemePreference = ThemePreference.SYSTEM,
+    val theme: ThemePreference = ThemePreference.System,
     val notificationsEnabled: Boolean = true,
     val priceAlertsEnabled: Boolean = true,
     val emailNotifications: Boolean = false
@@ -32,13 +34,4 @@ data class UserPreferences(
 enum class Language(val displayName: String, val code: String) {
     ENGLISH("English", "en"),
     HEBREW("עברית", "he")
-}
-
-/**
- * Theme preference options
- */
-enum class ThemePreference(val displayName: String) {
-    LIGHT("Light"),
-    DARK("Dark"),
-    SYSTEM("System Default")
 }

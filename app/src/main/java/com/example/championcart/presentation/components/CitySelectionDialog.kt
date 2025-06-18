@@ -506,41 +506,61 @@ private fun SectionHeader(
 @Composable
 private fun CityItem(
     cityInfo: CityInfo,
-    isSelected: Boolean,
     onClick: () -> Unit,
+    isSelected: Boolean,
     isRecent: Boolean = false,
-    isPopular: Boolean = false
+    isPopular: Boolean = false,
+    modifier: Modifier = Modifier // It's good practice for all Composables to accept a modifier
 ) {
-    val backgroundColor by animateColorAsState(
-        targetValue = when {
-            isSelected -> MaterialTheme.colorScheme.extended.electricMint.copy(alpha = 0.15f)
-            else -> Color.Transparent
-        },
-        animationSpec = SpringSpecs.ColorAnimation,
+    // Derived UI properties based on selection state
+    val targetBackgroundColor = if (isSelected) {
+        MaterialTheme.colorScheme.extended.electricMint.copy(alpha = 0.15f)
+    } else {
+        Color.Transparent
+    }
+    val targetScale = if (isSelected) 1.02f else 1f
+    val cardElevation = if (isSelected) 2.dp else 0.dp
+    val cityTextFontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
+    val badgeBackgroundColor = if (isSelected) {
+        MaterialTheme.colorScheme.extended.electricMint
+    } else {
+        MaterialTheme.colorScheme.extended.surfaceGlass
+    }
+    val badgeTextColor = if (isSelected) {
+        MaterialTheme.colorScheme.extended.deepNavy
+    } else {
+        MaterialTheme.colorScheme.onSurface
+    }
+
+    // Animations
+    val animatedBackgroundColor by animateColorAsState(
+        targetValue = targetBackgroundColor,
+        animationSpec = spring(
+            dampingRatio = SpringSpecs.DampingRatioLowBounce,
+            stiffness = SpringSpecs.StiffnessMedium
+        ),
         label = "cityItemBg"
     )
 
-    val scale by animateFloatAsState(
-        targetValue = if (isSelected) 1.02f else 1f,
-        animationSpec = SpringSpecs.Bouncy,
+    val animatedScale by animateFloatAsState(
+        targetValue = targetScale,
+        animationSpec = SpringSpecs.Snappy, // Assuming SpringSpecs is defined elsewhere
         label = "cityItemScale"
     )
 
     Card(
         onClick = onClick,
-        modifier = Modifier
+        modifier = modifier // Apply the passed-in modifier
             .fillMaxWidth()
-            .scale(scale),
-        shape = GlassmorphicShapes.GlassCardSmall,
-        colors = CardDefaults.cardColors(containerColor = backgroundColor),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = if (isSelected) 2.dp else 0.dp
-        )
+            .scale(animatedScale),
+        shape = GlassmorphicShapes.GlassCardSmall, // Assuming GlassmorphicShapes is defined
+        colors = CardDefaults.cardColors(containerColor = animatedBackgroundColor),
+        elevation = CardDefaults.cardElevation(defaultElevation = cardElevation)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(SpacingTokens.L),
+                .padding(SpacingTokens.L), // Assuming SpacingTokens is defined
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -551,9 +571,9 @@ private fun CityItem(
                     horizontalArrangement = Arrangement.spacedBy(SpacingTokens.S)
                 ) {
                     Text(
-                        text = cityInfo.nameHebrew,
+                        text = cityInfo.nameHebrew, // Assuming CityInfo has nameHebrew
                         style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
+                        fontWeight = cityTextFontWeight
                     )
 
                     // Tags
@@ -571,32 +591,24 @@ private fun CityItem(
                     }
                 }
 
+                Spacer(modifier = Modifier.height(SpacingTokens.XS)) // Added a small spacer for better visual separation
+
                 // Store breakdown
-                StoreBreakdown(cityInfo.storeBreakdown)
+                StoreBreakdown(cityInfo.storeBreakdown) // Assuming CityInfo has storeBreakdown
             }
 
             // Total stores badge
             Box(
                 modifier = Modifier
-                    .clip(GlassmorphicShapes.BottomSheet)
-                    .background(
-                        if (isSelected) {
-                            MaterialTheme.colorScheme.extended.electricMint
-                        } else {
-                            MaterialTheme.colorScheme.extended.surfaceGlass
-                        }
-                    )
+                    .clip(GlassmorphicShapes.BottomSheet) // Assuming GlassmorphicShapes is defined
+                    .background(badgeBackgroundColor)
                     .padding(horizontal = SpacingTokens.M, vertical = SpacingTokens.S)
             ) {
                 Text(
-                    text = cityInfo.totalStores.toString(),
+                    text = cityInfo.totalStores.toString(), // Assuming CityInfo has totalStores
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = if (isSelected) {
-                        MaterialTheme.colorScheme.extended.deepNavy
-                    } else {
-                        MaterialTheme.colorScheme.onSurface
-                    }
+                    color = badgeTextColor
                 )
             }
         }

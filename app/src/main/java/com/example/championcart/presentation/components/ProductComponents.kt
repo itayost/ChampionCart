@@ -176,7 +176,7 @@ private fun ProductInfo(
         Text(
             text = product.nameHebrew ?: product.name,
             style = if (isCompact) {
-                AppTextStyles.productNameSmall
+                AppTextStyles.productName
             } else {
                 AppTextStyles.productName
             }.withSmartHebrewSupport(product.nameHebrew ?: product.name),
@@ -407,7 +407,7 @@ private fun ProductActionButton(
             style = if (isCompact) {
                 MaterialTheme.typography.bodySmall
             } else {
-                AppTextStyles.buttonTextSmall
+                AppTextStyles.buttonText
             }.withSmartHebrewSupport("הוסף לרשימה")
         )
     }

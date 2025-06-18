@@ -300,8 +300,9 @@ object NavigationTokens {
     val TabIndicatorHeight = 3.dp
     val IconSize = SizingTokens.IconM
     val LabelSpacing = SpacingTokens.XXS
-    val ItemMinWidth = 64.dp
-    val ItemMaxWidth = 120.dp
+    val ItemSpacing = SpacingTokens.M
+    val BadgeSize = 20.dp
+    val BadgeOffset = 8.dp
 }
 
 object ModalTokens {

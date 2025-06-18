@@ -1,34 +1,78 @@
 package com.example.championcart.presentation.screens.profile
 
-import androidx.compose.animation.*
-import androidx.compose.animation.core.*
-import androidx.compose.foundation.*
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Login
+import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Savings
+import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.TrendingUp
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.RadioButtonDefaults
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.example.championcart.domain.models.*
-import com.example.championcart.presentation.components.ErrorState
+import com.example.championcart.domain.models.Language
+import com.example.championcart.domain.models.UserPreferences
+import com.example.championcart.domain.models.UserStats
+import com.example.championcart.presentation.components.EmptyState
+import com.example.championcart.presentation.components.EmptyStateType
 import com.example.championcart.presentation.navigation.Screen
-import com.example.championcart.ui.theme.*
+import com.example.championcart.ui.theme.AppTextStyles
+import com.example.championcart.ui.theme.GlassmorphicShapes
+import com.example.championcart.ui.theme.SizingTokens
+import com.example.championcart.ui.theme.SpacingTokens
+import com.example.championcart.ui.theme.ThemePreference
+import com.example.championcart.ui.theme.extended
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -39,87 +83,13 @@ fun ProfileScreen(
     val state by viewModel.state.collectAsState()
     val haptics = LocalHapticFeedback.current
 
-    // Logout confirmation dialog
-    if (state.showLogoutDialog) {
-        AlertDialog(
-            onDismissRequest = viewModel::hideLogoutDialog,
-            title = {
-                Text(
-                    "Logout",
-                    style = AppTextStyles.hebrewHeadline
-                )
-            },
-            text = {
-                Text(
-                    "Are you sure you want to logout?",
-                    style = MaterialTheme.typography.bodyLarge
-                )
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                        viewModel.logout()
-                        navController.navigate(Screen.Auth.route) {
-                            popUpTo(Screen.Home.route) { inclusive = true }
-                        }
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.extendedColors.errorRed
-                    )
-                ) {
-                    Text("Logout", style = MaterialTheme.typography.labelLarge)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = viewModel::hideLogoutDialog) {
-                    Text("Cancel", style = MaterialTheme.typography.labelLarge)
-                }
-            }
-        )
-    }
-
-    // City Selection Dialog
-    if (state.showCitySelector) {
-        CitySelectionDialog(
-            availableCities = state.availableCities,
-            selectedCity = state.selectedCity,
-            onCitySelected = { city ->
-                viewModel.updateDefaultCity(city)
-            },
-            onDismiss = viewModel::hideCitySelector
-        )
-    }
-
-    // Language Selection Dialog
-    if (state.showLanguageSelector) {
-        LanguageSelectionDialog(
-            selectedLanguage = state.userPreferences.language,
-            onLanguageSelected = { language ->
-                viewModel.updateLanguage(language)
-            },
-            onDismiss = viewModel::hideLanguageSelector
-        )
-    }
-
-    // Theme Selection Dialog
-    if (state.showThemeSelector) {
-        ThemeSelectionDialog(
-            selectedTheme = state.userPreferences.theme,
-            onThemeSelected = { theme ->
-                viewModel.updateTheme(theme)
-            },
-            onDismiss = viewModel::hideThemeSelector
-        )
-    }
-
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .background(
                 brush = Brush.verticalGradient(
                     colors = listOf(
-                        MaterialTheme.extendedColors.electricMint.copy(alpha = 0.02f),
+                        MaterialTheme.colorScheme.extended.cosmicPurple.copy(alpha = 0.05f),
                         MaterialTheme.colorScheme.surface
                     )
                 )
@@ -127,53 +97,72 @@ fun ProfileScreen(
     ) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(Dimensions.paddingLarge),
-            verticalArrangement = Arrangement.spacedBy(Dimensions.spacingLarge)
+            contentPadding = PaddingValues(SpacingTokens.L),
+            verticalArrangement = Arrangement.spacedBy(SpacingTokens.L)
         ) {
+            // Profile Header
             item {
                 ProfileHeader(
                     userName = state.userName,
                     userEmail = state.userEmail,
-                    isGuest = state.isGuest,
-                    onAvatarClick = {
-                        haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                    }
+                    isGuest = state.isGuest
                 )
             }
 
+            // Stats Section (only for logged-in users)
             if (!state.isGuest) {
                 item {
-                    StatsSection(
+                    StatsCard(
                         userStats = state.userStats,
                         isLoading = state.isLoading
                     )
                 }
             }
 
+            // Preferences Section
             item {
-                SettingsSection(
+                PreferencesSection(
                     userPreferences = state.userPreferences,
                     selectedCity = state.selectedCity,
                     onCityClick = viewModel::showCitySelector,
                     onLanguageClick = viewModel::showLanguageSelector,
                     onThemeClick = viewModel::showThemeSelector,
-                    onNotificationsToggle = viewModel::toggleNotifications,
-                    onPriceAlertsToggle = viewModel::togglePriceAlerts
+                    onNotificationsToggle = viewModel::toggleNotifications
                 )
             }
 
+            // Saved Carts Preview (only for logged-in users)
+            if (!state.isGuest && state.savedCarts.isNotEmpty()) {
+                item {
+                    SavedCartsPreview(
+                        savedCartsCount = state.savedCarts.size,
+                        onViewAllClick = {
+                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                            navController.navigate(Screen.SavedCarts.route)
+                        }
+                    )
+                }
+            }
+
+            // Actions Section
             item {
                 ActionsSection(
                     isGuest = state.isGuest,
                     onLoginClick = {
+                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                         navController.navigate(Screen.Auth.route)
                     },
-                    onLogoutClick = viewModel::showLogoutDialog,
+                    onLogoutClick = {
+                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                        viewModel.showLogoutDialog()
+                    },
                     onSavedCartsClick = {
+                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                         navController.navigate(Screen.SavedCarts.route)
                     },
-                    onSettingsClick = {
-                        navController.navigate(Screen.Settings.route)
+                    onAboutClick = {
+                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                        navController.navigate(Screen.About.route)
                     }
                 )
             }
@@ -181,12 +170,51 @@ fun ProfileScreen(
             // Error handling
             state.error?.let { error ->
                 item {
-                    ErrorState(
-                        message = error,
-                        onRetry = viewModel::clearError
+                    EmptyState(
+                        type = EmptyStateType.NETWORK_ERROR,
+                        title = "שגיאה",
+                        subtitle = error,
+                        actionLabel = "נסה שוב",
+                        onAction = viewModel::clearError
                     )
                 }
             }
+        }
+
+        // Dialogs
+        if (state.showLogoutDialog) {
+            LogoutConfirmationDialog(
+                onConfirm = {
+                    viewModel.logout()
+                    viewModel.hideLogoutDialog()
+                },
+                onDismiss = viewModel::hideLogoutDialog
+            )
+        }
+
+        if (state.showCitySelector) {
+            CitySelectionDialog(
+                cities = state.availableCities,
+                currentCity = state.selectedCity,
+                onCitySelected = viewModel::updateDefaultCity,
+                onDismiss = viewModel::hideCitySelector
+            )
+        }
+
+        if (state.showLanguageSelector) {
+            LanguageSelectionDialog(
+                currentLanguage = state.userPreferences.language,
+                onLanguageSelected = viewModel::updateLanguage,
+                onDismiss = viewModel::hideLanguageSelector
+            )
+        }
+
+        if (state.showThemeSelector) {
+            ThemeSelectionDialog(
+                currentTheme = state.userPreferences.theme,
+                onThemeSelected = viewModel::updateTheme,
+                onDismiss = viewModel::hideThemeSelector
+            )
         }
     }
 }
@@ -195,64 +223,69 @@ fun ProfileScreen(
 private fun ProfileHeader(
     userName: String,
     userEmail: String,
-    isGuest: Boolean,
-    onAvatarClick: () -> Unit
+    isGuest: Boolean
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = ComponentShapes.Card,
+        shape = GlassmorphicShapes.GlassCard,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.extendedColors.glassFrosted
+            containerColor = MaterialTheme.colorScheme.extended.surfaceGlass
         ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = Dimensions.elevationMedium
-        )
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(Dimensions.paddingLarge),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingLarge)
+                .padding(SpacingTokens.XL),
+            horizontalArrangement = Arrangement.spacedBy(SpacingTokens.L),
+            verticalAlignment = Alignment.CenterVertically
         ) {
             // Avatar
-            Surface(
+            Box(
                 modifier = Modifier
                     .size(80.dp)
-                    .clickable { onAvatarClick() },
-                shape = CircleShape,
-                color = MaterialTheme.extendedColors.electricMint.copy(alpha = 0.2f)
+                    .clip(CircleShape)
+                    .background(
+                        brush = Brush.linearGradient(
+                            colors = listOf(
+                                MaterialTheme.colorScheme.extended.electricMint,
+                                MaterialTheme.colorScheme.extended.cosmicPurple
+                            )
+                        )
+                    ),
+                contentAlignment = Alignment.Center
             ) {
-                Box(
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = if (isGuest) Icons.Default.PersonOutline else Icons.Default.Person,
-                        contentDescription = "Profile Avatar",
-                        modifier = Modifier.size(40.dp),
-                        tint = MaterialTheme.extendedColors.electricMint
-                    )
-                }
+                Text(
+                    text = if (isGuest) "G" else userName.firstOrNull()?.uppercase() ?: "U",
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    fontWeight = FontWeight.Bold
+                )
             }
 
             // User Info
-            Column {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(SpacingTokens.XS)
+            ) {
                 Text(
                     text = userName,
-                    style = AppTextStyles.hebrewHeadline,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
-
                 if (!isGuest) {
                     Text(
                         text = userEmail,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 } else {
                     Text(
-                        text = "Sign in to access all features",
+                        text = "משתמש אורח",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -263,38 +296,40 @@ private fun ProfileHeader(
 }
 
 @Composable
-private fun StatsSection(
+private fun StatsCard(
     userStats: UserStats,
     isLoading: Boolean
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = ComponentShapes.Card,
+        shape = GlassmorphicShapes.GlassCard,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.extendedColors.glassFrosted
-        )
+            containerColor = MaterialTheme.colorScheme.extended.surfaceGlass
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(Dimensions.paddingLarge)
+                .padding(SpacingTokens.L)
         ) {
             Text(
-                text = "Your Savings",
-                style = AppTextStyles.hebrewHeadline,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = Dimensions.spacingMedium)
+                text = "הסטטיסטיקה שלך",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.padding(bottom = SpacingTokens.M)
             )
 
             if (isLoading) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(120.dp),
+                        .height(100.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     CircularProgressIndicator(
-                        color = MaterialTheme.extendedColors.electricMint
+                        color = MaterialTheme.colorScheme.extended.electricMint,
+                        strokeWidth = 2.dp
                     )
                 }
             } else {
@@ -303,17 +338,17 @@ private fun StatsSection(
                     horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
                     StatItem(
-                        title = "Total Saved",
+                        title = "נחסך השנה",
                         value = "₪${String.format("%.2f", userStats.totalSavings)}",
                         icon = Icons.Default.Savings
                     )
                     StatItem(
-                        title = "Items Tracked",
+                        title = "מוצרים במעקב",
                         value = userStats.itemsTracked.toString(),
                         icon = Icons.Default.ShoppingCart
                     )
                     StatItem(
-                        title = "This Month",
+                        title = "החודש",
                         value = "₪${String.format("%.2f", userStats.thisMonthSavings)}",
                         icon = Icons.Default.TrendingUp
                     )
@@ -330,20 +365,20 @@ private fun StatItem(
     icon: ImageVector
 ) {
     Column(
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(SpacingTokens.S)
     ) {
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = MaterialTheme.extendedColors.electricMint,
-            modifier = Modifier.size(24.dp)
+            tint = MaterialTheme.colorScheme.extended.electricMint,
+            modifier = Modifier.size(SizingTokens.IconM)
         )
-        Spacer(modifier = Modifier.height(Dimensions.spacingSmall))
         Text(
             text = value,
             style = AppTextStyles.priceMedium,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.extendedColors.electricMint
+            color = MaterialTheme.colorScheme.extended.electricMint
         )
         Text(
             text = title,
@@ -355,148 +390,115 @@ private fun StatItem(
 }
 
 @Composable
-private fun SettingsSection(
+private fun PreferencesSection(
     userPreferences: UserPreferences,
     selectedCity: String,
     onCityClick: () -> Unit,
     onLanguageClick: () -> Unit,
     onThemeClick: () -> Unit,
     onNotificationsToggle: (Boolean) -> Unit,
-    onPriceAlertsToggle: (Boolean) -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = ComponentShapes.Card,
+        shape = GlassmorphicShapes.GlassCard,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.extendedColors.glassFrosted
-        )
+            containerColor = MaterialTheme.colorScheme.extended.surfaceGlass
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(Dimensions.paddingLarge)
+                .padding(SpacingTokens.L)
         ) {
             Text(
-                text = "Settings",
-                style = AppTextStyles.hebrewHeadline,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = Dimensions.spacingMedium)
+                text = "העדפות",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.padding(bottom = SpacingTokens.M)
             )
 
-            SettingItem(
-                title = "Default City",
-                subtitle = selectedCity,
+            // City Selection
+            PreferenceItem(
                 icon = Icons.Default.LocationOn,
+                title = "עיר ברירת מחדל",
+                subtitle = selectedCity,
                 onClick = onCityClick
             )
 
-            SettingItem(
-                title = "Language",
-                subtitle = userPreferences.language.displayName,
+            HorizontalDivider(
+                modifier = Modifier.padding(vertical = SpacingTokens.S),
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+            )
+
+            // Language Selection
+            PreferenceItem(
                 icon = Icons.Default.Language,
+                title = "שפה",
+                subtitle = userPreferences.language.displayName,
                 onClick = onLanguageClick
             )
 
-            SettingItem(
-                title = "Theme",
-                subtitle = userPreferences.theme.displayName,
+            HorizontalDivider(
+                modifier = Modifier.padding(vertical = SpacingTokens.S),
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+            )
+
+            // Theme Selection
+            PreferenceItem(
                 icon = Icons.Default.Palette,
+                title = "ערכת נושא",
+                subtitle = userPreferences.theme.displayName,
                 onClick = onThemeClick
             )
 
-            SettingToggleItem(
-                title = "Notifications",
-                subtitle = "App notifications",
+            HorizontalDivider(
+                modifier = Modifier.padding(vertical = SpacingTokens.S),
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+            )
+
+            // Notifications Toggle
+            PreferenceToggle(
                 icon = Icons.Default.Notifications,
-                checked = userPreferences.notificationsEnabled,
-                onToggle = onNotificationsToggle
+                title = "התראות",
+                subtitle = "קבל התראות על מבצעים ועדכונים",
+                isChecked = userPreferences.notificationsEnabled,
+                onCheckedChange = onNotificationsToggle
             )
 
-            SettingToggleItem(
-                title = "Price Alerts",
-                subtitle = "Get notified of price drops",
-                icon = Icons.Default.NotificationsActive,
-                checked = userPreferences.priceAlertsEnabled,
-                onToggle = onPriceAlertsToggle
+            HorizontalDivider(
+                modifier = Modifier.padding(vertical = SpacingTokens.S),
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
             )
         }
     }
 }
 
 @Composable
-private fun SettingItem(
+private fun PreferenceItem(
+    icon: ImageVector,
     title: String,
     subtitle: String,
-    icon: ImageVector,
     onClick: () -> Unit
-) {
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() },
-        shape = ComponentShapes.CardSmall,
-        color = Color.Transparent
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(Dimensions.paddingMedium),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingMedium)
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = MaterialTheme.extendedColors.electricMint,
-                modifier = Modifier.size(24.dp)
-            )
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = title,
-                    style = AppTextStyles.hebrewBody,
-                    fontWeight = FontWeight.Medium
-                )
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            Icon(
-                imageVector = Icons.Default.ChevronRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(20.dp)
-            )
-        }
-    }
-}
-
-@Composable
-private fun SettingToggleItem(
-    title: String,
-    subtitle: String,
-    icon: ImageVector,
-    checked: Boolean,
-    onToggle: (Boolean) -> Unit
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(Dimensions.paddingMedium),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingMedium)
+            .clickable { onClick() }
+            .padding(vertical = SpacingTokens.M),
+        horizontalArrangement = Arrangement.spacedBy(SpacingTokens.M),
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = MaterialTheme.extendedColors.electricMint,
-            modifier = Modifier.size(24.dp)
+            tint = MaterialTheme.colorScheme.extended.electricMint,
+            modifier = Modifier.size(SizingTokens.IconM)
         )
-
-        Column(modifier = Modifier.weight(1f)) {
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(SpacingTokens.XXS)
+        ) {
             Text(
                 text = title,
                 style = MaterialTheme.typography.bodyLarge,
@@ -508,15 +510,124 @@ private fun SettingToggleItem(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
+        Icon(
+            imageVector = Icons.Default.ChevronRight,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(SizingTokens.IconS)
+        )
+    }
+}
 
+@Composable
+private fun PreferenceToggle(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    isChecked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = SpacingTokens.M),
+        horizontalArrangement = Arrangement.spacedBy(SpacingTokens.M),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.extended.electricMint,
+            modifier = Modifier.size(SizingTokens.IconM)
+        )
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(SpacingTokens.XXS)
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium
+            )
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
         Switch(
-            checked = checked,
-            onCheckedChange = onToggle,
+            checked = isChecked,
+            onCheckedChange = onCheckedChange,
             colors = SwitchDefaults.colors(
-                checkedThumbColor = MaterialTheme.extendedColors.electricMint,
-                checkedTrackColor = MaterialTheme.extendedColors.electricMint.copy(alpha = 0.3f)
+                checkedThumbColor = MaterialTheme.colorScheme.extended.electricMint,
+                checkedTrackColor = MaterialTheme.colorScheme.extended.electricMint.copy(alpha = 0.5f)
             )
         )
+    }
+}
+
+@Composable
+private fun SavedCartsPreview(
+    savedCartsCount: Int,
+    onViewAllClick: () -> Unit
+) {
+    Card(
+        onClick = onViewAllClick,
+        modifier = Modifier.fillMaxWidth(),
+        shape = GlassmorphicShapes.GlassCard,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.extended.surfaceGlass
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(SpacingTokens.L),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(SpacingTokens.M),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .background(
+                            MaterialTheme.colorScheme.extended.electricMint.copy(alpha = 0.1f)
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ShoppingCart,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.extended.electricMint,
+                        modifier = Modifier.size(SizingTokens.IconM)
+                    )
+                }
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(SpacingTokens.XXS)
+                ) {
+                    Text(
+                        text = "עגלות שמורות",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Text(
+                        text = "$savedCartsCount עגלות שמורות",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            Icon(
+                imageVector = Icons.Default.ChevronRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
     }
 }
 
@@ -526,189 +637,224 @@ private fun ActionsSection(
     onLoginClick: () -> Unit,
     onLogoutClick: () -> Unit,
     onSavedCartsClick: () -> Unit,
-    onSettingsClick: () -> Unit
+    onAboutClick: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = ComponentShapes.Card,
+        shape = GlassmorphicShapes.GlassCard,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.extendedColors.glassFrosted
-        )
+            containerColor = MaterialTheme.colorScheme.extended.surfaceGlass
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(Dimensions.paddingLarge),
-            verticalArrangement = Arrangement.spacedBy(Dimensions.spacingSmall)
+                .padding(SpacingTokens.L)
         ) {
             if (isGuest) {
+                // Login button for guests
                 Button(
                     onClick = onLoginClick,
                     modifier = Modifier.fillMaxWidth(),
+                    shape = GlassmorphicShapes.Button,
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.extendedColors.electricMint
-                    ),
-                    shape = ComponentShapes.Button
+                        containerColor = MaterialTheme.colorScheme.extended.electricMint
+                    )
                 ) {
                     Icon(
                         Icons.Default.Login,
                         contentDescription = null,
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(SizingTokens.IconS)
                     )
-                    Spacer(modifier = Modifier.width(Dimensions.spacingSmall))
-                    Text("Sign In", style = MaterialTheme.typography.labelLarge)
+                    Spacer(modifier = Modifier.width(SpacingTokens.S))
+                    Text("התחבר לחשבון")
                 }
             } else {
-                OutlinedButton(
-                    onClick = onSavedCartsClick,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = ComponentShapes.Button
-                ) {
-                    Icon(
-                        Icons.Default.BookmarkBorder,
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(Dimensions.spacingSmall))
-                    Text("Saved Carts", style = MaterialTheme.typography.labelLarge)
-                }
+                // Actions for logged-in users
+                ActionItem(
+                    icon = Icons.Default.ShoppingCart,
+                    title = "עגלות שמורות",
+                    onClick = onSavedCartsClick
+                )
 
-                OutlinedButton(
+                HorizontalDivider(
+                    modifier = Modifier.padding(vertical = SpacingTokens.S),
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                )
+
+                ActionItem(
+                    icon = Icons.Default.Info,
+                    title = "אודות",
+                    onClick = onAboutClick
+                )
+
+                HorizontalDivider(
+                    modifier = Modifier.padding(vertical = SpacingTokens.S),
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                )
+
+                ActionItem(
+                    icon = Icons.Default.Logout,
+                    title = "התנתק",
                     onClick = onLogoutClick,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = MaterialTheme.extendedColors.errorRed
-                    ),
-                    shape = ComponentShapes.Button
-                ) {
-                    Icon(
-                        Icons.Default.Logout,
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(Dimensions.spacingSmall))
-                    Text("Logout", style = MaterialTheme.typography.labelLarge)
+                    tintColor = MaterialTheme.colorScheme.error
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ActionItem(
+    icon: ImageVector,
+    title: String,
+    onClick: () -> Unit,
+    tintColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurface
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+            .padding(vertical = SpacingTokens.M),
+        horizontalArrangement = Arrangement.spacedBy(SpacingTokens.M),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = tintColor,
+            modifier = Modifier.size(SizingTokens.IconM)
+        )
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = FontWeight.Medium,
+            color = tintColor
+        )
+    }
+}
+
+// Dialogs
+@Composable
+private fun LogoutConfirmationDialog(
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                "התנתקות",
+                style = MaterialTheme.typography.headlineSmall
+            )
+        },
+        text = {
+            Text(
+                "האם אתה בטוח שברצונך להתנתק?",
+                style = MaterialTheme.typography.bodyLarge
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = onConfirm,
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = MaterialTheme.colorScheme.error
+                )
+            ) {
+                Text("התנתק")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("ביטול")
+            }
+        },
+        shape = GlassmorphicShapes.Dialog
+    )
+}
+
+@Composable
+private fun LanguageSelectionDialog(
+    currentLanguage: Language,
+    onLanguageSelected: (Language) -> Unit,
+    onDismiss: () -> Unit
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = GlassmorphicShapes.Dialog,
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            )
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(SpacingTokens.L)
+            ) {
+                Text(
+                    text = "בחר שפה",
+                    style = MaterialTheme.typography.headlineSmall,
+                    modifier = Modifier.padding(bottom = SpacingTokens.L)
+                )
+
+                Language.values().forEach { language ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                onLanguageSelected(language)
+                                onDismiss()
+                            }
+                            .padding(vertical = SpacingTokens.M),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = language.displayName,
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                        RadioButton(
+                            selected = language == currentLanguage,
+                            onClick = null,
+                            colors = RadioButtonDefaults.colors(
+                                selectedColor = MaterialTheme.colorScheme.extended.electricMint
+                            )
+                        )
+                    }
                 }
             }
         }
     }
 }
 
-// Simple selection dialogs
-@Composable
-private fun CitySelectionDialog(
-    availableCities: List<String>,
-    selectedCity: String,
-    onCitySelected: (String) -> Unit,
-    onDismiss: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Select City", style = AppTextStyles.hebrewHeadline) },
-        text = {
-            LazyColumn {
-                items(availableCities.size) { index ->
-                    val city = availableCities[index]
-                    val isSelected = city == selectedCity
-
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                onCitySelected(city)
-                                onDismiss()
-                            }
-                            .padding(Dimensions.paddingMedium),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        RadioButton(
-                            selected = isSelected,
-                            onClick = {
-                                onCitySelected(city)
-                                onDismiss()
-                            }
-                        )
-                        Spacer(modifier = Modifier.width(Dimensions.spacingSmall))
-                        Text(
-                            text = city,
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                        )
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel", style = MaterialTheme.typography.labelLarge)
-            }
-        }
-    )
-}
-
-@Composable
-private fun LanguageSelectionDialog(
-    selectedLanguage: Language,
-    onLanguageSelected: (Language) -> Unit,
-    onDismiss: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Select Language", style = AppTextStyles.hebrewHeadline) },
-        text = {
-            Column {
-                Language.values().forEach { language ->
-                    val isSelected = language == selectedLanguage
-
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                onLanguageSelected(language)
-                                onDismiss()
-                            }
-                            .padding(Dimensions.paddingMedium),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        RadioButton(
-                            selected = isSelected,
-                            onClick = {
-                                onLanguageSelected(language)
-                                onDismiss()
-                            }
-                        )
-                        Spacer(modifier = Modifier.width(Dimensions.spacingSmall))
-                        Text(
-                            text = language.displayName,
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                        )
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel", style = MaterialTheme.typography.labelLarge)
-            }
-        }
-    )
-}
-
 @Composable
 private fun ThemeSelectionDialog(
-    selectedTheme: ThemePreference,
+    currentTheme: ThemePreference,
     onThemeSelected: (ThemePreference) -> Unit,
     onDismiss: () -> Unit
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Select Theme", style = AppTextStyles.hebrewHeadline) },
-        text = {
-            Column {
-                ThemePreference.values().forEach { theme ->
-                    val isSelected = theme == selectedTheme
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = GlassmorphicShapes.Dialog,
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            )
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(SpacingTokens.L)
+            ) {
+                Text(
+                    text = "בחר ערכת נושא",
+                    style = MaterialTheme.typography.headlineSmall,
+                    modifier = Modifier.padding(bottom = SpacingTokens.L)
+                )
 
+                ThemePreference.values().forEach { theme ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -716,30 +862,85 @@ private fun ThemeSelectionDialog(
                                 onThemeSelected(theme)
                                 onDismiss()
                             }
-                            .padding(Dimensions.paddingMedium),
+                            .padding(vertical = SpacingTokens.M),
+                        horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        RadioButton(
-                            selected = isSelected,
-                            onClick = {
-                                onThemeSelected(theme)
-                                onDismiss()
-                            }
-                        )
-                        Spacer(modifier = Modifier.width(Dimensions.spacingSmall))
                         Text(
                             text = theme.displayName,
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                        RadioButton(
+                            selected = theme == currentTheme,
+                            onClick = null,
+                            colors = RadioButtonDefaults.colors(
+                                selectedColor = MaterialTheme.colorScheme.extended.electricMint
+                            )
                         )
                     }
                 }
             }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel", style = MaterialTheme.typography.labelLarge)
+        }
+    }
+}
+
+@Composable
+private fun CitySelectionDialog(
+    cities: List<String>,
+    currentCity: String,
+    onCitySelected: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    // This would use the existing CitySelectionDialog component
+    // from CitySelectionDialog.kt with the proper city data
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = GlassmorphicShapes.Dialog,
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            )
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(SpacingTokens.L)
+            ) {
+                Text(
+                    text = "בחר עיר",
+                    style = MaterialTheme.typography.headlineSmall,
+                    modifier = Modifier.padding(bottom = SpacingTokens.L)
+                )
+
+                LazyColumn {
+                    items(cities.size) { index ->
+                        val city = cities[index]
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    onCitySelected(city)
+                                    onDismiss()
+                                }
+                                .padding(vertical = SpacingTokens.M),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = city,
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                            RadioButton(
+                                selected = city == currentCity,
+                                onClick = null,
+                                colors = RadioButtonDefaults.colors(
+                                    selectedColor = MaterialTheme.colorScheme.extended.electricMint
+                                )
+                            )
+                        }
+                    }
+                }
             }
         }
-    )
+    }
 }

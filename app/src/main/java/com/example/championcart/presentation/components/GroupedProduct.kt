@@ -304,7 +304,10 @@ private fun StorePriceItem(
             isBestPrice -> BrandColors.ElectricMint.copy(alpha = 0.1f)
             else -> Color.Transparent
         },
-        animationSpec = SpringSpecs.ColorAnimation,
+        animationSpec = spring(
+            dampingRatio = SpringSpecs.DampingRatioLowBounce,
+            stiffness = SpringSpecs.StiffnessMedium
+        ),
         label = "storePriceBackground"
     )
 
@@ -403,7 +406,6 @@ private fun SavingsIndicator(savings: Double) {
         Spacer(modifier = Modifier.width(SpacingTokens.S))
         Text(
             text = "חסכון של ₪${String.format("%.2f", animatedSavings)}",
-            style = MaterialTheme.typography.bodyMedium,
             style = MaterialTheme.typography.bodyMedium,
             color = BrandColors.Success ,
             fontWeight = FontWeight.SemiBold
