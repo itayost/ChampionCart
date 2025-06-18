@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.championcart.data.local.preferences.TokenManager
 import com.example.championcart.domain.repository.AuthRepository
 import com.example.championcart.domain.models.*
+import com.example.championcart.ui.theme.ThemePreference
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -109,9 +110,9 @@ class ProfileViewModel @Inject constructor(
                     defaultCity = savedCity,
                     language = Language.values().find { it.code == savedLanguage } ?: Language.ENGLISH,
                     theme = when (savedTheme) {
-                        "light" -> ThemePreference.LIGHT
-                        "dark" -> ThemePreference.DARK
-                        else -> ThemePreference.SYSTEM
+                        "light" -> ThemePreference.Light
+                        "dark" -> ThemePreference.Dark
+                        else -> ThemePreference.System
                     },
                     notificationsEnabled = notificationsEnabled,
                 )
@@ -271,9 +272,10 @@ class ProfileViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val themeCode = when (theme) {
-                    ThemePreference.LIGHT -> "light"
-                    ThemePreference.DARK -> "dark"
-                    ThemePreference.SYSTEM -> "system"
+                    ThemePreference.Light -> "light"
+                    ThemePreference.Dark -> "dark"
+                    ThemePreference.System -> "system"
+                    ThemePreference.Auto -> TODO()
                 }
                 tokenManager.saveTheme(themeCode)
 

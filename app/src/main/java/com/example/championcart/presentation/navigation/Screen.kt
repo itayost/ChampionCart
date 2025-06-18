@@ -1,33 +1,81 @@
 package com.example.championcart.presentation.navigation
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
-import com.example.championcart.ui.theme.ChampionCartIcons
 
 /**
- * Sealed class representing all navigation destinations in the app
+ * Unified navigation definition for Champion Cart
+ * Single source of truth for all routes and navigation items
  */
 sealed class Screen(
     val route: String,
-    val arguments: List<androidx.navigation.NamedNavArgument> = emptyList()
+    val arguments: List<androidx.navigation.NamedNavArgument> = emptyList(),
+    // Bottom nav specific properties
+    val icon: ImageVector? = null,
+    val selectedIcon: ImageVector? = null,
+    val labelEnglish: String? = null,
+    val labelHebrew: String? = null,
+    val showInBottomNav: Boolean = false
 ) {
-    // Auth flow screens
-    object Splash : Screen("splash")
-    object Auth : Screen("auth")
+    // ===== BOTTOM NAV SCREENS =====
+    object Home : Screen(
+        route = "home",
+        icon = Icons.Outlined.Home,
+        selectedIcon = Icons.Filled.Home,
+        labelEnglish = "Home",
+        labelHebrew = "בית",
+        showInBottomNav = true
+    )
 
-    // Main screens (bottom nav)
-    object Home : Screen("home")
-    object Search : Screen("search")
-    object Cart : Screen("cart")
-    object Stores : Screen("stores")
-    object Profile : Screen("profile")
+    object Search : Screen(
+        route = "search",
+        icon = Icons.Outlined.Search,
+        selectedIcon = Icons.Filled.Search,
+        labelEnglish = "Search",
+        labelHebrew = "חיפוש",
+        showInBottomNav = true
+    )
 
-    // Detail screens
+    object Cart : Screen(
+        route = "cart",
+        icon = Icons.Outlined.ShoppingCart,
+        selectedIcon = Icons.Filled.ShoppingCart,
+        labelEnglish = "Cart",
+        labelHebrew = "עגלה",
+        showInBottomNav = true
+    )
+
+    object Profile : Screen(
+        route = "profile",
+        icon = Icons.Outlined.Person,
+        selectedIcon = Icons.Filled.Person,
+        labelEnglish = "Profile",
+        labelHebrew = "פרופיל",
+        showInBottomNav = true
+    )
+
+    // ===== AUTH FLOW SCREENS =====
+    object Splash : Screen(
+        route = "splash",
+        showInBottomNav = false
+    )
+
+    object Auth : Screen(
+        route = "auth",
+        showInBottomNav = false
+    )
+
+    // ===== DETAIL SCREENS =====
     object ProductDetail : Screen(
         route = "product/{productId}",
         arguments = listOf(
             navArgument("productId") { type = NavType.StringType }
-        )
+        ),
+        showInBottomNav = false
     ) {
         fun createRoute(productId: String) = "product/$productId"
     }
@@ -36,58 +84,59 @@ sealed class Screen(
         route = "store/{storeId}",
         arguments = listOf(
             navArgument("storeId") { type = NavType.StringType }
-        )
+        ),
+        showInBottomNav = false
     ) {
         fun createRoute(storeId: String) = "store/$storeId"
     }
 
-    // Settings and other screens
-    object Settings : Screen("settings")
-    object SavedCarts : Screen("saved_carts")
-    object PriceAlerts : Screen("price_alerts")
-    object About : Screen("about")
-
-    // Checkout flow
-    object Checkout : Screen("checkout")
-    object CheckoutSuccess : Screen("checkout_success")
-}
-
-/**
- * Bottom navigation items configuration with custom ChampionCart icons
- */
-enum class BottomNavItem(
-    val screen: Screen,
-    val selectedIcon: androidx.compose.ui.graphics.vector.ImageVector,
-    val unselectedIcon: androidx.compose.ui.graphics.vector.ImageVector,
-    val label: String,
-    val contentDescription: String
-) {
-    HOME(
-        screen = Screen.Home,
-        selectedIcon = ChampionCartIcons.Home,
-        unselectedIcon = ChampionCartIcons.Home,
-        label = "Home",
-        contentDescription = "Home screen"
-    ),
-    SEARCH(
-        screen = Screen.Search,
-        selectedIcon = ChampionCartIcons.Search,
-        unselectedIcon = ChampionCartIcons.Search,
-        label = "Search",
-        contentDescription = "Search products"
-    ),
-    CART(
-        screen = Screen.Cart,
-        selectedIcon = ChampionCartIcons.Cart,
-        unselectedIcon = ChampionCartIcons.Cart,
-        label = "Cart",
-        contentDescription = "Shopping cart"
-    ),
-    PROFILE(
-        screen = Screen.Profile,
-        selectedIcon = ChampionCartIcons.Profile,
-        unselectedIcon = ChampionCartIcons.Profile,
-        label = "Profile",
-        contentDescription = "User profile"
+    // ===== SETTINGS & OTHER SCREENS =====
+    object Settings : Screen(
+        route = "settings",
+        showInBottomNav = false
     )
+
+    object SavedCarts : Screen(
+        route = "saved_carts",
+        showInBottomNav = false
+    )
+
+    object PriceAlerts : Screen(
+        route = "price_alerts",
+        showInBottomNav = false
+    )
+
+    object About : Screen(
+        route = "about",
+        showInBottomNav = false
+    )
+
+    // ===== CHECKOUT FLOW =====
+    object Checkout : Screen(
+        route = "checkout",
+        showInBottomNav = false
+    )
+
+    object CheckoutSuccess : Screen(
+        route = "checkout_success",
+        showInBottomNav = false
+    )
+
+    companion object {
+        /**
+         * Get all screens that should appear in bottom navigation
+         */
+        fun getBottomNavItems(): List<Screen> {
+            return Screen::class.sealedSubclasses
+                .mapNotNull { it.objectInstance }
+                .filter { it.showInBottomNav }
+        }
+
+        /**
+         * Check if bottom bar should be shown for current route
+         */
+        fun shouldShowBottomBar(currentRoute: String?): Boolean {
+            return getBottomNavItems().any { it.route == currentRoute }
+        }
+    }
 }

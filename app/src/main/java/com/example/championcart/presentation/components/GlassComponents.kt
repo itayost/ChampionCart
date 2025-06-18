@@ -1,10 +1,7 @@
 package com.example.championcart.presentation.components
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -12,29 +9,14 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
@@ -45,334 +27,347 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.example.championcart.ui.theme.LocalExtendedColors
+import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.launch
+import com.example.championcart.ui.theme.*
 
 /**
- * Champion Cart - Premium Glass Components
- * Implementing your glassmorphism design system perfectly
+ * Glass Card component for lists
  */
-
-/**
- * Enhanced glass effect with proper blur simulation and glow
- */
-fun Modifier.premiumGlass(
-    alpha: Float = 0.08f,
-    borderAlpha: Float = 0.18f,
-    blurRadius: Dp = 20.dp,
-    glowColor: Color? = null,
-    shape: Shape = RoundedCornerShape(24.dp)
-) = composed {
-    val colors = LocalExtendedColors.current // FIXED: Using LocalExtendedColors.current
-
-    this
-        .clip(shape)
-        .background(
-            color = Color.White.copy(alpha = alpha),
-            shape = shape
-        )
-        .border(
-            width = 1.dp,
-            color = Color.White.copy(alpha = borderAlpha),
-            shape = shape
-        )
-        .let { modifier ->
-            if (glowColor != null) {
-                modifier.glowEffect(glowColor = glowColor, blurRadius = blurRadius)
-            } else {
-                modifier
-            }
-        }
-        .shadow(
-            elevation = 8.dp,
-            shape = shape,
-            spotColor = Color.Black.copy(alpha = 0.08f)
-        )
-}
-
-/**
- * Interactive glass card with hover effects
- */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GlassCard(
+    modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
-    modifier: Modifier = Modifier,
-    glowColor: Color? = null,
-    shape: Shape = RoundedCornerShape(24.dp),
-    content: @Composable BoxScope.() -> Unit
+    content: @Composable ColumnScope.() -> Unit
 ) {
-    val haptics = LocalHapticFeedback.current
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.98f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessHigh
-        ),
-        label = "card_scale"
-    )
-
-    Box(
-        modifier = modifier
-            .scale(scale)
-            .premiumGlass(
-                shape = shape,
-                glowColor = glowColor
-            )
-            .then(
-                if (onClick != null) {
-                    Modifier.clickable(
-                        interactionSource = interactionSource,
-                        indication = null
-                    ) {
-                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                        onClick()
-                    }
-                } else Modifier
+    if (onClick != null) {
+        Card(
+            onClick = onClick,
+            modifier = modifier,
+            shape = GlassmorphicShapes.GlassCard,
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)
             ),
-        content = content
-    )
-}
-
-/**
- * Hero glass card with animated background orbs
- */
-@Composable
-fun HeroGlassCard(
-    modifier: Modifier = Modifier,
-    backgroundOrbs: Boolean = true,
-    content: @Composable BoxScope.() -> Unit
-) {
-    val colors = LocalExtendedColors.current // FIXED
-
-    Box(
-        modifier = modifier
-    ) {
-        // Background orbs
-        if (backgroundOrbs) {
-            CardBackgroundOrbs(
-                modifier = Modifier.fillMaxSize(),
-                primaryColor = colors.electricMint
-            )
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            content()
         }
-
-        // Glass surface
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .premiumGlass(
-                    alpha = 0.12f,
-                    borderAlpha = 0.25f,
-                    glowColor = colors.electricMintGlow,
-                    shape = RoundedCornerShape(32.dp)
-                )
-                .padding(24.dp),
-            content = content
-        )
+    } else {
+        Card(
+            modifier = modifier,
+            shape = GlassmorphicShapes.GlassCard,
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            content()
+        }
     }
 }
 
 /**
- * Glass button with gradient and glow effects
+ * Glass Outlined Card
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun GlassButton(
+fun GlassOutlinedCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    gradient: List<Color>? = null,
-    glowColor: Color? = null,
-    shape: Shape = RoundedCornerShape(28.dp),
-    content: @Composable RowScope.() -> Unit
+    borderColor: Color = MaterialTheme.colorScheme.outline,
+    content: @Composable ColumnScope.() -> Unit
 ) {
-    val colors = LocalExtendedColors.current // FIXED
-    val haptics = LocalHapticFeedback.current
-    val interactionSource = remember { MutableInteractionSource() }
-
-    // Default gradient if not provided
-    val defaultGradient = listOf(
-        colors.electricMint,
-        colors.cosmicPurple
-    )
-
-    var isPressed by remember { mutableStateOf(false) }
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.94f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessHigh
-        ),
-        label = "button_scale"
-    )
-
-    val glowAlpha by animateFloatAsState(
-        targetValue = if (isPressed) 1f else 0.6f,
-        animationSpec = tween(200),
-        label = "button_glow"
-    )
-
-    Button(
-        onClick = {
-            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-            onClick()
-        },
-        modifier = modifier
-            .scale(scale)
-            .glowEffect(
-                glowColor = glowColor ?: colors.electricMintGlow, // FIXED
-                blurRadius = 16.dp,
-                alpha = glowAlpha
-            ),
-        colors = ButtonDefaults.buttonColors(
+    OutlinedCard(
+        onClick = onClick,
+        modifier = modifier,
+        shape = GlassmorphicShapes.GlassCard,
+        border = BorderStroke(2.dp, borderColor),
+        colors = CardDefaults.outlinedCardColors(
             containerColor = Color.Transparent
-        ),
-        shape = shape,
-        interactionSource = interactionSource,
-        contentPadding = PaddingValues(0.dp)
+        )
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    brush = Brush.linearGradient(
-                        colors = gradient ?: defaultGradient // FIXED
-                    )
-                )
-                .pointerInput(Unit) {
-                    detectTapGestures(
-                        onPress = {
-                            isPressed = true
-                            tryAwaitRelease()
-                            isPressed = false
-                        }
-                    )
-                }
-                .padding(horizontal = 24.dp, vertical = 12.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Row(
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically,
-                content = content
-            )
-        }
+        content()
     }
 }
 
 /**
- * Floating glass chip for selections
+ * Glass Selectable Card
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun GlassChip(
+fun GlassSelectableCard(
     selected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    label: @Composable () -> Unit
+    content: @Composable ColumnScope.() -> Unit
 ) {
-    val colors = LocalExtendedColors.current // FIXED
-
-    val backgroundColor by animateColorAsState(
-        targetValue = if (selected) {
-            colors.electricMint.copy(alpha = 0.2f)
-        } else {
-            colors.glassLight
-        },
-        animationSpec = tween(300),
-        label = "chip_background"
-    )
-
-    val borderColor by animateColorAsState(
-        targetValue = if (selected) {
-            colors.electricMint
-        } else {
-            colors.borderGlass
-        },
-        animationSpec = tween(300),
-        label = "chip_border"
-    )
-
-    Surface(
+    Card(
         onClick = onClick,
         modifier = modifier,
-        shape = CircleShape,
-        color = backgroundColor,
-        border = BorderStroke(
-            width = 1.dp,
-            color = borderColor
+        shape = GlassmorphicShapes.GlassCard,
+        colors = CardDefaults.cardColors(
+            containerColor = if (selected) {
+                MaterialTheme.colorScheme.extended.electricMint.copy(alpha = 0.1f)
+            } else {
+                MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)
+            }
+        ),
+        border = if (selected) {
+            BorderStroke(2.dp, MaterialTheme.colorScheme.extended.electricMint)
+        } else null,
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = if (selected) 4.dp else 2.dp
         )
     ) {
-        Box(
-            modifier = Modifier.padding(
-                horizontal = 16.dp,
-                vertical = 8.dp
-            ),
-            contentAlignment = Alignment.Center
-        ) {
-            label()
-        }
+        content()
     }
 }
 
 /**
- * Glass loading indicator
+ * Glass Info Card
  */
 @Composable
-fun GlassLoadingCard(
-    message: String? = null,
+fun GlassInfoCard(
+    icon: @Composable () -> Unit,
+    title: String,
+    subtitle: String? = null,
+    backgroundColor: Color = MaterialTheme.colorScheme.surfaceVariant,
     modifier: Modifier = Modifier
 ) {
-    val colors = LocalExtendedColors.current // FIXED
-
-    GlassCard(
+    Surface(
         modifier = modifier,
-        glowColor = colors.electricMintGlow // FIXED
+        shape = RoundedCornerShape(SpacingTokens.M),
+        color = backgroundColor
     ) {
-        Column(
-            modifier = Modifier.padding(32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+        Row(
+            modifier = Modifier.padding(SpacingTokens.M),
+            horizontalArrangement = Arrangement.spacedBy(SpacingTokens.S),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            CircularProgressIndicator(
-                color = colors.electricMint, // FIXED
-                strokeWidth = 3.dp
-            )
-
-            message?.let {
+            icon()
+            Column {
                 Text(
-                    text = it,
+                    text = title,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    fontWeight = FontWeight.Medium
                 )
+                subtitle?.let {
+                    Text(
+                        text = it,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
     }
 }
 
 /**
- * Glow effect modifier helper
+ * Glass Badge component
  */
-fun Modifier.glowEffect(
-    glowColor: Color,
-    blurRadius: Dp = 16.dp,
-    alpha: Float = 1f
-) = composed {
-    this.drawWithCache {
-        onDrawBehind {
-            drawCircle(
-                brush = Brush.radialGradient(
-                    colors = listOf(
-                        glowColor.copy(alpha = alpha * 0.3f),
-                        glowColor.copy(alpha = 0f)
-                    ),
-                    radius = size.minDimension / 2 + blurRadius.toPx()
-                ),
-                radius = size.minDimension / 2 + blurRadius.toPx()
+enum class BadgeSize { SMALL, MEDIUM, LARGE }
+
+@Composable
+fun GlassBadge(
+    count: Int? = null,
+    text: String? = null,
+    backgroundColor: Color = MaterialTheme.colorScheme.primary,
+    textColor: Color = Color.White,
+    size: BadgeSize = BadgeSize.MEDIUM,
+    modifier: Modifier = Modifier
+) {
+    val displayText = count?.toString() ?: text ?: ""
+    val (badgeSize, textSize) = when (size) {
+        BadgeSize.SMALL -> 20.dp to 10.sp
+        BadgeSize.MEDIUM -> 24.dp to 12.sp
+        BadgeSize.LARGE -> 40.dp to 16.sp
+    }
+
+    Box(
+        modifier = modifier
+            .size(width = if (displayText.length > 2) badgeSize * 1.5f else badgeSize, height = badgeSize)
+            .clip(RoundedCornerShape(badgeSize / 2))
+            .background(backgroundColor),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = displayText,
+            style = MaterialTheme.typography.labelSmall.copy(fontSize = textSize),
+            color = textColor,
+            fontWeight = FontWeight.Bold
+        )
+    }
+}
+
+/**
+ * Animated Price Counter
+ */
+@Composable
+fun AnimatedPriceCounter(
+    targetValue: Double,
+    style: TextStyle = MaterialTheme.typography.bodyLarge,
+    modifier: Modifier = Modifier
+) {
+    var oldValue by remember { mutableStateOf(targetValue) }
+
+    val animatedValue by animateFloatAsState(
+        targetValue = targetValue.toFloat(),
+        animationSpec = tween(
+            durationMillis = 500,
+            easing = FastOutSlowInEasing
+        ),
+        label = "price_animation"
+    )
+
+    LaunchedEffect(targetValue) {
+        oldValue = targetValue
+    }
+
+    Text(
+        text = "₪${String.format("%.2f", animatedValue)}",
+        style = style,
+        modifier = modifier
+    )
+}
+
+/**
+ * Glass Chip component
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun GlassmorphicChip(
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    leadingIcon: (@Composable () -> Unit)? = null,
+    trailingIcon: (@Composable () -> Unit)? = null,
+    content: @Composable RowScope.() -> Unit
+) {
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        label = content,
+        modifier = modifier,
+        leadingIcon = leadingIcon,
+        trailingIcon = trailingIcon,
+        shape = GlassmorphicShapes.Chip,
+        colors = FilterChipDefaults.filterChipColors(
+            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+            selectedContainerColor = MaterialTheme.colorScheme.extended.electricMint.copy(alpha = 0.2f),
+            labelColor = MaterialTheme.colorScheme.onSurface,
+            selectedLabelColor = MaterialTheme.colorScheme.extended.electricMint
+        ),
+        border = FilterChipDefaults.filterChipBorder(
+            enabled = true,
+            selected = selected,
+            borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+            selectedBorderColor = MaterialTheme.colorScheme.extended.electricMint
+        )
+    )
+}
+
+/**
+ * Glassmorphic Icon Button
+ */
+@Composable
+fun GlassmorphicIconButton(
+    onClick: () -> Unit,
+    icon: ImageVector,
+    modifier: Modifier = Modifier,
+    size: Dp = 48.dp,
+    tint: Color = MaterialTheme.colorScheme.primary,
+    backgroundColor: Color? = null,
+    glassIntensity: GlassIntensity = GlassIntensity.Light
+) {
+    Surface(
+        onClick = onClick,
+        modifier = modifier.size(size),
+        shape = CircleShape,
+        color = backgroundColor ?: Color.Transparent
+    ) {
+        Box(
+            modifier = if (backgroundColor == null) {
+                Modifier.glassmorphic(
+                    intensity = glassIntensity,
+                    shape = CircleShape
+                )
+            } else {
+                Modifier
+            },
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = tint,
+                modifier = Modifier.size(size * 0.5f)
             )
+        }
+    }
+}
+
+/**
+ * Premium Button component using GlassButton
+ */
+@Composable
+fun PremiumButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    loading: Boolean = false,
+    icon: (@Composable () -> Unit)? = null
+) {
+    val gradient = listOf(
+        MaterialTheme.colorScheme.extended.electricMint,
+        MaterialTheme.colorScheme.extended.bestPrice
+    )
+
+    GlassButton(
+        onClick = onClick,
+        modifier = modifier.fillMaxWidth().height(56.dp),
+        gradient = gradient,
+        glowColor = MaterialTheme.colorScheme.extended.electricMint
+    ) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            if (loading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp),
+                    color = Color.White,
+                    strokeWidth = 2.dp
+                )
+            } else {
+                Row(
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (icon != null) {
+                        Box(modifier = Modifier) {
+                            icon()
+                        }
+                        Spacer(modifier = Modifier.width(SpacingTokens.S))
+                    }
+                    Text(
+                        text = text,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.White
+                    )
+                }
+            }
         }
     }
 }

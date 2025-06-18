@@ -7,17 +7,13 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
@@ -25,51 +21,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
-import com.example.championcart.presentation.navigation.Screen
 import com.example.championcart.ui.theme.*
 
 /**
- * Bottom navigation items - 4 main screens
- */
-enum class BottomNavItem(
-    val screen: Screen,
-    val icon: ImageVector,
-    val selectedIcon: ImageVector,
-    val label: String,
-    val labelHebrew: String
-) {
-    HOME(
-        screen = Screen.Home,
-        icon = Icons.Default.Home,
-        selectedIcon = Icons.Filled.Home,
-        label = "Home",
-        labelHebrew = "בית"
-    ),
-    SEARCH(
-        screen = Screen.Search,
-        icon = Icons.Default.Search,
-        selectedIcon = Icons.Filled.Search,
-        label = "Search",
-        labelHebrew = "חיפוש"
-    ),
-    CART(
-        screen = Screen.Cart,
-        icon = Icons.Default.ShoppingCart,
-        selectedIcon = Icons.Filled.ShoppingCart,
-        label = "Cart",
-        labelHebrew = "עגלה"
-    ),
-    PROFILE(
-        screen = Screen.Profile,
-        icon = Icons.Default.Person,
-        selectedIcon = Icons.Filled.Person,
-        label = "Profile",
-        labelHebrew = "פרופיל"
-    )
-}
-
-/**
  * Modern bottom navigation bar with Electric Harmony design
+ * Now uses unified Screen definitions
  */
 @Composable
 fun ChampionCartBottomBar(
@@ -81,8 +37,11 @@ fun ChampionCartBottomBar(
     val currentRoute = navBackStackEntry?.destination?.route
     val haptics = LocalHapticFeedback.current
 
+    // Get bottom nav items from unified Screen definition
+    val bottomNavItems = Screen.getBottomNavItems()
+
     // Only show bottom bar on main screens
-    if (!shouldShowBottomBar(currentRoute)) return
+    if (!Screen.shouldShowBottomBar(currentRoute)) return
 
     Surface(
         modifier = modifier.fillMaxWidth(),
@@ -100,7 +59,7 @@ fun ChampionCartBottomBar(
                     .fillMaxSize()
                     .glassmorphic(
                         intensity = GlassIntensity.Heavy,
-                        shape = GlassmorphicShapes.BottomNav
+                        shape = GlassmorphicShapes.BottomNavigation
                     )
             )
 
@@ -113,17 +72,17 @@ fun ChampionCartBottomBar(
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                BottomNavItem.values().forEach { item ->
-                    val isSelected = currentRoute == item.screen.route
+                bottomNavItems.forEach { screen ->
+                    val isSelected = currentRoute == screen.route
 
                     BottomNavItemView(
-                        item = item,
+                        screen = screen,
                         isSelected = isSelected,
-                        cartBadgeCount = if (item == BottomNavItem.CART) cartItemCount else 0,
+                        cartBadgeCount = if (screen == Screen.Cart) cartItemCount else 0,
                         onClick = {
                             haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                            if (currentRoute != item.screen.route) {
-                                navController.navigate(item.screen.route) {
+                            if (currentRoute != screen.route) {
+                                navController.navigate(screen.route) {
                                     // Pop up to home to avoid building up a large back stack
                                     popUpTo(Screen.Home.route) {
                                         saveState = true
@@ -144,7 +103,7 @@ fun ChampionCartBottomBar(
 
 @Composable
 private fun BottomNavItemView(
-    item: BottomNavItem,
+    screen: Screen,
     isSelected: Boolean,
     cartBadgeCount: Int,
     onClick: () -> Unit
@@ -190,14 +149,18 @@ private fun BottomNavItemView(
             // Icon with badge
             Box {
                 Icon(
-                    imageVector = if (isSelected) item.selectedIcon else item.icon,
-                    contentDescription = item.labelHebrew,
+                    imageVector = if (isSelected) {
+                        screen.selectedIcon ?: screen.icon!!
+                    } else {
+                        screen.icon!!
+                    },
+                    contentDescription = screen.labelHebrew,
                     modifier = Modifier.size(SizingTokens.IconM),
                     tint = contentColor
                 )
 
                 // Cart badge
-                if (item == BottomNavItem.CART && cartBadgeCount > 0) {
+                if (cartBadgeCount > 0) {
                     CartBadge(
                         count = cartBadgeCount,
                         modifier = Modifier
@@ -214,7 +177,7 @@ private fun BottomNavItemView(
                 exit = fadeOut() + shrinkVertically()
             ) {
                 Text(
-                    text = item.labelHebrew,
+                    text = screen.labelHebrew ?: "",
                     style = MaterialTheme.typography.labelSmall,
                     color = contentColor,
                     fontWeight = FontWeight.Medium
@@ -253,16 +216,4 @@ private fun CartBadge(
             fontWeight = FontWeight.Bold
         )
     }
-}
-
-/**
- * Determines if bottom bar should be shown for the current route
- */
-private fun shouldShowBottomBar(currentRoute: String?): Boolean {
-    return currentRoute in listOf(
-        Screen.Home.route,
-        Screen.Search.route,
-        Screen.Cart.route,
-        Screen.Profile.route
-    )
 }

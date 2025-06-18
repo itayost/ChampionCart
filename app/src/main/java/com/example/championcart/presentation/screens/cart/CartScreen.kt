@@ -6,836 +6,629 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.window.Dialog
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.championcart.domain.models.*
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.championcart.domain.models.Store
+import com.example.championcart.presentation.components.*
 import com.example.championcart.ui.theme.*
 
 /**
- * Cart Screen - Modern Shopping Cart with Electric Harmony Design
- * Uses only server-provided data structure
+ * Redesigned Cart Screen using existing component library
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CartScreen(
-    modifier: Modifier = Modifier,
-    viewModel: CartViewModel = viewModel(),
-    onNavigateToSearch: () -> Unit = {},
-    onNavigateToResults: (city: String, items: List<CartProduct>) -> Unit = { _, _ -> }
+    onNavigateBack: () -> Unit,
+    onNavigateToSearch: () -> Unit,
+    onNavigateToResults: () -> Unit,
+    viewModel: CartViewModel = hiltViewModel()
 ) {
-    val state by viewModel.state.collectAsState()
-    val hapticFeedback = LocalHapticFeedback.current
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val haptics = LocalHapticFeedback.current
 
+    // Load cities on first composition
     LaunchedEffect(Unit) {
-        viewModel.loadSavedCarts()
+        viewModel.loadAvailableCities()
     }
 
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(
-                brush = Brush.verticalGradient(
-                    colors = listOf(
-                        MaterialTheme.colorScheme.background,
-                        MaterialTheme.extendedColors.glass
+    Scaffold(
+        topBar = {
+            GlassmorphicTopAppBar(
+                title = "Shopping Cart",
+                subtitle = if (state.cartItems.isNotEmpty()) "${state.cartItems.size} items" else null,
+                onNavigationClick = onNavigateBack,
+                actions = {
+                    // City selector chip
+                    CityChip(
+                        city = state.selectedCity,
+                        onClick = { viewModel.showCityDialog() }
                     )
-                )
+
+                    // Clear cart action
+                    if (state.cartItems.isNotEmpty()) {
+                        GlassmorphicIconButton(
+                            onClick = {
+                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                viewModel.clearCart()
+                            },
+                            icon = Icons.Default.Delete,
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
             )
-    ) {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(Dimensions.screenPadding),
-            verticalArrangement = Arrangement.spacedBy(Dimensions.spacingMedium)
-        ) {
-            // Header Section
-            item {
-                CartHeader(
-                    cartTotal = state.totalPrice,
-                    itemCount = state.cartItems.size,
-                    selectedCity = state.selectedCity,
-                    onCityClick = { viewModel.showCityDialog() }
-                )
-            }
-
-            // Search Bar
-            item {
-                SearchAddProductBar(
-                    onAddProductClick = onNavigateToSearch,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-
-            // Cart Items Section
+        },
+        bottomBar = {
             if (state.cartItems.isNotEmpty()) {
-                item {
-                    Text(
-                        text = "Your Cart (${state.cartItems.size} items)",
-                        style = AppTextStyles.hebrewHeadline,
-                        color = MaterialTheme.colorScheme.onBackground,
-                        modifier = Modifier.padding(vertical = Dimensions.paddingSmall)
-                    )
-                }
+                CartBottomActionBar(
+                    totalPrice = state.totalPrice,
+                    isLoading = state.isFindingCheapest,
+                    onFindCheapest = {
+                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                        viewModel.findCheapestCart()
+                    }
+                )
+            }
+        },
+        containerColor = MaterialTheme.colorScheme.extended.backgroundLight
+    ) { paddingValues ->
+        Box(modifier = Modifier.fillMaxSize()) {
+            // Background orbs
+            FloatingOrbsBackground()
 
-                // Fixed: Proper items() usage with LocalCartItem objects
-                items(
-                    items = state.cartItems,
-                    key = { cartItem -> cartItem.id }
-                ) { cartItem ->
-                    Spacer(modifier = Modifier.height(Dimensions.spacingSmall))
-                    CartItemCard(
-                        item = cartItem,
-                        onQuantityChange = { newQuantity ->
-                            viewModel.updateQuantity(cartItem.id, newQuantity)
-                        },
-                        onRemoveItem = {
-                            hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                            viewModel.removeItem(cartItem.id)
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-
-                // Action Buttons
-                item {
-                    Spacer(modifier = Modifier.height(Dimensions.spacingLarge))
-                    CartActionButtons(
-                        isLoading = state.isFindingCheapest,
-                        cartItems = state.cartItems,
-                        selectedCity = state.selectedCity,
-                        onFindBestPrices = {
-                            val cartProducts = state.cartItems.map {
-                                CartProduct(it.itemName, it.quantity)
-                            }
-                            viewModel.findCheapestCart()
-                            onNavigateToResults(state.selectedCity, cartProducts)
-                        },
-                        onSaveCart = { viewModel.showSaveDialog() },
-                        onClearCart = { viewModel.clearCart() }
-                    )
-                }
+            if (state.cartItems.isEmpty()) {
+                // Empty state
+                EmptyState(
+                    type = EmptyStateType.EMPTY_CART,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
+                    onAction = onNavigateToSearch
+                )
             } else {
-                // Empty Cart State
-                item {
-                    EmptyCartState(
-                        onAddProductClick = onNavigateToSearch,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(Dimensions.paddingLarge)
-                    )
-                }
-            }
-
-            // Saved Carts Section
-            if (state.savedCarts.isNotEmpty()) {
-                item {
-                    Spacer(modifier = Modifier.height(Dimensions.spacingExtraLarge))
-                    Text(
-                        text = "Saved Carts",
-                        style = AppTextStyles.hebrewHeadline,
-                        color = MaterialTheme.colorScheme.onBackground,
-                        modifier = Modifier.padding(vertical = Dimensions.paddingSmall)
-                    )
-                }
-
-                // Fixed: Proper items() usage with SavedCart objects
-                items(
-                    items = state.savedCarts,
-                    key = { savedCart -> "${savedCart.cartName}_${savedCart.city}" }
-                ) { savedCart ->
-                    SavedCartCard(
-                        savedCart = savedCart,
-                        onLoadCart = { viewModel.loadSavedCart(savedCart) },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-            }
-        }
-
-        // Loading Overlay
-        if (state.isLoading) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(MaterialTheme.extendedColors.glass),
-                contentAlignment = Alignment.Center
-            ) {
-                Card(
-                    shape = ComponentShapes.Dialog,
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.extendedColors.glassFrosted
-                    )
+                // Cart items list
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
+                    contentPadding = PaddingValues(SpacingTokens.L),
+                    verticalArrangement = Arrangement.spacedBy(SpacingTokens.M)
                 ) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.padding(Dimensions.paddingLarge),
-                        color = MaterialTheme.extendedColors.electricMint
-                    )
+                    items(
+                        items = state.cartItems,
+                        key = { it.id }
+                    ) { item ->
+                        CartItemCard(
+                            item = item,
+                            onQuantityChange = { newQuantity ->
+                                viewModel.updateQuantity(item.id, newQuantity)
+                            },
+                            onRemove = {
+                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                viewModel.removeItem(item.id)
+                            }
+                        )
+                    }
+
+                    // Add more items card
+                    item {
+                        AddMoreItemsCard(
+                            onClick = onNavigateToSearch
+                        )
+                    }
                 }
+            }
+
+            // Loading overlay
+            LoadingDialog(
+                isLoading = state.isFindingCheapest,
+                message = "Finding best prices..."
+            )
+        }
+    }
+
+    // City selection dialog
+    if (state.showCityDialog) {
+        CitySelectionDialog(
+            currentCity = state.selectedCity,
+            availableCities = state.availableCities,
+            onCitySelected = viewModel::selectCity,
+            onDismiss = viewModel::hideCityDialog
+        )
+    }
+
+    // Store selector bottom sheet
+    if (state.showStoreSelector) {
+        GlassmorphicBottomSheet(
+            onDismiss = viewModel::hideStoreSelector,
+            content = {
+                StoreSelectorContent(
+                    stores = state.availableStores,
+                    selectedStore = state.selectedStore,
+                    potentialSavings = state.potentialSavings,
+                    onStoreSelected = viewModel::selectStore
+                )
+            }
+        )
+
+        // Navigate to results after selection
+        LaunchedEffect(state.selectedStore) {
+            if (state.selectedStore != null) {
+                onNavigateToResults()
             }
         }
     }
 
-    // Dialogs
-    if (state.showSaveDialog) {
-        SaveCartDialog(
-            onSave = { cartName ->
-                viewModel.saveCart(cartName)
-                viewModel.hideSaveDialog()
-            },
-            onDismiss = { viewModel.hideSaveDialog() }
-        )
-    }
-
-    if (state.showSavedCartsDialog) {
-        SavedCartsDialog(
-            savedCarts = state.savedCarts,
-            onLoadCart = { cart ->
-                viewModel.loadSavedCart(cart)
-                viewModel.hideSavedCartsDialog()
-            },
-            onDismiss = { viewModel.hideSavedCartsDialog() }
-        )
-    }
-
-    // Error Handling
+    // Error handling
     state.error?.let { error ->
         LaunchedEffect(error) {
-            // Show snackbar or handle error
+            // Show error snackbar
+            viewModel.clearError()
         }
     }
 }
 
+/**
+ * City selector chip component
+ */
 @Composable
-private fun CartHeader(
-    cartTotal: Double,
-    itemCount: Int,
-    selectedCity: String,
-    onCityClick: () -> Unit,
-    modifier: Modifier = Modifier
+private fun CityChip(
+    city: String,
+    onClick: () -> Unit
 ) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = ComponentShapes.CardLarge,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.extendedColors.glassFrosted
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = Dimensions.elevationMedium
-        )
-    ) {
-        Column(
-            modifier = Modifier.padding(Dimensions.cardPadding),
-            verticalArrangement = Arrangement.spacedBy(Dimensions.spacingMedium)
-        ) {
-            // City Selection
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onCityClick() }
-                    .padding(Dimensions.paddingSmall),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.LocationOn,
-                        contentDescription = "Location",
-                        tint = MaterialTheme.extendedColors.electricMint,
-                        modifier = Modifier.size(Dimensions.iconSizeMedium)
-                    )
-                    Spacer(modifier = Modifier.width(Dimensions.spacingSmall))
-                    Text(
-                        text = selectedCity,
-                        style = AppTextStyles.hebrewBody,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-                Icon(
-                    imageVector = Icons.Default.KeyboardArrowDown,
-                    contentDescription = "Change city",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(Dimensions.iconSizeSmall)
-                )
-            }
-
-            HorizontalDivider(
-                thickness = Dimensions.dividerThickness,
-                color = MaterialTheme.extendedColors.glassBorder
+    GlassmorphicChip(
+        selected = true,
+        onClick = onClick,
+        leadingIcon = {
+            Icon(
+                Icons.Default.LocationOn,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp)
             )
-
-            // Cart Summary
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column {
-                    Text(
-                        text = "Cart Total",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = "₪${String.format("%.2f", cartTotal)}",
-                        style = AppTextStyles.priceLarge,
-                        color = MaterialTheme.extendedColors.electricMint,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-
-                Card(
-                    shape = ComponentShapes.Badge,
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.extendedColors.electricMint
-                    )
-                ) {
-                    Text(
-                        text = "$itemCount items",
-                        style = AppTextStyles.badge,
-                        color = Color.White,
-                        modifier = Modifier.padding(
-                            horizontal = Dimensions.paddingMedium,
-                            vertical = Dimensions.paddingSmall
-                        )
-                    )
-                }
-            }
+        },
+        trailingIcon = {
+            Icon(
+                Icons.Default.KeyboardArrowDown,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp)
+            )
         }
+    ) {
+        Text(
+            text = city,
+            style = MaterialTheme.typography.bodySmall,
+            fontWeight = FontWeight.Medium
+        )
     }
 }
 
-@Composable
-private fun SearchAddProductBar(
-    onAddProductClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(Dimensions.searchBarHeight)
-            .clickable { onAddProductClick() },
-        shape = ComponentShapes.SearchBar,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.extendedColors.glass
-        ),
-        border = BorderStroke(
-            width = Dimensions.borderThin,
-            color = MaterialTheme.extendedColors.glassBorder
-        )
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = Dimensions.paddingMedium),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingMedium)
-        ) {
-            Icon(
-                imageVector = Icons.Default.Search,
-                contentDescription = "Search",
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(Dimensions.searchBarIconSize)
-            )
-            Text(
-                text = "Add products to your cart...",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.weight(1f)
-            )
-            Icon(
-                imageVector = Icons.Default.Add,
-                contentDescription = "Add product",
-                tint = MaterialTheme.extendedColors.electricMint,
-                modifier = Modifier.size(Dimensions.iconSizeMedium)
-            )
-        }
-    }
-}
-
+/**
+ * Enhanced Cart Item Card using glass components
+ */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CartItemCard(
     item: LocalCartItem,
     onQuantityChange: (Int) -> Unit,
-    onRemoveItem: () -> Unit,
+    onRemove: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Card(
-        modifier = modifier.height(Dimensions.cartItemHeight),
-        shape = ComponentShapes.Card,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.extendedColors.glassFrosted
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = Dimensions.elevationSmall
-        )
+    val haptics = LocalHapticFeedback.current
+
+    GlassCard(
+        modifier = modifier.fillMaxWidth(),
+        onClick = { /* Handle item click */ }
     ) {
         Row(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(Dimensions.listItemPadding),
+                .fillMaxWidth()
+                .padding(SpacingTokens.L),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingMedium)
+            horizontalArrangement = Arrangement.spacedBy(SpacingTokens.L)
         ) {
-            // Product Info
-            Column(modifier = Modifier.weight(1f)) {
+            // Product emoji/icon with glass background
+            Box(
+                modifier = Modifier
+                    .size(60.dp)
+                    .clip(CircleShape)
+                    .background(
+                        MaterialTheme.colorScheme.extended.electricMint.copy(alpha = 0.1f)
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = getProductEmoji(item.itemName),
+                    fontSize = 28.sp
+                )
+            }
+
+            // Product details
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(SpacingTokens.XXS)
+            ) {
                 Text(
                     text = item.itemName,
-                    style = AppTextStyles.productName,
+                    style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Medium,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
-                Spacer(modifier = Modifier.height(Dimensions.spacingExtraSmall))
-                Text(
-                    text = "₪${String.format("%.2f", item.price)}",
-                    style = AppTextStyles.priceMedium,
-                    color = MaterialTheme.extendedColors.electricMint
+                PriceDisplay(
+                    price = item.price,
+                    quantity = item.quantity,
+                    total = item.price * item.quantity
                 )
-                // Show chain if available
-                item.chain?.let { chain ->
-                    Text(
-                        text = chain,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
             }
 
-            // Quantity Controls
-            QuantityControls(
+            // Quantity controls using existing components
+            QuantitySelector(
                 quantity = item.quantity,
-                onQuantityChange = onQuantityChange,
-                onRemove = onRemoveItem
+                onIncrease = {
+                    haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    onQuantityChange(item.quantity + 1)
+                },
+                onDecrease = {
+                    haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    if (item.quantity > 1) {
+                        onQuantityChange(item.quantity - 1)
+                    } else {
+                        onRemove()
+                    }
+                },
+                showDeleteOnOne = true
             )
         }
     }
 }
 
+/**
+ * Price display component
+ */
 @Composable
-private fun QuantityControls(
+private fun PriceDisplay(
+    price: Double,
     quantity: Int,
-    onQuantityChange: (Int) -> Unit,
-    onRemove: () -> Unit,
+    total: Double
+) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(SpacingTokens.S),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = "₪${String.format("%.2f", price)}",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.extended.electricMint,
+            fontWeight = FontWeight.SemiBold
+        )
+        Text(
+            text = "× $quantity",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = "= ₪${String.format("%.2f", total)}",
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium
+        )
+    }
+}
+
+/**
+ * Quantity selector component
+ */
+@Composable
+private fun QuantitySelector(
+    quantity: Int,
+    onIncrease: () -> Unit,
+    onDecrease: () -> Unit,
+    showDeleteOnOne: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     Row(
         modifier = modifier,
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingSmall)
+        horizontalArrangement = Arrangement.spacedBy(SpacingTokens.S),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        // Remove/Decrease Button
-        IconButton(
-            onClick = {
-                if (quantity <= 1) {
-                    onRemove()
-                } else {
-                    onQuantityChange(quantity - 1)
-                }
-            },
-            modifier = Modifier.size(Dimensions.quantityButtonSize)
-        ) {
-            Icon(
-                imageVector = if (quantity <= 1) Icons.Default.Delete else Icons.Default.Remove,
-                contentDescription = if (quantity <= 1) "Remove item" else "Decrease quantity",
-                tint = if (quantity <= 1)
-                    MaterialTheme.extendedColors.errorRed
-                else
-                    MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(Dimensions.iconSizeSmall)
-            )
-        }
-
-        // Quantity Display
-        Card(
-            shape = ComponentShapes.Badge,
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.extendedColors.glass
-            )
-        ) {
-            Text(
-                text = quantity.toString(),
-                style = AppTextStyles.badge,
-                modifier = Modifier.padding(
-                    horizontal = Dimensions.paddingMedium,
-                    vertical = Dimensions.paddingSmall
-                ),
-                textAlign = TextAlign.Center,
-                minLines = 1
-            )
-        }
-
-        // Add Button
-        IconButton(
-            onClick = { onQuantityChange(quantity + 1) },
-            modifier = Modifier.size(Dimensions.quantityButtonSize)
-        ) {
-            Icon(
-                imageVector = Icons.Default.Add,
-                contentDescription = "Increase quantity",
-                tint = MaterialTheme.extendedColors.electricMint,
-                modifier = Modifier.size(Dimensions.iconSizeSmall)
-            )
-        }
-    }
-}
-
-@Composable
-private fun CartActionButtons(
-    isLoading: Boolean,
-    cartItems: List<LocalCartItem>,
-    selectedCity: String,
-    onFindBestPrices: () -> Unit,
-    onSaveCart: () -> Unit,
-    onClearCart: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(Dimensions.spacingMedium)
-    ) {
-        // Primary CTA - Find Best Prices
-        Button(
-            onClick = onFindBestPrices,
-            enabled = !isLoading && cartItems.isNotEmpty(),
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(Dimensions.buttonHeight),
-            shape = ComponentShapes.Button,
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.extendedColors.electricMint,
-                contentColor = Color.White
-            ),
-            elevation = ButtonDefaults.buttonElevation(
-                defaultElevation = Dimensions.elevationMedium
-            )
-        ) {
-            if (isLoading) {
-                CircularProgressIndicator(
-                    color = Color.White,
-                    modifier = Modifier.size(Dimensions.iconSizeSmall)
-                )
+        // Decrease/Delete button
+        GlassmorphicIconButton(
+            onClick = onDecrease,
+            size = 36.dp,
+            icon = if (quantity > 1 || !showDeleteOnOne) Icons.Default.Remove else Icons.Default.Delete,
+            tint = if (quantity > 1 || !showDeleteOnOne) {
+                MaterialTheme.colorScheme.onSurface
             } else {
-                Icon(
-                    imageVector = Icons.Default.Search,
-                    contentDescription = null,
-                    modifier = Modifier.size(Dimensions.iconSizeSmall)
-                )
-                Spacer(modifier = Modifier.width(Dimensions.spacingSmall))
-                Text(
-                    text = "Find Best Prices",
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Medium
-                )
-            }
-        }
+                MaterialTheme.colorScheme.error
+            },
+            glassIntensity = if (quantity > 1) GlassIntensity.Medium else GlassIntensity.Light,
+            backgroundColor = if (quantity <= 1 && showDeleteOnOne) {
+                MaterialTheme.colorScheme.error.copy(alpha = 0.1f)
+            } else null
+        )
 
-        // Secondary Actions
+        // Quantity display
+        GlassBadge(
+            count = quantity,
+            backgroundColor = MaterialTheme.colorScheme.extended.electricMint.copy(alpha = 0.1f),
+            textColor = MaterialTheme.colorScheme.extended.electricMint,
+            size = BadgeSize.LARGE
+        )
+
+        // Increase button
+        GlassmorphicIconButton(
+            onClick = onIncrease,
+            size = 36.dp,
+            icon = Icons.Default.Add,
+            tint = Color.White,
+            backgroundColor = MaterialTheme.colorScheme.extended.electricMint
+        )
+    }
+}
+
+/**
+ * Add more items card using glass components
+ */
+@Composable
+private fun AddMoreItemsCard(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    GlassOutlinedCard(
+        onClick = onClick,
+        modifier = modifier.fillMaxWidth(),
+        borderColor = MaterialTheme.colorScheme.extended.electricMint.copy(alpha = 0.3f)
+    ) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingMedium)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(SpacingTokens.L),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            // Save Cart
-            OutlinedButton(
-                onClick = onSaveCart,
-                enabled = cartItems.isNotEmpty(),
-                modifier = Modifier.weight(1f),
-                shape = ComponentShapes.Button,
-                border = BorderStroke(
-                    width = Dimensions.borderThin,
-                    color = MaterialTheme.extendedColors.electricMint
-                )
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Favorite,
-                    contentDescription = null,
-                    tint = MaterialTheme.extendedColors.electricMint,
-                    modifier = Modifier.size(Dimensions.iconSizeExtraSmall)
-                )
-                Spacer(modifier = Modifier.width(Dimensions.spacingExtraSmall))
-                Text(
-                    text = "Save",
-                    color = MaterialTheme.extendedColors.electricMint
-                )
-            }
-
-            // Clear Cart
-            OutlinedButton(
-                onClick = onClearCart,
-                enabled = cartItems.isNotEmpty(),
-                modifier = Modifier.weight(1f),
-                shape = ComponentShapes.Button,
-                border = BorderStroke(
-                    width = Dimensions.borderThin,
-                    color = MaterialTheme.extendedColors.errorRed
-                )
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Clear,
-                    contentDescription = null,
-                    tint = MaterialTheme.extendedColors.errorRed,
-                    modifier = Modifier.size(Dimensions.iconSizeExtraSmall)
-                )
-                Spacer(modifier = Modifier.width(Dimensions.spacingExtraSmall))
-                Text(
-                    text = "Clear",
-                    color = MaterialTheme.extendedColors.errorRed
-                )
-            }
+            Icon(
+                Icons.Default.Add,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.extended.electricMint
+            )
+            Spacer(modifier = Modifier.width(SpacingTokens.S))
+            Text(
+                text = "Add More Items",
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.extended.electricMint
+            )
         }
     }
 }
 
+/**
+ * Cart bottom action bar using premium button
+ */
 @Composable
-private fun EmptyCartState(
-    onAddProductClick: () -> Unit,
-    modifier: Modifier = Modifier
+private fun CartBottomActionBar(
+    totalPrice: Double,
+    isLoading: Boolean,
+    onFindCheapest: () -> Unit
 ) {
-    Card(
-        modifier = modifier,
-        shape = ComponentShapes.CardLarge,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.extendedColors.glassFrosted
-        )
+    GlassmorphicNavigationContainer(
+        modifier = Modifier.fillMaxWidth()
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(Dimensions.paddingExtraLarge),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(Dimensions.spacingMedium)
+                .padding(SpacingTokens.L),
+            verticalArrangement = Arrangement.spacedBy(SpacingTokens.M)
         ) {
-            Icon(
-                imageVector = Icons.Default.ShoppingCart,
-                contentDescription = null,
-                modifier = Modifier.size(Dimensions.iconSizeHuge),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            Text(
-                text = "Your cart is empty",
-                style = AppTextStyles.hebrewHeadline,
-                textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-
-            Text(
-                text = "Add products to start comparing prices and find the best deals",
-                style = MaterialTheme.typography.bodyMedium,
-                textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            Spacer(modifier = Modifier.height(Dimensions.spacingSmall))
-
-            Button(
-                onClick = onAddProductClick,
-                shape = ComponentShapes.Button,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.extendedColors.electricMint
-                )
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = null,
-                    modifier = Modifier.size(Dimensions.iconSizeExtraSmall)
-                )
-                Spacer(modifier = Modifier.width(Dimensions.spacingSmall))
-                Text(text = "Add Products")
-            }
-        }
-    }
-}
-
-@Composable
-private fun SavedCartCard(
-    savedCart: SavedCart,
-    onLoadCart: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable { onLoadCart() },
-        shape = ComponentShapes.Card,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.extendedColors.glass
-        ),
-        border = BorderStroke(
-            width = Dimensions.borderThin,
-            color = MaterialTheme.extendedColors.glassBorder
-        )
-    ) {
-        Column(
-            modifier = Modifier.padding(Dimensions.listItemPadding),
-            verticalArrangement = Arrangement.spacedBy(Dimensions.spacingSmall)
-        ) {
+            // Total row
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = savedCart.cartName,
-                    style = AppTextStyles.productNameLarge,
-                    fontWeight = FontWeight.Medium
+                    text = "Total",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.SemiBold
                 )
+                AnimatedPriceCounter(
+                    targetValue = totalPrice,
+                    style = MaterialTheme.typography.headlineSmall.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.extended.electricMint
+                    )
+                )
+            }
 
-                Row(verticalAlignment = Alignment.CenterVertically) {
+            // Find cheapest button using premium button
+            PremiumButton(
+                text = "Find Best Prices",
+                onClick = onFindCheapest,
+                loading = isLoading,
+                enabled = !isLoading,
+                icon = {
                     Icon(
-                        imageVector = Icons.Default.LocationOn,
+                        Icons.Default.Search,
                         contentDescription = null,
-                        modifier = Modifier.size(Dimensions.iconSizeExtraSmall),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        modifier = Modifier.size(20.dp)
                     )
-                    Text(
-                        text = savedCart.city,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-
-            Text(
-                text = "${savedCart.items.size} items • Total: ₪${savedCart.items.sumOf { it.price * it.quantity }.let { String.format("%.2f", it) }}",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                },
+                modifier = Modifier.fillMaxWidth()
             )
         }
     }
 }
 
+/**
+ * Store selector content for bottom sheet
+ */
 @Composable
-private fun SaveCartDialog(
-    onSave: (String) -> Unit,
-    onDismiss: () -> Unit
+private fun StoreSelectorContent(
+    stores: List<StoreWithPrice>,
+    selectedStore: Store?,
+    potentialSavings: Double,
+    onStoreSelected: (Store) -> Unit
 ) {
-    var cartName by remember { mutableStateOf("") }
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(SpacingTokens.L)
+    ) {
+        // Header
+        Text(
+            text = "Select Store",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(bottom = SpacingTokens.XXS)
+        )
+        Text(
+            text = "Choose where you want to shop",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(bottom = SpacingTokens.L)
+        )
 
-    Dialog(onDismissRequest = onDismiss) {
-        Card(
-            shape = ComponentShapes.Dialog,
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.extendedColors.glassFrosted
+        // Best deal indicator
+        if (potentialSavings > 0) {
+            BestDealCard(
+                savings = potentialSavings,
+                bestStore = stores.firstOrNull()?.store?.name ?: ""
             )
-        ) {
-            Column(
-                modifier = Modifier.padding(Dimensions.dialogPadding),
-                verticalArrangement = Arrangement.spacedBy(Dimensions.spacingMedium)
-            ) {
-                Text(
-                    text = "Save Cart",
-                    style = AppTextStyles.hebrewHeadline,
-                    fontWeight = FontWeight.Medium
-                )
+        }
 
-                OutlinedTextField(
-                    value = cartName,
-                    onValueChange = { cartName = it },
-                    label = { Text("Cart Name") },
-                    placeholder = { Text("e.g., Weekly Shopping") },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = ComponentShapes.TextField,
-                    keyboardOptions = KeyboardOptions(
-                        imeAction = androidx.compose.ui.text.input.ImeAction.Done
-                    )
-                )
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingMedium)
-                ) {
-                    OutlinedButton(
-                        onClick = onDismiss,
-                        modifier = Modifier.weight(1f),
-                        shape = ComponentShapes.Button
-                    ) {
-                        Text("Cancel")
-                    }
-
-                    Button(
-                        onClick = {
-                            if (cartName.isNotBlank()) {
-                                onSave(cartName.trim())
-                            }
-                        },
-                        enabled = cartName.isNotBlank(),
-                        modifier = Modifier.weight(1f),
-                        shape = ComponentShapes.Button,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.extendedColors.electricMint
-                        )
-                    ) {
-                        Text("Save")
-                    }
-                }
-            }
+        // Store list
+        stores.forEach { storeWithPrice ->
+            StoreOptionCard(
+                store = storeWithPrice.store,
+                totalPrice = storeWithPrice.totalPrice,
+                isSelected = selectedStore?.id == storeWithPrice.store.id,
+                isBestDeal = stores.indexOf(storeWithPrice) == 0,
+                onSelect = { onStoreSelected(storeWithPrice.store) }
+            )
+            Spacer(modifier = Modifier.height(SpacingTokens.S))
         }
     }
 }
 
+/**
+ * Best deal indicator card
+ */
 @Composable
-private fun SavedCartsDialog(
-    savedCarts: List<SavedCart>,
-    onLoadCart: (SavedCart) -> Unit,
-    onDismiss: () -> Unit
+private fun BestDealCard(
+    savings: Double,
+    bestStore: String
 ) {
-    Dialog(onDismissRequest = onDismiss) {
-        Card(
-            shape = ComponentShapes.Dialog,
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.extendedColors.glassFrosted
-            ),
+    GlassInfoCard(
+        icon = { Text("💰", fontSize = 20.sp) },
+        title = "You save ₪${String.format("%.2f", savings)}",
+        subtitle = "Shopping at $bestStore",
+        backgroundColor = MaterialTheme.colorScheme.extended.success.copy(alpha = 0.1f),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = SpacingTokens.M)
+    )
+}
+
+/**
+ * Store option card
+ */
+@Composable
+private fun StoreOptionCard(
+    store: Store,
+    totalPrice: Double,
+    isSelected: Boolean,
+    isBestDeal: Boolean,
+    onSelect: () -> Unit
+) {
+    GlassSelectableCard(
+        selected = isSelected,
+        onClick = onSelect,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(max = Dimensions.modalMaxHeight)
+                .padding(SpacingTokens.L),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
+            // Store info
             Column(
-                modifier = Modifier.padding(Dimensions.dialogPadding)
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(SpacingTokens.XXS)
             ) {
-                Text(
-                    text = "Saved Carts",
-                    style = AppTextStyles.hebrewHeadline,
-                    fontWeight = FontWeight.Medium,
-                    modifier = Modifier.padding(bottom = Dimensions.spacingMedium)
-                )
-
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(Dimensions.spacingSmall)
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(SpacingTokens.S),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    items(savedCarts) { savedCart ->
-                        SavedCartCard(
-                            savedCart = savedCart,
-                            onLoadCart = { onLoadCart(savedCart) }
+                    Text(
+                        text = store.name,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium
+                    )
+                    if (isBestDeal) {
+                        GlassBadge(
+                            text = "BEST DEAL",
+                            backgroundColor = MaterialTheme.colorScheme.extended.success,
+                            textColor = Color.White,
+                            size = BadgeSize.SMALL
                         )
                     }
                 }
-
-                Spacer(modifier = Modifier.height(Dimensions.spacingMedium))
-
-                Button(
-                    onClick = onDismiss,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = ComponentShapes.Button,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.extendedColors.electricMint
-                    )
-                ) {
-                    Text("Close")
-                }
+                Text(
+                    text = store.address,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
+
+            // Price
+            AnimatedPriceCounter(
+                targetValue = totalPrice,
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = FontWeight.Bold,
+                    color = if (isBestDeal) {
+                        MaterialTheme.colorScheme.extended.success
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    }
+                )
+            )
         }
+    }
+}
+
+/**
+ * Helper function to get emoji for products
+ */
+private fun getProductEmoji(productName: String): String {
+    val name = productName.lowercase()
+    return when {
+        name.contains("חלב") || name.contains("milk") -> "🥛"
+        name.contains("לחם") || name.contains("bread") -> "🍞"
+        name.contains("ביצה") || name.contains("egg") -> "🥚"
+        name.contains("במבה") || name.contains("bamba") -> "🥜"
+        name.contains("גבינה") || name.contains("cheese") -> "🧀"
+        name.contains("עגבניה") || name.contains("tomato") -> "🍅"
+        name.contains("תפוח") || name.contains("apple") -> "🍎"
+        name.contains("בננה") || name.contains("banana") -> "🍌"
+        else -> "📦"
     }
 }
