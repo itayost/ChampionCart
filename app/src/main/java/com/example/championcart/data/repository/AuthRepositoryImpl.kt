@@ -10,6 +10,7 @@ import com.example.championcart.data.models.response.ApiErrorResponse
 import com.example.championcart.domain.models.*
 import com.example.championcart.domain.repository.AuthRepository
 import com.example.championcart.domain.repository.AuthState
+import com.example.championcart.utils.Constants
 import com.google.gson.Gson
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,12 +30,18 @@ class AuthRepositoryImpl @Inject constructor(
         return try {
             _authState.value = AuthState.Loading
 
+            Log.d("AuthRepository", "Starting login request for email: $email")
+            Log.d("AuthRepository", "API Base URL: ${Constants.BASE_URL}")
+
             val response = api.login(LoginRequest(email, password))
+
+            Log.d("AuthRepository", "Response received - Code: ${response.code()}")
+            Log.d("AuthRepository", "Response headers: ${response.headers()}")
 
             if (response.isSuccessful) {
                 val authResponse = response.body()
                 if (authResponse != null) {
-                    Log.d("AuthRepository", "Login successful for: $email")
+                    Log.d("AuthRepository", "Login successful - Token: ${authResponse.accessToken.take(20)}...")
 
                     // Create domain AuthResponse using server response
                     val domainAuthResponse = AuthResponse(
@@ -49,18 +56,42 @@ class AuthRepositoryImpl @Inject constructor(
                     _authState.value = AuthState.Authenticated
                     Result.success(domainAuthResponse)
                 } else {
+                    Log.e("AuthRepository", "Empty response body")
                     _authState.value = AuthState.Unauthenticated
                     Result.failure(Exception("Empty response body"))
                 }
             } else {
-                _authState.value = AuthState.Unauthenticated
                 val errorBody = response.errorBody()?.string()
-                Result.failure(Exception("Login failed: ${parseErrorMessage(errorBody)}"))
+                Log.e("AuthRepository", "Login failed - Code: ${response.code()}")
+                Log.e("AuthRepository", "Error body: $errorBody")
+
+                _authState.value = AuthState.Unauthenticated
+
+                // Parse specific error messages
+                val errorMessage = when (response.code()) {
+                    401 -> "Invalid email or password"
+                    404 -> "User not found"
+                    500 -> "Server error. Please try again later"
+                    else -> parseErrorMessage(errorBody)
+                }
+
+                Result.failure(Exception(errorMessage))
             }
         } catch (e: Exception) {
-            Log.e("AuthRepository", "Login error", e)
+            Log.e("AuthRepository", "Login exception: ${e.message}", e)
+            Log.e("AuthRepository", "Exception type: ${e.javaClass.simpleName}")
+
             _authState.value = AuthState.Unauthenticated
-            Result.failure(e)
+
+            // Better error messages for common issues
+            val errorMessage = when {
+                e is java.net.UnknownHostException -> "No internet connection"
+                e is java.net.SocketTimeoutException -> "Connection timeout. Please try again"
+                e is javax.net.ssl.SSLException -> "Secure connection failed"
+                else -> e.message ?: "Unknown error occurred"
+            }
+
+            Result.failure(Exception(errorMessage))
         }
     }
 
@@ -232,15 +263,15 @@ class AuthRepositoryImpl @Inject constructor(
 
     private fun parseErrorMessage(errorBody: String?): String {
         return try {
-            if (errorBody != null) {
-                val gson = Gson()
-                val errorResponse = gson.fromJson(errorBody, ApiErrorResponse::class.java)
-                errorResponse.detail
+            if (errorBody.isNullOrEmpty()) {
+                "An error occurred"
             } else {
-                "Unknown error"
+                val errorResponse = Gson().fromJson(errorBody, ApiErrorResponse::class.java)
+                errorResponse?.detail ?: "An error occurred"
             }
         } catch (e: Exception) {
-            errorBody ?: "Unknown error"
+            Log.e("AuthRepository", "Error parsing error message: ${e.message}")
+            "An error occurred"
         }
     }
 }

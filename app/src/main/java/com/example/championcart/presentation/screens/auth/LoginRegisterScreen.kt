@@ -36,6 +36,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.championcart.presentation.components.FloatingOrbsBackground
 import com.example.championcart.presentation.components.LoadingDialog
@@ -299,6 +300,13 @@ private fun AuthFormCard(
                 isLoginMode = state.isLoginMode,
                 onToggle = viewModel::toggleMode
             )
+            // ERROR MESSAGE DISPLAY
+            state.error?.let { error ->
+                GlassErrorCard(
+                    error = error,
+                    onDismiss = viewModel::clearError
+                )
+            }
 
             // Email field
             OutlinedTextField(
@@ -480,6 +488,31 @@ private fun AuthFormCard(
                 isLoading = state.isLoading,
                 modifier = Modifier.fillMaxWidth()
             )
+            if (BuildConfig.DEBUG) {
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedButton(
+                    onClick = { viewModel.testServerConnection() },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp),
+                    shape = GlassmorphicShapes.Button,
+                    border = BorderStroke(
+                        width = 1.dp,
+                        color = colors.borderGlass.copy(alpha = 0.5f)
+                    ),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = Color.Transparent,
+                        contentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    )
+                ) {
+                    Text(
+                        text = "Test Server Connection",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontSize = 12.sp
+                    )
+                }
+            }
         }
     }
 }

@@ -1,16 +1,24 @@
 package com.example.championcart.presentation.screens.auth
 
+import android.util.Log
 import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.championcart.domain.repository.AuthRepository
 import com.example.championcart.domain.models.AuthResult
+import com.example.championcart.utils.Constants
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.BufferedReader
+import java.io.InputStreamReader
+import java.net.HttpURLConnection
+import java.net.URL
 import javax.inject.Inject
 
 /**
@@ -115,6 +123,8 @@ class AuthViewModel @Inject constructor(
     fun login() {
         val currentState = _state.value
 
+        Log.d("AuthViewModel", "Login attempt with email: ${currentState.email}")
+
         // Validate inputs
         val emailError = validateEmail(currentState.email)
         val passwordError = validatePassword(currentState.password)
@@ -134,14 +144,16 @@ class AuthViewModel @Inject constructor(
             _state.update { it.copy(isLoading = true, error = null) }
 
             try {
+                Log.d("AuthViewModel", "Calling authRepository.login")
+
                 val result = authRepository.login(
                     email = currentState.email.trim(),
                     password = currentState.password,
-                    //rememberMe = currentState.rememberMe
                 )
 
                 result.fold(
-                    onSuccess = { user ->
+                    onSuccess = { authResponse ->
+                        Log.d("AuthViewModel", "Login successful: ${authResponse.accessToken.take(20)}...")
                         _state.update {
                             it.copy(
                                 isLoading = false,
@@ -151,6 +163,7 @@ class AuthViewModel @Inject constructor(
                         }
                     },
                     onFailure = { exception ->
+                        Log.e("AuthViewModel", "Login failed: ${exception.message}", exception)
                         _state.update {
                             it.copy(
                                 isLoading = false,
@@ -160,6 +173,7 @@ class AuthViewModel @Inject constructor(
                     }
                 )
             } catch (e: Exception) {
+                Log.e("AuthViewModel", "Login exception", e)
                 _state.update {
                     it.copy(
                         isLoading = false,
@@ -172,6 +186,8 @@ class AuthViewModel @Inject constructor(
 
     fun register() {
         val currentState = _state.value
+
+        Log.d("AuthViewModel", "Register attempt with email: ${currentState.email}")
 
         // Validate inputs
         val emailError = validateEmail(currentState.email)
@@ -192,20 +208,21 @@ class AuthViewModel @Inject constructor(
             return
         }
 
-
         // Perform registration
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
 
             try {
+                Log.d("AuthViewModel", "Calling authRepository.register")
+
                 val result = authRepository.register(
                     email = currentState.email.trim(),
                     password = currentState.password,
-                    //enableBiometrics = currentState.enableBiometrics
                 )
 
                 result.fold(
-                    onSuccess = { user ->
+                    onSuccess = { authResponse ->
+                        Log.d("AuthViewModel", "Registration successful")
                         _state.update {
                             it.copy(
                                 isLoading = false,
@@ -215,6 +232,7 @@ class AuthViewModel @Inject constructor(
                         }
                     },
                     onFailure = { exception ->
+                        Log.e("AuthViewModel", "Registration failed: ${exception.message}", exception)
                         _state.update {
                             it.copy(
                                 isLoading = false,
@@ -224,6 +242,7 @@ class AuthViewModel @Inject constructor(
                     }
                 )
             } catch (e: Exception) {
+                Log.e("AuthViewModel", "Registration exception", e)
                 _state.update {
                     it.copy(
                         isLoading = false,
@@ -271,12 +290,17 @@ class AuthViewModel @Inject constructor(
     }
 
     private fun getErrorMessage(exception: Throwable): String {
-        return when (exception.message?.lowercase()) {
-            "user not found", "invalid credentials" -> "Invalid email or password"
-            "user already exists", "email already registered" -> "An account with this email already exists"
-            "weak password" -> "Password is too weak. Please choose a stronger password"
-            "network error", "timeout" -> "Network error. Please check your connection"
-            "server error" -> "Server error. Please try again later"
+        val message = exception.message?.lowercase() ?: ""
+
+        return when {
+            message.contains("invalid") && message.contains("password") -> "Invalid email or password"
+            message.contains("user") && message.contains("not found") -> "Invalid email or password"
+            message.contains("already") && message.contains("registered") -> "An account with this email already exists"
+            message.contains("email") && message.contains("already") -> "An account with this email already exists"
+            message.contains("weak password") -> "Password is too weak. Please choose a stronger password"
+            message.contains("no internet") || message.contains("unknownhost") -> "No internet connection"
+            message.contains("timeout") -> "Connection timeout. Please try again"
+            message.contains("server error") || message.contains("500") -> "Server error. Please try again later"
             else -> exception.message ?: "An unexpected error occurred. Please try again"
         }
     }
@@ -296,7 +320,7 @@ class AuthViewModel @Inject constructor(
                     currentState.confirmPassword.isNotBlank() &&
                     currentState.emailError == null &&
                     currentState.passwordError == null &&
-                    currentState.confirmPasswordError == null 
+                    currentState.confirmPasswordError == null
         }
     }
 
@@ -310,6 +334,56 @@ class AuthViewModel @Inject constructor(
                     password.any { it.isLetter() } &&
                     password.any { it.isUpperCase() } -> PasswordStrength.STRONG
             else -> PasswordStrength.MEDIUM
+        }
+    }
+
+    fun testServerConnection() {
+        viewModelScope.launch {
+            try {
+                Log.d("AuthViewModel", "Testing server connection...")
+
+                // Try to access the health endpoint
+                val url = "${Constants.BASE_URL}health"
+                Log.d("AuthViewModel", "Testing URL: $url")
+
+                // Simple network test
+                withContext(Dispatchers.IO) {
+                    val connection = URL(url).openConnection() as HttpURLConnection
+                    connection.requestMethod = "GET"
+                    connection.connectTimeout = 5000
+                    connection.readTimeout = 5000
+
+                    val responseCode = connection.responseCode
+                    Log.d("AuthViewModel", "Server response code: $responseCode")
+
+                    if (responseCode == 200) {
+                        val reader = BufferedReader(InputStreamReader(connection.inputStream))
+                        val response = reader.readText()
+                        reader.close()
+
+                        Log.d("AuthViewModel", "Server response: $response")
+
+                        _state.update {
+                            it.copy(
+                                error = "Server connection successful! ✅"
+                            )
+                        }
+                    } else {
+                        _state.update {
+                            it.copy(
+                                error = "Server returned code: $responseCode"
+                            )
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("AuthViewModel", "Connection test failed", e)
+                _state.update {
+                    it.copy(
+                        error = "Connection test failed: ${e.message}"
+                    )
+                }
+            }
         }
     }
 }

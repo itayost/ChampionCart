@@ -50,24 +50,44 @@ data class ProductResponse(
  * - GET /prices/identical-products/{city}/{item_name}
  */
 data class GroupedProductResponse(
-    @SerializedName("item_name")
-    val itemName: String,
     @SerializedName("item_code")
     val itemCode: String,
+    @SerializedName("item_name")
+    val itemName: String,
+
+    // For grouped products:
     @SerializedName("prices")
-    val prices: List<StorePriceResponse>,
-    @SerializedName("cross_chain")
-    val crossChain: Boolean,
-    @SerializedName("relevance_score")
-    val relevanceScore: Double? = null,
+    val prices: List<StorePriceResponse>? = null,
     @SerializedName("price_comparison")
     val priceComparison: PriceComparisonResponse? = null,
+
+    // For single products (direct fields):
+    @SerializedName("chain")
+    val chain: String? = null,
+    @SerializedName("store_id")
+    val storeId: String? = null,
+    @SerializedName("price")
+    val price: Double? = null,
+    @SerializedName("timestamp")
+    val timestamp: String? = null,
+
+    // Common fields:
+    @SerializedName("cross_chain")
+    val crossChain: Boolean? = false,
+    @SerializedName("relevance_score")
+    val relevanceScore: Double? = 0.0,
     @SerializedName("weight")
     val weight: Double? = null,
     @SerializedName("unit")
     val unit: String? = null,
     @SerializedName("price_per_unit")
-    val pricePerUnit: Double? = null
+    val pricePerUnit: Double? = null,
+    @SerializedName("multi_store")
+    val multiStore: Boolean? = false,
+    @SerializedName("store_count")
+    val storeCount: Int? = 1,
+    @SerializedName("chain_count")
+    val chainCount: Int? = 1
 )
 
 /**
@@ -91,15 +111,17 @@ data class StorePriceResponse(
  */
 data class PriceComparisonResponse(
     @SerializedName("best_deal")
-    val bestDeal: PriceDealResponse,
+    val bestDeal: PriceDealResponse?,
     @SerializedName("worst_deal")
-    val worstDeal: PriceDealResponse,
+    val worstDeal: PriceDealResponse?,
     @SerializedName("savings")
-    val savings: Double,
+    val savings: Double?,
     @SerializedName("savings_percent")
-    val savingsPercent: Double,
+    val savingsPercent: Double?,
     @SerializedName("identical_product")
-    val identicalProduct: Boolean
+    val identicalProduct: Boolean? = false,
+    //@SerializedName("price_range")
+    //val priceRange: PriceRangeResponse? = null
 )
 
 /**

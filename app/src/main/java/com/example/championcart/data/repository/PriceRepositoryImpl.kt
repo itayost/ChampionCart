@@ -205,12 +205,32 @@ class PriceRepositoryImpl @Inject constructor(
 // ============ EXTENSION FUNCTIONS TO CONVERT API MODELS TO DOMAIN MODELS ============
 
 private fun GroupedProductResponse.toDomainModel(): GroupedProduct {
+    // Handle both grouped products and single products
+    val pricesList = if (prices != null) {
+        // This is a grouped product with prices array
+        prices.map { it.toDomainModel() }
+    } else if (chain != null && storeId != null && price != null) {
+        // This is a single product - create a single price entry
+        listOf(
+            StorePrice(
+                chain = chain,
+                storeId = storeId,
+                price = price,
+                originalName = itemName,
+                timestamp = timestamp ?: ""
+            )
+        )
+    } else {
+        // No price information available
+        emptyList()
+    }
+
     return GroupedProduct(
         itemCode = itemCode,
         itemName = itemName,
-        prices = prices.map { it.toDomainModel() },
-        crossChain = crossChain,
-        relevanceScore = relevanceScore,
+        prices = pricesList,
+        crossChain = crossChain ?: false,
+        relevanceScore = relevanceScore ?: 0.0,
         priceComparison = priceComparison?.toDomainModel(),
         weight = weight,
         unit = unit,
@@ -230,11 +250,11 @@ private fun StorePriceResponse.toDomainModel(): StorePrice {
 
 private fun PriceComparisonResponse.toDomainModel(): PriceComparison {
     return PriceComparison(
-        bestDeal = bestDeal.toDomainModel(),
-        worstDeal = worstDeal.toDomainModel(),
-        savings = savings,
-        savingsPercent = savingsPercent,
-        identicalProduct = identicalProduct
+        bestDeal = bestDeal?.toDomainModel() ?: PriceDeal("", 0.0, ""), // Add null safety
+        worstDeal = worstDeal?.toDomainModel() ?: PriceDeal("", 0.0, ""), // Add null safety
+        savings = savings ?: 0.0,
+        savingsPercent = savingsPercent ?: 0.0,
+        identicalProduct = identicalProduct ?: false
     )
 }
 
