@@ -228,8 +228,8 @@ private fun SavedCartCard(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     SavedCartHeader(
-                        cartName = savedCart.cartName,
-                        city = savedCart.city,
+                        cartName = savedCart.name,
+                        city = savedCart.city.toString(),
                         itemCount = savedCart.items.size,
                         totalPrice = savedCart.items.sumOf { it.price * it.quantity },
                         isExpanded = true

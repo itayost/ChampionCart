@@ -160,7 +160,7 @@ class ProfileViewModel @Inject constructor(
                 authRepository.getUserSavedCarts().fold(
                     onSuccess = { carts ->
                         _state.update {
-                            it.copy(savedCarts = Prod)
+                            it.copy(savedCarts = authRepository.getSavedCarts())
                         }
                     },
                     onFailure = { error ->

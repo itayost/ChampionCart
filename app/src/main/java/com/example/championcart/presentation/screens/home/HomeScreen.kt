@@ -386,6 +386,11 @@ private fun StatsCard(
 }
 
 @Composable
+fun GlassmorphicCard(modifier: Modifier, content: @Composable () -> Unit) {
+    TODO("Not yet implemented")
+}
+
+@Composable
 private fun QuickActionsRow(
     onScanClick: () -> Unit,
     onListClick: () -> Unit,
