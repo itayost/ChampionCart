@@ -129,7 +129,7 @@ fun ChampionCartNavHost(
                 ) + fadeOut(animationSpec = tween(400))
             }
         ) {
-            SearchScreen()
+            SearchScreen(navController = navController)
         }
 
         // Cart Screen

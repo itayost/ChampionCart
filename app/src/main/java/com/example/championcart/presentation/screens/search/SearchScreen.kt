@@ -1,11 +1,23 @@
 package com.example.championcart.presentation.screens.search
 
-import androidx.compose.animation.*
-import androidx.compose.animation.core.*
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -14,35 +26,69 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.TrendingDown
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.ErrorOutline
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.NorthWest
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.SearchOff
+import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.SortByAlpha
+import androidx.compose.material.icons.filled.TrendingDown
+import androidx.compose.material.icons.filled.TrendingUp
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.example.championcart.R
 import com.example.championcart.domain.models.GroupedProduct
-import com.example.championcart.presentation.components.*
-import com.example.championcart.ui.theme.*
+import com.example.championcart.presentation.components.CityInfo
+import com.example.championcart.presentation.components.CitySelectionDialog
+import com.example.championcart.ui.theme.GlassmorphicShapes
+import com.example.championcart.ui.theme.LocalExtendedColors
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -58,6 +104,7 @@ fun SearchScreen(
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusRequester = remember { FocusRequester() }
     val scope = rememberCoroutineScope()
+    val extendedColors = LocalExtendedColors.current
 
     // City selection dialog state
     var showCityDialog by remember { mutableStateOf(false) }
@@ -158,7 +205,7 @@ fun SearchScreen(
                         .padding(16.dp)
                         .fillMaxWidth(),
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.extended.electricMint
+                        containerColor = extendedColors.electricMint
                     )
                 ) {
                     Row(
@@ -245,7 +292,7 @@ private fun SearchTopBar(
                 // Back button
                 IconButton(onClick = onBackClick) {
                     Icon(
-                        imageVector = Icons.Default.ArrowBack,
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Back",
                         tint = MaterialTheme.colorScheme.onSurface
                     )
@@ -256,7 +303,7 @@ private fun SearchTopBar(
                     value = searchQuery,
                     onValueChange = onSearchQueryChange,
                     modifier = Modifier
-                        .weight(1f)
+                        .weight(0.5f)
                         .focusRequester(focusRequester),
                     placeholder = {
                         Text(
@@ -318,38 +365,42 @@ private fun CityChip(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    AssistChip(
+    val extendedColors = LocalExtendedColors.current
+
+    Surface(
         onClick = onClick,
-        label = {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.LocationOn,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp)
-                )
-                Text(
-                    text = city,
-                    style = MaterialTheme.typography.labelLarge
-                )
-                Icon(
-                    imageVector = Icons.Default.ArrowDropDown,
-                    contentDescription = "Change city",
-                    modifier = Modifier.size(18.dp)
-                )
-            }
-        },
         modifier = modifier,
-        colors = AssistChipDefaults.assistChipColors(
-            containerColor = MaterialTheme.colorScheme.extended.electricMint.copy(alpha = 0.1f),
-            labelColor = MaterialTheme.colorScheme.extended.electricMint
-        ),
-        border = AssistChipDefaults.assistChipBorder(
-            borderColor = MaterialTheme.colorScheme.extended.electricMint.copy(alpha = 0.3f)
+        shape = RoundedCornerShape(8.dp),
+        color = extendedColors.electricMint.copy(alpha = 0.1f),
+        border = BorderStroke(
+            width = 1.dp,
+            color = extendedColors.electricMint.copy(alpha = 0.3f)
         )
-    )
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.LocationOn,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp),
+                tint = extendedColors.electricMint
+            )
+            Text(
+                text = city,
+                style = MaterialTheme.typography.labelLarge,
+                color = extendedColors.electricMint
+            )
+            Icon(
+                imageVector = Icons.Default.ArrowDropDown,
+                contentDescription = "Change city",
+                modifier = Modifier.size(18.dp),
+                tint = extendedColors.electricMint
+            )
+        }
+    }
 }
 
 @Composable
@@ -391,8 +442,8 @@ private fun SearchResults(
                             ) {
                                 Icon(
                                     imageVector = when (sortOrder) {
-                                        SortOrder.PRICE_LOW_TO_HIGH -> Icons.Default.TrendingDown
-                                        SortOrder.PRICE_HIGH_TO_LOW -> Icons.Default.TrendingUp
+                                        SortOrder.PRICE_LOW_TO_HIGH -> Icons.AutoMirrored.Filled.TrendingDown
+                                        SortOrder.PRICE_HIGH_TO_LOW -> Icons.AutoMirrored.Filled.TrendingUp
                                         else -> Icons.Default.SortByAlpha
                                     },
                                     contentDescription = null,
@@ -431,6 +482,8 @@ private fun ProductSearchCard(
     onClick: () -> Unit,
     onAddToCart: () -> Unit
 ) {
+    val extendedColors = LocalExtendedColors.current
+
     Card(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
@@ -469,7 +522,7 @@ private fun ProductSearchCard(
                             text = "₪${bestPrice.price}",
                             style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.extended.electricMint
+                            color = extendedColors.electricMint
                         )
                         Text(
                             text = "${bestPrice.chain} - ${bestPrice.city}",
@@ -484,13 +537,13 @@ private fun ProductSearchCard(
                         if (savingsPercent > 0) {
                             Surface(
                                 shape = CircleShape,
-                                color = MaterialTheme.colorScheme.extended.electricMint.copy(alpha = 0.1f)
+                                color = extendedColors.electricMint.copy(alpha = 0.1f)
                             ) {
                                 Text(
                                     text = "Save $savingsPercent%",
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.extended.electricMint,
+                                    color = extendedColors.electricMint,
                                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                                 )
                             }
@@ -552,7 +605,7 @@ private fun ProductSearchCard(
                 Button(
                     onClick = onAddToCart,
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.extended.electricMint
+                        containerColor = extendedColors.electricMint
                     )
                 ) {
                     Icon(
@@ -574,17 +627,19 @@ private fun StorePriceChip(
     price: Double,
     isLowest: Boolean
 ) {
+    val extendedColors = LocalExtendedColors.current
+
     Surface(
         shape = CircleShape,
         color = if (isLowest) {
-            MaterialTheme.colorScheme.extended.electricMint.copy(alpha = 0.1f)
+            extendedColors.electricMint.copy(alpha = 0.1f)
         } else {
             MaterialTheme.colorScheme.surfaceVariant
         },
         border = if (isLowest) {
             BorderStroke(
                 width = 1.dp,
-                color = MaterialTheme.colorScheme.extended.electricMint
+                color = extendedColors.electricMint
             )
         } else null
     ) {
@@ -603,7 +658,7 @@ private fun StorePriceChip(
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold,
                 color = if (isLowest) {
-                    MaterialTheme.colorScheme.extended.electricMint
+                    extendedColors.electricMint
                 } else {
                     MaterialTheme.colorScheme.onSurfaceVariant
                 }
@@ -618,6 +673,8 @@ private fun SearchSuggestions(
     popularSearches: List<String>,
     onSuggestionClick: (String) -> Unit
 ) {
+    val extendedColors = LocalExtendedColors.current
+
     LazyColumn(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp)
@@ -672,7 +729,7 @@ private fun SearchSuggestions(
                     Icon(
                         imageVector = Icons.Default.TrendingUp,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.extended.electricMint,
+                        tint = extendedColors.electricMint,
                         modifier = Modifier.size(20.dp)
                     )
                     Text(
@@ -688,7 +745,7 @@ private fun SearchSuggestions(
                     SuggestionItem(
                         text = search,
                         icon = Icons.Default.TrendingUp,
-                        iconTint = MaterialTheme.colorScheme.extended.electricMint,
+                        iconTint = extendedColors.electricMint,
                         onClick = { onSuggestionClick(search) }
                     )
                 }
@@ -746,6 +803,8 @@ private fun SuggestionItem(
 
 @Composable
 private fun LoadingState() {
+    val extendedColors = LocalExtendedColors.current
+
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
@@ -755,7 +814,7 @@ private fun LoadingState() {
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             CircularProgressIndicator(
-                color = MaterialTheme.colorScheme.extended.electricMint
+                color = extendedColors.electricMint
             )
             Text(
                 text = "Searching for the best prices...",
@@ -831,6 +890,8 @@ private fun ErrorState(
     message: String,
     onRetry: () -> Unit
 ) {
+    val extendedColors = LocalExtendedColors.current
+
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
@@ -863,7 +924,7 @@ private fun ErrorState(
             Button(
                 onClick = onRetry,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.extended.electricMint
+                    containerColor = extendedColors.electricMint
                 )
             ) {
                 Icon(
