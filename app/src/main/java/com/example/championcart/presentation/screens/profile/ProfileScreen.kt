@@ -1,108 +1,54 @@
 package com.example.championcart.presentation.screens.profile
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Language
-import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Login
-import androidx.compose.material.icons.filled.Logout
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Palette
-import androidx.compose.material.icons.filled.Savings
-import androidx.compose.material.icons.filled.ShoppingCart
-import androidx.compose.material.icons.filled.TrendingUp
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.RadioButton
-import androidx.compose.material3.RadioButtonDefaults
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.championcart.domain.models.Language
 import com.example.championcart.domain.models.UserPreferences
 import com.example.championcart.domain.models.UserStats
-import com.example.championcart.presentation.components.EmptyState
-import com.example.championcart.presentation.components.EmptyStateType
+import com.example.championcart.presentation.components.*
 import com.example.championcart.presentation.navigation.Screen
-import com.example.championcart.ui.theme.AppTextStyles
-import com.example.championcart.ui.theme.GlassmorphicShapes
-import com.example.championcart.ui.theme.SizingTokens
-import com.example.championcart.ui.theme.SpacingTokens
-import com.example.championcart.ui.theme.ThemePreference
-import com.example.championcart.ui.theme.extended
+import com.example.championcart.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
     navController: NavController,
-    viewModel: ProfileViewModel = viewModel()
+    viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
     val haptics = LocalHapticFeedback.current
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                brush = Brush.verticalGradient(
-                    colors = listOf(
-                        MaterialTheme.colorScheme.extended.cosmicPurple.copy(alpha = 0.05f),
-                        MaterialTheme.colorScheme.surface
-                    )
-                )
+    ChampionCartScreen(
+        topBar = {
+            ChampionCartTopBar(
+                title = "הפרופיל שלי",
+                showBackButton = false
             )
-    ) {
+        }
+    ) { paddingValues ->
         LazyColumn(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues),
             contentPadding = PaddingValues(SpacingTokens.L),
             verticalArrangement = Arrangement.spacedBy(SpacingTokens.L)
         ) {
             // Profile Header
             item {
-                ProfileHeader(
+                ProfileHeaderCard(
                     userName = state.userName,
                     userEmail = state.userEmail,
                     isGuest = state.isGuest
@@ -112,7 +58,7 @@ fun ProfileScreen(
             // Stats Section (only for logged-in users)
             if (!state.isGuest) {
                 item {
-                    StatsCard(
+                    UserStatsCard(
                         userStats = state.userStats,
                         isLoading = state.isLoading
                     )
@@ -121,12 +67,21 @@ fun ProfileScreen(
 
             // Preferences Section
             item {
-                PreferencesSection(
+                PreferencesCard(
                     userPreferences = state.userPreferences,
                     selectedCity = state.selectedCity,
-                    onCityClick = viewModel::showCitySelector,
-                    onLanguageClick = viewModel::showLanguageSelector,
-                    onThemeClick = viewModel::showThemeSelector,
+                    onCityClick = {
+                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                        viewModel.showCitySelector()
+                    },
+                    onLanguageClick = {
+                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                        viewModel.showLanguageSelector()
+                    },
+                    onThemeClick = {
+                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                        viewModel.showThemeSelector()
+                    },
                     onNotificationsToggle = viewModel::toggleNotifications
                 )
             }
@@ -134,9 +89,11 @@ fun ProfileScreen(
             // Saved Carts Preview (only for logged-in users)
             if (!state.isGuest && state.savedCarts.isNotEmpty()) {
                 item {
-                    SavedCartsPreview(
-                        savedCartsCount = state.savedCarts.size,
-                        onViewAllClick = {
+                    ActionCard(
+                        icon = Icons.Default.ShoppingCart,
+                        title = "עגלות שמורות",
+                        subtitle = "${state.savedCarts.size} עגלות שמורות",
+                        onClick = {
                             haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                             navController.navigate(Screen.SavedCarts.route)
                         }
@@ -146,7 +103,7 @@ fun ProfileScreen(
 
             // Actions Section
             item {
-                ActionsSection(
+                ProfileActionsCard(
                     isGuest = state.isGuest,
                     onLoginClick = {
                         haptics.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -179,36 +136,59 @@ fun ProfileScreen(
 
         // Dialogs
         if (state.showLogoutDialog) {
-            LogoutConfirmationDialog(
+            ChampionCartAlertDialog(
+                title = "התנתקות",
+                text = "האם אתה בטוח שברצונך להתנתק?",
+                confirmButtonText = "התנתק",
+                dismissButtonText = "ביטול",
                 onConfirm = {
                     viewModel.logout()
                     viewModel.hideLogoutDialog()
                 },
-                onDismiss = viewModel::hideLogoutDialog
+                onDismiss = viewModel::hideLogoutDialog,
+                confirmButtonColor = MaterialTheme.colorScheme.error
             )
         }
 
         if (state.showCitySelector) {
-            CitySelectionDialog(
-                cities = state.availableCities,
-                currentCity = state.selectedCity,
-                onCitySelected = viewModel::updateDefaultCity,
+            SelectionDialog(
+                title = "בחר עיר",
+                items = state.availableCities,
+                selectedItem = state.selectedCity,
+                onItemSelected = viewModel::updateDefaultCity,
                 onDismiss = viewModel::hideCitySelector
             )
         }
 
         if (state.showLanguageSelector) {
-            LanguageSelectionDialog(
-                currentLanguage = state.userPreferences.language,
-                onLanguageSelected = viewModel::updateLanguage,
+            val languages = Language.values().map { it.displayName }
+            SelectionDialog(
+                title = "בחר שפה",
+                items = languages,
+                selectedItem = state.userPreferences.language.displayName,
+                onItemSelected = { displayName ->
+                    Language.values().find { it.displayName == displayName }?.let {
+                        viewModel.updateLanguage(it)
+                    }
+                },
                 onDismiss = viewModel::hideLanguageSelector
             )
         }
 
         if (state.showThemeSelector) {
-            ThemeSelectionDialog(
-                currentTheme = state.userPreferences.theme,
-                onThemeSelected = viewModel::updateTheme,
+            val themes = ThemePreference.values()
+                .filter { it != ThemePreference.Auto }
+                .map { it.displayName }
+
+            SelectionDialog(
+                title = "בחר ערכת נושא",
+                items = themes,
+                selectedItem = state.userPreferences.theme.displayName,
+                onItemSelected = { displayName ->
+                    ThemePreference.values().find { it.displayName == displayName }?.let {
+                        viewModel.updateTheme(it)
+                    }
+                },
                 onDismiss = viewModel::hideThemeSelector
             )
         }
@@ -216,18 +196,13 @@ fun ProfileScreen(
 }
 
 @Composable
-private fun ProfileHeader(
+private fun ProfileHeaderCard(
     userName: String,
     userEmail: String,
     isGuest: Boolean
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = GlassmorphicShapes.GlassCard,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.extended.surfaceGlass
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    GlassCard(
+        modifier = Modifier.fillMaxWidth()
     ) {
         Row(
             modifier = Modifier
@@ -237,27 +212,11 @@ private fun ProfileHeader(
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Avatar
-            Box(
-                modifier = Modifier
-                    .size(80.dp)
-                    .clip(CircleShape)
-                    .background(
-                        brush = Brush.linearGradient(
-                            colors = listOf(
-                                MaterialTheme.colorScheme.extended.electricMint,
-                                MaterialTheme.colorScheme.extended.cosmicPurple
-                            )
-                        )
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = if (isGuest) "G" else userName.firstOrNull()?.uppercase() ?: "U",
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    fontWeight = FontWeight.Bold
-                )
-            }
+            UserAvatar(
+                userName = userName,
+                isGuest = isGuest,
+                size = 80.dp
+            )
 
             // User Info
             Column(
@@ -271,63 +230,39 @@ private fun ProfileHeader(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                if (!isGuest) {
-                    Text(
-                        text = userEmail,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                } else {
-                    Text(
-                        text = "משתמש אורח",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+                Text(
+                    text = if (!isGuest) userEmail else "משתמש אורח",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
         }
     }
 }
 
 @Composable
-private fun StatsCard(
+private fun UserStatsCard(
     userStats: UserStats,
     isLoading: Boolean
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = GlassmorphicShapes.GlassCard,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.extended.surfaceGlass
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    GlassCard(
+        modifier = Modifier.fillMaxWidth()
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(SpacingTokens.L)
         ) {
-            Text(
-                text = "הסטטיסטיקה שלך",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.padding(bottom = SpacingTokens.M)
-            )
+            SectionHeader(title = "הסטטיסטיקה שלך")
 
             if (isLoading) {
-                Box(
+                LoadingIndicator(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(100.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(
-                        color = MaterialTheme.colorScheme.extended.electricMint,
-                        strokeWidth = 2.dp
-                    )
-                }
+                        .height(100.dp)
+                )
             } else {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -355,292 +290,75 @@ private fun StatsCard(
 }
 
 @Composable
-private fun StatItem(
-    title: String,
-    value: String,
-    icon: ImageVector
-) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(SpacingTokens.S)
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.extended.electricMint,
-            modifier = Modifier.size(SizingTokens.IconM)
-        )
-        Text(
-            text = value,
-            style = AppTextStyles.priceMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.extended.electricMint
-        )
-        Text(
-            text = title,
-            style = AppTextStyles.caption,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
-        )
-    }
-}
-
-@Composable
-private fun PreferencesSection(
+private fun PreferencesCard(
     userPreferences: UserPreferences,
     selectedCity: String,
     onCityClick: () -> Unit,
     onLanguageClick: () -> Unit,
     onThemeClick: () -> Unit,
-    onNotificationsToggle: (Boolean) -> Unit,
+    onNotificationsToggle: (Boolean) -> Unit
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = GlassmorphicShapes.GlassCard,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.extended.surfaceGlass
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    GlassCard(
+        modifier = Modifier.fillMaxWidth()
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(SpacingTokens.L)
         ) {
-            Text(
-                text = "העדפות",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.padding(bottom = SpacingTokens.M)
-            )
+            SectionHeader(title = "העדפות")
 
             // City Selection
-            PreferenceItem(
+            SettingsItem(
                 icon = Icons.Default.LocationOn,
                 title = "עיר ברירת מחדל",
                 subtitle = selectedCity,
                 onClick = onCityClick
             )
 
-            HorizontalDivider(
-                modifier = Modifier.padding(vertical = SpacingTokens.S),
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-            )
+            ItemDivider()
 
             // Language Selection
-            PreferenceItem(
+            SettingsItem(
                 icon = Icons.Default.Language,
                 title = "שפה",
                 subtitle = userPreferences.language.displayName,
                 onClick = onLanguageClick
             )
 
-            HorizontalDivider(
-                modifier = Modifier.padding(vertical = SpacingTokens.S),
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-            )
+            ItemDivider()
 
             // Theme Selection
-            PreferenceItem(
+            SettingsItem(
                 icon = Icons.Default.Palette,
                 title = "ערכת נושא",
                 subtitle = userPreferences.theme.displayName,
                 onClick = onThemeClick
             )
 
-            HorizontalDivider(
-                modifier = Modifier.padding(vertical = SpacingTokens.S),
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-            )
+            ItemDivider()
 
             // Notifications Toggle
-            PreferenceToggle(
+            SwitchListItem(
                 icon = Icons.Default.Notifications,
                 title = "התראות",
                 subtitle = "קבל התראות על מבצעים ועדכונים",
-                isChecked = userPreferences.notificationsEnabled,
+                checked = userPreferences.notificationsEnabled,
                 onCheckedChange = onNotificationsToggle
             )
-
-            HorizontalDivider(
-                modifier = Modifier.padding(vertical = SpacingTokens.S),
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-            )
         }
     }
 }
 
 @Composable
-private fun PreferenceItem(
-    icon: ImageVector,
-    title: String,
-    subtitle: String,
-    onClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() }
-            .padding(vertical = SpacingTokens.M),
-        horizontalArrangement = Arrangement.spacedBy(SpacingTokens.M),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.extended.electricMint,
-            modifier = Modifier.size(SizingTokens.IconM)
-        )
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(SpacingTokens.XXS)
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium
-            )
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-        Icon(
-            imageVector = Icons.Default.ChevronRight,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(SizingTokens.IconS)
-        )
-    }
-}
-
-@Composable
-private fun PreferenceToggle(
-    icon: ImageVector,
-    title: String,
-    subtitle: String,
-    isChecked: Boolean,
-    onCheckedChange: (Boolean) -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = SpacingTokens.M),
-        horizontalArrangement = Arrangement.spacedBy(SpacingTokens.M),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.extended.electricMint,
-            modifier = Modifier.size(SizingTokens.IconM)
-        )
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(SpacingTokens.XXS)
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium
-            )
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-        Switch(
-            checked = isChecked,
-            onCheckedChange = onCheckedChange,
-            colors = SwitchDefaults.colors(
-                checkedThumbColor = MaterialTheme.colorScheme.extended.electricMint,
-                checkedTrackColor = MaterialTheme.colorScheme.extended.electricMint.copy(alpha = 0.5f)
-            )
-        )
-    }
-}
-
-@Composable
-private fun SavedCartsPreview(
-    savedCartsCount: Int,
-    onViewAllClick: () -> Unit
-) {
-    Card(
-        onClick = onViewAllClick,
-        modifier = Modifier.fillMaxWidth(),
-        shape = GlassmorphicShapes.GlassCard,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.extended.surfaceGlass
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(SpacingTokens.L),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(SpacingTokens.M),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clip(CircleShape)
-                        .background(
-                            MaterialTheme.colorScheme.extended.electricMint.copy(alpha = 0.1f)
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.ShoppingCart,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.extended.electricMint,
-                        modifier = Modifier.size(SizingTokens.IconM)
-                    )
-                }
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(SpacingTokens.XXS)
-                ) {
-                    Text(
-                        text = "עגלות שמורות",
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Medium
-                    )
-                    Text(
-                        text = "$savedCartsCount עגלות שמורות",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-            Icon(
-                imageVector = Icons.Default.ChevronRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
-}
-
-@Composable
-private fun ActionsSection(
+private fun ProfileActionsCard(
     isGuest: Boolean,
     onLoginClick: () -> Unit,
     onLogoutClick: () -> Unit,
     onSavedCartsClick: () -> Unit
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = GlassmorphicShapes.GlassCard,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.extended.surfaceGlass
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    GlassCard(
+        modifier = Modifier.fillMaxWidth()
     ) {
         Column(
             modifier = Modifier
@@ -649,286 +367,28 @@ private fun ActionsSection(
         ) {
             if (isGuest) {
                 // Login button for guests
-                Button(
+                PrimaryButton(
+                    text = "התחבר לחשבון",
                     onClick = onLoginClick,
                     modifier = Modifier.fillMaxWidth(),
-                    shape = GlassmorphicShapes.Button,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.extended.electricMint
-                    )
-                ) {
-                    Icon(
-                        Icons.Default.Login,
-                        contentDescription = null,
-                        modifier = Modifier.size(SizingTokens.IconS)
-                    )
-                    Spacer(modifier = Modifier.width(SpacingTokens.S))
-                    Text("התחבר לחשבון")
-                }
+                    leadingIcon = Icons.Default.Login
+                )
             } else {
                 // Actions for logged-in users
-                ActionItem(
+                MenuItem(
                     icon = Icons.Default.ShoppingCart,
                     title = "עגלות שמורות",
                     onClick = onSavedCartsClick
                 )
 
-                HorizontalDivider(
-                    modifier = Modifier.padding(vertical = SpacingTokens.S),
-                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                )
+                ItemDivider()
 
-                HorizontalDivider(
-                    modifier = Modifier.padding(vertical = SpacingTokens.S),
-                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                )
-
-                ActionItem(
+                MenuItem(
                     icon = Icons.Default.Logout,
                     title = "התנתק",
                     onClick = onLogoutClick,
                     tintColor = MaterialTheme.colorScheme.error
                 )
-            }
-        }
-    }
-}
-
-@Composable
-private fun ActionItem(
-    icon: ImageVector,
-    title: String,
-    onClick: () -> Unit,
-    tintColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurface
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() }
-            .padding(vertical = SpacingTokens.M),
-        horizontalArrangement = Arrangement.spacedBy(SpacingTokens.M),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = tintColor,
-            modifier = Modifier.size(SizingTokens.IconM)
-        )
-        Text(
-            text = title,
-            style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.Medium,
-            color = tintColor
-        )
-    }
-}
-
-// Dialogs
-@Composable
-private fun LogoutConfirmationDialog(
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text(
-                "התנתקות",
-                style = MaterialTheme.typography.headlineSmall
-            )
-        },
-        text = {
-            Text(
-                "האם אתה בטוח שברצונך להתנתק?",
-                style = MaterialTheme.typography.bodyLarge
-            )
-        },
-        confirmButton = {
-            TextButton(
-                onClick = onConfirm,
-                colors = ButtonDefaults.textButtonColors(
-                    contentColor = MaterialTheme.colorScheme.error
-                )
-            ) {
-                Text("התנתק")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("ביטול")
-            }
-        },
-        shape = GlassmorphicShapes.Dialog
-    )
-}
-
-@Composable
-private fun LanguageSelectionDialog(
-    currentLanguage: Language,
-    onLanguageSelected: (Language) -> Unit,
-    onDismiss: () -> Unit
-) {
-    Dialog(onDismissRequest = onDismiss) {
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = GlassmorphicShapes.Dialog,
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface
-            )
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(SpacingTokens.L)
-            ) {
-                Text(
-                    text = "בחר שפה",
-                    style = MaterialTheme.typography.headlineSmall,
-                    modifier = Modifier.padding(bottom = SpacingTokens.L)
-                )
-
-                Language.values().forEach { language ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                onLanguageSelected(language)
-                                onDismiss()
-                            }
-                            .padding(vertical = SpacingTokens.M),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = language.displayName,
-                            style = MaterialTheme.typography.bodyLarge
-                        )
-                        RadioButton(
-                            selected = language == currentLanguage,
-                            onClick = null,
-                            colors = RadioButtonDefaults.colors(
-                                selectedColor = MaterialTheme.colorScheme.extended.electricMint
-                            )
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun ThemeSelectionDialog(
-    currentTheme: ThemePreference,
-    onThemeSelected: (ThemePreference) -> Unit,
-    onDismiss: () -> Unit
-) {
-    Dialog(onDismissRequest = onDismiss) {
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = GlassmorphicShapes.Dialog,
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface
-            )
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(SpacingTokens.L)
-            ) {
-                Text(
-                    text = "בחר ערכת נושא",
-                    style = MaterialTheme.typography.headlineSmall,
-                    modifier = Modifier.padding(bottom = SpacingTokens.L)
-                )
-
-                ThemePreference.values().forEach { theme ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                onThemeSelected(theme)
-                                onDismiss()
-                            }
-                            .padding(vertical = SpacingTokens.M),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = theme.displayName,
-                            style = MaterialTheme.typography.bodyLarge
-                        )
-                        RadioButton(
-                            selected = theme == currentTheme,
-                            onClick = null,
-                            colors = RadioButtonDefaults.colors(
-                                selectedColor = MaterialTheme.colorScheme.extended.electricMint
-                            )
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun CitySelectionDialog(
-    cities: List<String>,
-    currentCity: String,
-    onCitySelected: (String) -> Unit,
-    onDismiss: () -> Unit
-) {
-    // This would use the existing CitySelectionDialog component
-    // from CitySelectionDialog.kt with the proper city data
-    Dialog(onDismissRequest = onDismiss) {
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = GlassmorphicShapes.Dialog,
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface
-            )
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(SpacingTokens.L)
-            ) {
-                Text(
-                    text = "בחר עיר",
-                    style = MaterialTheme.typography.headlineSmall,
-                    modifier = Modifier.padding(bottom = SpacingTokens.L)
-                )
-
-                LazyColumn {
-                    items(cities.size) { index ->
-                        val city = cities[index]
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    onCitySelected(city)
-                                    onDismiss()
-                                }
-                                .padding(vertical = SpacingTokens.M),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = city,
-                                style = MaterialTheme.typography.bodyLarge
-                            )
-                            RadioButton(
-                                selected = city == currentCity,
-                                onClick = null,
-                                colors = RadioButtonDefaults.colors(
-                                    selectedColor = MaterialTheme.colorScheme.extended.electricMint
-                                )
-                            )
-                        }
-                    }
-                }
             }
         }
     }

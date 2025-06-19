@@ -1,8 +1,7 @@
 package com.example.championcart.presentation.screens.home
 
 import androidx.compose.animation.*
-import androidx.compose.animation.core.*
-import androidx.compose.foundation.*
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -14,234 +13,123 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.*
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.example.championcart.data.local.preferences.TokenManager
 import com.example.championcart.domain.models.GroupedProduct
-import com.example.championcart.domain.models.StorePrice
 import com.example.championcart.presentation.components.*
 import com.example.championcart.presentation.navigation.Screen
 import com.example.championcart.ui.theme.*
-import java.time.LocalTime
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
+import kotlinx.coroutines.launch
 
-/**
- * Modern Home Screen with Electric Harmony Design
- * Fixed edge-to-edge layout with proper glass morphism
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ModernHomeScreen(
+fun HomeScreen(
     navController: NavController,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
-    val context = LocalContext.current
-    val tokenManager = TokenManager(context)
     val uiState by viewModel.uiState.collectAsState()
     val haptics = LocalHapticFeedback.current
+    val scope = rememberCoroutineScope()
 
-    // Dynamic greeting
-    val greeting = remember {
-        val hour = LocalTime.now().hour
-        when (hour) {
-            in 5..11 -> "בוקר טוב"
-            in 12..17 -> "צהריים טובים"
-            in 18..21 -> "ערב טוב"
-            else -> "לילה טוב"
+    ChampionCartScreen(
+        topBar = {
+            HomeTopBar(
+                selectedCity = uiState.selectedCity,
+                onCityClick = { viewModel.showCitySelector() },
+                onSearchClick = {
+                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                    navController.navigate(Screen.Search.route)
+                }
+            )
         }
-    }
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-    ) {
-        // Background gradient
-        Box(
+    ) { paddingValues ->
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.background,
-                            MaterialTheme.colorScheme.background.copy(alpha = 0.95f),
-                            MaterialTheme.colorScheme.extended.surfaceGlass
-                        )
-                    )
-                )
-        )
-
-        // Main content - Edge to edge
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(
-                top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding(),
-                bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 80.dp
-            ),
-            verticalArrangement = Arrangement.spacedBy(SpacingTokens.M)
+                .padding(paddingValues),
+            contentPadding = PaddingValues(bottom = SpacingTokens.XL),
+            verticalArrangement = Arrangement.spacedBy(SpacingTokens.L)
         ) {
-            // Header Section
+            // Welcome section
             item {
-                HomeHeader(
-                    greeting = greeting,
+                WelcomeCard(
                     userName = uiState.userName,
-                    onSearchClick = {
+                    isGuest = uiState.isGuest,
+                    onLoginClick = {
                         haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                        navController.navigate(Screen.Search.route)
-                    },
-                    onNotificationClick = {
-                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                        // TODO: Navigate to notifications
+                        navController.navigate(Screen.Auth.route)
                     }
                 )
             }
 
-            // Stats Card
+            // Quick stats
+            if (!uiState.isGuest && uiState.quickStats != null) {
+                item {
+                    QuickStatsSection(stats = uiState.quickStats)
+                }
+            }
+
+            // Featured deals
+            if (uiState.featuredDeals.isNotEmpty()) {
+                item {
+                    FeaturedDealsSection(
+                        deals = uiState.featuredDeals,
+                        onProductClick = { product ->
+                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                            navController.navigate(
+                                Screen.ProductDetail.createRoute(product.itemCode)
+                            )
+                        },
+                        onAddToCart = { product ->
+                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                            viewModel.addToCart(product)
+                        }
+                    )
+                }
+            }
+
+            // Popular products
             item {
-                StatsCard(
-                    totalSavings = uiState.totalSavings,
+                SectionHeader(
+                    title = "פופולרי עכשיו",
+                    subtitle = "המוצרים הכי נרכשים",
                     modifier = Modifier.padding(horizontal = SpacingTokens.L)
                 )
             }
 
-            // Quick Actions
-            item {
-                QuickActionsRow(
-                    onScanClick = {
+            items(uiState.popularProducts) { product ->
+                ProductCard(
+                    product = product,
+                    onAddToCart = { storePrice ->
                         haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                        // TODO: Navigate to scanner
+                        viewModel.addToCart(product)
                     },
-                    onListClick = {
+                    onFavoriteToggle = {
                         haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                        // TODO: Navigate to lists
+                        // TODO: Implement favorites
                     },
-                    onCompareClick = {
+                    onProductClick = {
                         haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                        navController.navigate(Screen.Cart.route)
-                    }
+                        navController.navigate(
+                            Screen.ProductDetail.createRoute(product.itemCode)
+                        )
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = SpacingTokens.L)
                 )
             }
 
-            // Pull to refresh indicator
-            if (uiState.isRefreshing) {
-                item {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(SpacingTokens.M),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator(
-                            color = MaterialTheme.colorScheme.extended.electricMint,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-                }
-            }
-
-            // Categories Section
-            if (uiState.categories.isNotEmpty()) {
-                item {
-                    SectionHeader(
-                        title = "קטגוריות",
-                        modifier = Modifier.padding(horizontal = SpacingTokens.L)
-                    )
-                }
-
-                item {
-                    CategoriesRow(
-                        categories = uiState.categories,
-                        selectedCategory = uiState.selectedCategory,
-                        onCategoryClick = { category ->
-                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                            viewModel.selectCategory(category.name)
-                        }
-                    )
-                }
-            }
-
-            // Featured Deals Section
-            if (uiState.featuredDeals.isNotEmpty()) {
-                item {
-                    SectionHeader(
-                        title = "מבצעים חמים 🔥",
-                        action = "ראה הכל" to {
-                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                            // Navigate to deals
-                        },
-                        modifier = Modifier.padding(horizontal = SpacingTokens.L)
-                    )
-                }
-
-                item {
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(SpacingTokens.M),
-                        contentPadding = PaddingValues(horizontal = SpacingTokens.L)
-                    ) {
-                        items(uiState.featuredDeals) { deal ->
-                            ProductCard(
-                                product = deal,
-                                onAddToCart = {
-                                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    viewModel.addToCart(deal)
-                                },
-                                onFavoriteToggle = { /* TODO */ },
-                                onProductClick = {
-                                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    // TODO: Navigate to product detail
-                                },
-                                modifier = Modifier.width(200.dp)
-                            )
-                        }
-                    }
-                }
-
-                item {
-                    Spacer(modifier = Modifier.height(SpacingTokens.M))
-                }
-            }
-
-            // Popular Products Section
-            if (uiState.popularProducts.isNotEmpty()) {
-                item {
-                    SectionHeader(
-                        title = "פופולרי עכשיו",
-                        subtitle = "המוצרים הכי נרכשים",
-                        modifier = Modifier.padding(horizontal = SpacingTokens.L)
-                    )
-                }
-
-                items(uiState.popularProducts) { product ->
-                    ProductCard(
-                        product = product,
-                        onAddToCart = {
-                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                            viewModel.addToCart(product)
-                        },
-                        onFavoriteToggle = { /* TODO */ },
-                        onProductClick = {
-                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                            // TODO: Navigate to product detail
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = SpacingTokens.L)
-                            .padding(bottom = SpacingTokens.M)
-                    )
-                }
-            }
-
             // Empty state
-            if (!uiState.isLoading && uiState.featuredDeals.isEmpty() && uiState.popularProducts.isEmpty()) {
+            if (!uiState.isLoading &&
+                uiState.featuredDeals.isEmpty() &&
+                uiState.popularProducts.isEmpty()) {
                 item {
                     EmptyState(
                         type = EmptyStateType.NO_RESULTS,
@@ -257,59 +145,101 @@ fun ModernHomeScreen(
             // Loading state
             if (uiState.isLoading && uiState.popularProducts.isEmpty()) {
                 items(5) {
-                    Box(
+                    LoadingProductCard(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(120.dp)
                             .padding(horizontal = SpacingTokens.L)
-                            .padding(bottom = SpacingTokens.M)
-                            .clip(MaterialTheme.shapes.medium)
-                            .background(MaterialTheme.colorScheme.background)
                     )
                 }
             }
         }
 
-        // Floating Action Button
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(SpacingTokens.L)
-                .padding(bottom = 80.dp)
-        ) {
-            FloatingActionButton(
-                onClick = {
-                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                    navController.navigate(Screen.Search.route)
+        // Dialogs
+        if (uiState.showCitySelector) {
+            SelectionDialog(
+                title = "בחר עיר",
+                items = uiState.availableCities,
+                selectedItem = uiState.selectedCity,
+                onItemSelected = { city ->
+                    viewModel.updateCity(city)
                 },
-                containerColor = MaterialTheme.colorScheme.extended.electricMint,
-                elevation = FloatingActionButtonDefaults.elevation(
-                    defaultElevation = 8.dp,
-                    pressedElevation = 12.dp
-                )
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Search,
-                    contentDescription = "Search",
-                    tint = Color.Black
-                )
-            }
+                onDismiss = { viewModel.hideCitySelector() }
+            )
         }
 
         // Error handling
         uiState.error?.let { error ->
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(SpacingTokens.XL),
-                contentAlignment = Alignment.Center
-            ) {
-                EmptyState(
-                    type = EmptyStateType.NETWORK_ERROR,
-                    title = "שגיאה",
-                    subtitle = error,
+            val snackbarHostState = remember { SnackbarHostState() }
+            LaunchedEffect(error) {
+                snackbarHostState.showSnackbar(
+                    message = error,
                     actionLabel = "נסה שוב",
-                    onAction = viewModel::clearError
+                    duration = SnackbarDuration.Long
+                )
+                viewModel.clearError()
+            }
+
+            SnackbarHost(hostState = snackbarHostState)
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun HomeTopBar(
+    selectedCity: String,
+    onCityClick: () -> Unit,
+    onSearchClick: () -> Unit
+) {
+    ChampionCartTopBar(
+        title = selectedCity,
+        showBackButton = false,
+        onBackClick = {},
+        actions = {
+            IconButton(onClick = onSearchClick) {
+                Icon(
+                    Icons.Default.Search,
+                    contentDescription = "חיפוש",
+                    tint = MaterialTheme.colorScheme.onSurface
+                )
+            }
+        }
+    )
+}
+
+@Composable
+private fun WelcomeCard(
+    userName: String,
+    isGuest: Boolean,
+    onLoginClick: () -> Unit
+) {
+    GlassCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = SpacingTokens.L)
+    ) {
+        Column(
+            modifier = Modifier.padding(SpacingTokens.XL),
+            verticalArrangement = Arrangement.spacedBy(SpacingTokens.M)
+        ) {
+            Text(
+                text = if (isGuest) "שלום אורח" else "שלום $userName",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold
+            )
+
+            Text(
+                text = "מה תרצה לקנות היום?",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            if (isGuest) {
+                PrimaryButton(
+                    text = "התחבר כדי לשמור עגלות",
+                    onClick = onLoginClick,
+                    modifier = Modifier.fillMaxWidth(),
+                    leadingIcon = Icons.Default.Login
                 )
             }
         }
@@ -317,218 +247,138 @@ fun ModernHomeScreen(
 }
 
 @Composable
-private fun HomeHeader(
-    greeting: String,
-    userName: String,
-    onSearchClick: () -> Unit,
-    onNotificationClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = SpacingTokens.L)
-            .padding(top = SpacingTokens.L),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column {
-            Text(
-                text = greeting,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                text = userName,
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-        }
-
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(SpacingTokens.S)
-        ) {
-            GlassmorphicIconButton(
-                onClick = onSearchClick,
-                icon = Icons.Default.Search
-            )
-            GlassmorphicIconButton(
-                onClick = onNotificationClick,
-                icon = Icons.Default.NotificationsNone,
-                modifier = Modifier.size(48.dp)
-            )
-        }
-    }
-}
-
-@Composable
-private fun StatsCard(
-    totalSavings: Double,
-    modifier: Modifier = Modifier
-) {
-    GlassCard(
-        modifier = modifier.fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier.padding(SpacingTokens.L)
-        ) {
-            Text(
-                text = "החיסכון שלך החודש",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(modifier = Modifier.height(SpacingTokens.XS))
-            Text(
-                text = "₪${String.format("%.2f", totalSavings)}",
-                style = MaterialTheme.typography.headlineLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.extended.electricMint
-            )
-        }
-    }
-}
-
-@Composable
-private fun QuickActionsRow(
-    onScanClick: () -> Unit,
-    onListClick: () -> Unit,
-    onCompareClick: () -> Unit
-) {
+private fun QuickStatsSection(stats: QuickStats) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = SpacingTokens.L),
         horizontalArrangement = Arrangement.spacedBy(SpacingTokens.M)
     ) {
-        QuickActionButton(
-            icon = Icons.Default.QrCodeScanner,
-            label = "סרוק",
-            onClick = onScanClick,
+        QuickStatCard(
+            title = "נחסך החודש",
+            value = "₪${stats.savedThisMonth}",
+            icon = Icons.Default.Savings,
             modifier = Modifier.weight(1f)
         )
-        QuickActionButton(
-            icon = Icons.Default.ListAlt,
-            label = "רשימות",
-            onClick = onListClick,
-            modifier = Modifier.weight(1f)
-        )
-        QuickActionButton(
-            icon = Icons.Default.CompareArrows,
-            label = "השווה",
-            onClick = onCompareClick,
+
+        QuickStatCard(
+            title = "עגלות שמורות",
+            value = stats.savedCarts.toString(),
+            icon = Icons.Default.ShoppingCart,
             modifier = Modifier.weight(1f)
         )
     }
 }
 
 @Composable
-private fun QuickActionButton(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    label: String,
-    onClick: () -> Unit,
+private fun QuickStatCard(
+    title: String,
+    value: String,
+    icon: ImageVector,
     modifier: Modifier = Modifier
 ) {
     GlassCard(
-        onClick = onClick,
-        modifier = modifier
+        modifier = modifier,
+        onClick = null // Make it non-clickable
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(SpacingTokens.M),
-            horizontalAlignment = Alignment.CenterHorizontally
+        Row(
+            modifier = Modifier.padding(SpacingTokens.M),
+            horizontalArrangement = Arrangement.spacedBy(SpacingTokens.S),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = label,
-                tint = MaterialTheme.colorScheme.extended.electricMint,
-                modifier = Modifier.size(24.dp)
-            )
-            Spacer(modifier = Modifier.height(SpacingTokens.XS))
-            Text(
-                text = label,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-        }
-    }
-}
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(
+                        MaterialTheme.colorScheme.extended.electricMint.copy(alpha = 0.1f)
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.extended.electricMint,
+                    modifier = Modifier.size(SizingTokens.IconS)
+                )
+            }
 
-@Composable
-private fun CategoriesRow(
-    categories: List<ProductCategory>,
-    selectedCategory: String?,
-    onCategoryClick: (ProductCategory) -> Unit
-) {
-    LazyRow(
-        horizontalArrangement = Arrangement.spacedBy(SpacingTokens.M),
-        contentPadding = PaddingValues(horizontal = SpacingTokens.L)
-    ) {
-        items(categories) { category ->
-            CategoryChip(
-                category = category,
-                isSelected = category.name == selectedCategory,
-                onClick = { onCategoryClick(category) }
-            )
-        }
-    }
-}
-
-@Composable
-private fun CategoryChip(
-    category: ProductCategory,
-    isSelected: Boolean,
-    onClick: () -> Unit
-) {
-    FilterChip(
-        selected = isSelected,
-        onClick = onClick,
-        label = {
-            Text(
-                text = "${category.name} (${category.productCount})",
-                style = MaterialTheme.typography.bodySmall
-            )
-        },
-        colors = FilterChipDefaults.filterChipColors(
-            selectedContainerColor = MaterialTheme.colorScheme.extended.electricMint,
-            selectedLabelColor = Color.Black
-        )
-    )
-}
-
-@Composable
-private fun SectionHeader(
-    title: String,
-    subtitle: String? = null,
-    action: Pair<String, () -> Unit>? = null,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
-            )
-            subtitle?.let {
+            Column {
                 Text(
-                    text = it,
+                    text = value,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.extended.electricMint
+                )
+                Text(
+                    text = title,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
-        action?.let { (text, onClick) ->
-            TextButton(onClick = onClick) {
-                Text(
-                    text = text,
-                    color = MaterialTheme.colorScheme.extended.electricMint
+    }
+}
+
+@Composable
+private fun FeaturedDealsSection(
+    deals: List<GroupedProduct>,
+    onProductClick: (GroupedProduct) -> Unit,
+    onAddToCart: (GroupedProduct) -> Unit
+) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(SpacingTokens.M)
+    ) {
+        SectionHeader(
+            title = "מבצעי היום",
+            subtitle = "החיסכון הכי גדול",
+            modifier = Modifier.padding(horizontal = SpacingTokens.L),
+            action = {
+                TextButton(
+                    onClick = { /* Navigate to all deals */ },
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.extended.electricMint
+                    )
+                ) {
+                    Text("ראה הכל")
+                }
+            }
+        )
+
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(SpacingTokens.M),
+            contentPadding = PaddingValues(horizontal = SpacingTokens.L)
+        ) {
+            items(deals) { product ->
+                CompactProductCard(
+                    product = product,
+                    onProductClick = { onProductClick(product) },
+                    onAddToCart = { storePrice -> onAddToCart(product) },
+                    modifier = Modifier.width(200.dp)
                 )
             }
         }
     }
 }
+
+@Composable
+private fun LoadingProductCard(
+    modifier: Modifier = Modifier
+) {
+    GlassCard(
+        modifier = modifier.height(120.dp)
+    ) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            LoadingIndicator()
+        }
+    }
+}
+
+// Data class for quick stats
+data class QuickStats(
+    val savedThisMonth: Double,
+    val savedCarts: Int
+)

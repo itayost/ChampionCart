@@ -9,8 +9,9 @@ import androidx.navigation.compose.rememberNavController
 import com.example.championcart.presentation.navigation.ChampionCartBottomBar
 import com.example.championcart.presentation.navigation.ChampionCartNavHost
 import com.example.championcart.ui.theme.ChampionCartTheme
-
+import dagger.hilt.android.HiltAndroidApp
 /**
+ *
  * Main app composable that sets up the navigation structure
  */
 @Composable
