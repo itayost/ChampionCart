@@ -34,7 +34,8 @@ fun LoginRegisterScreen(
     onSkipLogin: () -> Unit,
     viewModel: AuthViewModel = hiltViewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    // Fix: Change from 'uiState' to 'state' to match the AuthViewModel
+    val uiState by viewModel.state.collectAsState()
     val haptics = LocalHapticFeedback.current
     val focusManager = LocalFocusManager.current
 
@@ -104,21 +105,11 @@ fun LoginRegisterScreen(
                     },
                     onToggleMode = {
                         haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                        viewModel.toggleAuthMode()
+                        viewModel.toggleMode() // Fix: Changed from toggleAuthMode to toggleMode
                     },
                     isLoading = uiState.isLoading,
                     error = uiState.error
                 )
-
-                Spacer(modifier = Modifier.height(SpacingTokens.L))
-
-                // Terms checkbox for registration
-                if (!uiState.isLoginMode) {
-                    TermsCheckbox(
-                        isChecked = uiState.acceptedTerms,
-                        onCheckedChange = viewModel::updateAcceptedTerms
-                    )
-                }
             }
         }
     }

@@ -1,6 +1,7 @@
 package com.example.championcart.presentation.components
 
 import androidx.compose.animation.*
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -82,7 +83,10 @@ fun ChampionCartTextField(
                 focusedBorderColor = MaterialTheme.colorScheme.extended.electricMint,
                 unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
                 errorBorderColor = MaterialTheme.colorScheme.error,
-                containerColor = MaterialTheme.colorScheme.extended.surfaceGlass,
+                focusedContainerColor = MaterialTheme.colorScheme.extended.surfaceGlass,
+                unfocusedContainerColor = MaterialTheme.colorScheme.extended.surfaceGlass,
+                disabledContainerColor = MaterialTheme.colorScheme.extended.surfaceGlass.copy(alpha = 0.5f),
+                errorContainerColor = MaterialTheme.colorScheme.extended.surfaceGlass,
                 focusedLabelColor = MaterialTheme.colorScheme.extended.electricMint,
                 unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -248,30 +252,57 @@ fun <T> DropdownTextField(
 ) {
     var expanded by remember { mutableStateOf(false) }
 
-    ExposedDropdownMenuBox(
-        expanded = expanded,
-        onExpandedChange = { expanded = it && enabled },
-        modifier = modifier
-    ) {
-        ChampionCartTextField(
+    Column(modifier = modifier) {
+        // Dropdown trigger field
+        OutlinedTextField(
             value = itemToString(value),
-            onValueChange = {},
-            label = label,
-            modifier = Modifier.menuAnchor(),
-            placeholder = placeholder,
-            readOnly = true,
-            enabled = enabled,
-            isError = isError,
-            errorMessage = errorMessage,
-            leadingIcon = leadingIcon,
+            onValueChange = { }, // Read-only
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(enabled = enabled) { expanded = true },
+            label = { Text(label) },
+            placeholder = placeholder?.let { { Text(it) } },
+            leadingIcon = leadingIcon?.let {
+                {
+                    Icon(
+                        imageVector = it,
+                        contentDescription = null
+                    )
+                }
+            },
             trailingIcon = {
-                ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
-            }
+                Icon(
+                    imageVector = if (expanded) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown,
+                    contentDescription = if (expanded) "סגור" else "פתח"
+                )
+            },
+            enabled = false, // Always disabled to prevent keyboard
+            readOnly = true,
+            isError = isError,
+            shape = GlassmorphicShapes.TextField,
+            colors = OutlinedTextFieldDefaults.colors(
+                disabledBorderColor = if (isError) {
+                    MaterialTheme.colorScheme.error
+                } else {
+                    MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+                },
+                disabledContainerColor = MaterialTheme.colorScheme.extended.surfaceGlass,
+                disabledLabelColor = if (isError) {
+                    MaterialTheme.colorScheme.error
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+                disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                disabledLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         )
 
-        ExposedDropdownMenu(
+        // Dropdown menu
+        DropdownMenu(
             expanded = expanded,
-            onDismissRequest = { expanded = false }
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.fillMaxWidth()
         ) {
             items.forEach { item ->
                 DropdownMenuItem(
@@ -279,36 +310,180 @@ fun <T> DropdownTextField(
                     onClick = {
                         onValueChange(item)
                         expanded = false
-                    },
-                    contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
+                    }
                 )
             }
+        }
+
+        // Error message
+        AnimatedVisibility(
+            visible = isError && !errorMessage.isNullOrEmpty(),
+            enter = expandVertically() + fadeIn(),
+            exit = shrinkVertically() + fadeOut()
+        ) {
+            Text(
+                text = errorMessage ?: "",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(start = SpacingTokens.M, top = SpacingTokens.XS)
+            )
         }
     }
 }
 
 /**
- * Form validation helpers
+ * Search field with icon and clear button
  */
-object FormValidation {
-    fun isValidEmail(email: String): Boolean {
-        return android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
-    }
+@Composable
+fun SearchTextField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    placeholder: String = "חיפוש...",
+    enabled: Boolean = true,
+    onSearch: () -> Unit = {}
+) {
+    ChampionCartTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = "",
+        modifier = modifier,
+        placeholder = placeholder,
+        leadingIcon = Icons.Default.Search,
+        trailingIcon = if (value.isNotEmpty()) {
+            {
+                IconButton(
+                    onClick = { onValueChange("") }
+                ) {
+                    Icon(
+                        Icons.Default.Clear,
+                        contentDescription = "נקה"
+                    )
+                }
+            }
+        } else null,
+        enabled = enabled,
+        keyboardOptions = KeyboardOptions(
+            imeAction = ImeAction.Search
+        ),
+        keyboardActions = KeyboardActions(
+            onSearch = { onSearch() }
+        )
+    )
+}
 
-    fun isValidPassword(password: String): Boolean {
-        return password.length >= 8
-    }
+/**
+ * Multi-line text field for comments/notes
+ */
+@Composable
+fun NotesTextField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    label: String = "הערות",
+    placeholder: String = "הוסף הערות...",
+    enabled: Boolean = true,
+    isError: Boolean = false,
+    errorMessage: String? = null,
+    maxLines: Int = 5
+) {
+    ChampionCartTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = label,
+        modifier = modifier,
+        placeholder = placeholder,
+        leadingIcon = Icons.Default.Edit,
+        enabled = enabled,
+        isError = isError,
+        errorMessage = errorMessage,
+        singleLine = false,
+        maxLines = maxLines
+    )
+}
 
-    fun isValidPhone(phone: String): Boolean {
-        val digitsOnly = phone.filter { it.isDigit() }
-        return digitsOnly.length == 10 || digitsOnly.length == 9
+/**
+ * Checkbox with label
+ */
+@Composable
+fun LabeledCheckbox(
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    label: String,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable(enabled = enabled) { onCheckedChange(!checked) }
+            .padding(vertical = SpacingTokens.S),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(SpacingTokens.M)
+    ) {
+        Checkbox(
+            checked = checked,
+            onCheckedChange = null, // Handled by row click
+            enabled = enabled,
+            colors = CheckboxDefaults.colors(
+                checkedColor = MaterialTheme.colorScheme.extended.electricMint
+            )
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyLarge,
+            color = if (enabled) {
+                MaterialTheme.colorScheme.onSurface
+            } else {
+                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            }
+        )
     }
 }
 
 /**
- * Form field spacing
+ * Radio button group
  */
 @Composable
-fun FormFieldSpace() {
-    Spacer(modifier = Modifier.height(SpacingTokens.M))
+fun <T> RadioButtonGroup(
+    selectedOption: T,
+    options: List<T>,
+    onOptionSelected: (T) -> Unit,
+    modifier: Modifier = Modifier,
+    optionToString: (T) -> String = { it.toString() },
+    enabled: Boolean = true
+) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(SpacingTokens.S)
+    ) {
+        options.forEach { option ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(enabled = enabled) { onOptionSelected(option) }
+                    .padding(vertical = SpacingTokens.S),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(SpacingTokens.M)
+            ) {
+                RadioButton(
+                    selected = option == selectedOption,
+                    onClick = null, // Handled by row click
+                    enabled = enabled,
+                    colors = RadioButtonDefaults.colors(
+                        selectedColor = MaterialTheme.colorScheme.extended.electricMint
+                    )
+                )
+                Text(
+                    text = optionToString(option),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = if (enabled) {
+                        MaterialTheme.colorScheme.onSurface
+                    } else {
+                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    }
+                )
+            }
+        }
+    }
 }

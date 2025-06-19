@@ -1,276 +1,286 @@
-package com.example.championcart.presentation.screens.cart
+package com.example.championcart.presentation.screens.home
 
-import androidx.compose.animation.*
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavController
-import com.example.championcart.presentation.components.*
-import com.example.championcart.presentation.navigation.Screen
-import com.example.championcart.ui.theme.*
+import android.util.Log
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.championcart.domain.models.GroupedProduct
+import com.example.championcart.domain.models.Product
+import com.example.championcart.domain.repository.AuthRepository
+import com.example.championcart.domain.repository.PriceRepository
+import com.example.championcart.domain.usecase.SearchProductsUseCase
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-@Composable
-fun CartScreen(
-    navController: NavController,
-    viewModel: CartViewModel = hiltViewModel()
-) {
-    val uiState by viewModel.uiState.collectAsState()
-    val haptics = LocalHapticFeedback.current
+@HiltViewModel
+class HomeViewModel @Inject constructor(
+    private val authRepository: AuthRepository,
+    private val priceRepository: PriceRepository,
+    private val searchProductsUseCase: SearchProductsUseCase
+) : ViewModel() {
 
-    var showStoreSelector by remember { mutableStateOf(false) }
-    var showClearCartDialog by remember { mutableStateOf(false) }
+    companion object {
+        private const val TAG = "HomeViewModel"
+    }
 
-    ChampionCartScreen(
-        topBar = {
-            CartTopBar(
-                itemCount = uiState.items.size,
-                onBackClick = { navController.popBackStack() },
-                onClearCartClick = {
-                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                    showClearCartDialog = true
-                }
-            )
-        },
-        bottomBar = {
-            // Show summary card at bottom on mobile
-            if (uiState.items.isNotEmpty()) {
-                CartSummaryCard(
-                    subtotal = uiState.subtotal,
-                    savings = uiState.savings,
-                    deliveryFee = uiState.deliveryFee,
-                    total = uiState.total,
-                    itemCount = uiState.items.size,
-                    onCheckoutClick = {
-                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                        viewModel.proceedToCheckout()
-                    },
-                    isLoading = uiState.isLoading,
-                    modifier = Modifier.padding(SpacingTokens.L)
+    private val _uiState = MutableStateFlow(HomeUiState())
+    val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
+
+    private val _selectedCity = MutableStateFlow<String?>(null)
+    val selectedCity: StateFlow<String?> = _selectedCity.asStateFlow()
+
+    private val _cities = MutableStateFlow<List<String>>(emptyList())
+    val cities: StateFlow<List<String>> = _cities.asStateFlow()
+
+    init {
+        loadInitialData()
+    }
+
+    private fun loadInitialData() {
+        viewModelScope.launch {
+            // Load user info
+            loadUserInfo()
+
+            // Load cities
+            loadCities()
+
+            // Load featured products
+            loadFeaturedProducts()
+        }
+    }
+
+    private suspend fun loadUserInfo() {
+        authRepository.getCurrentUser().fold(
+            onSuccess = { user ->
+                _uiState.value = _uiState.value.copy(
+                    userName = user?.email?.substringBefore("@") ?: "Guest",
+                    isGuest = user == null
+                )
+            },
+            onFailure = {
+                Log.e(TAG, "Failed to load user info", it)
+                _uiState.value = _uiState.value.copy(
+                    userName = "Guest",
+                    isGuest = true
                 )
             }
-        }
-    ) { paddingValues ->
-        when {
-            // Loading state
-            uiState.isLoading && uiState.items.isEmpty() -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues),
-                    contentAlignment = Alignment.Center
-                ) {
-                    LoadingIndicator(size = 60.dp)
-                }
-            }
+        )
+    }
 
-            // Empty cart
-            uiState.items.isEmpty() -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues),
-                    contentAlignment = Alignment.Center
-                ) {
-                    EmptyCartState(
-                        onStartShopping = {
-                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                            navController.navigate(Screen.Search.route)
-                        }
+    private suspend fun loadCities() {
+        priceRepository.getCities().fold(
+            onSuccess = { citiesList ->
+                _cities.value = citiesList
+                _uiState.value = _uiState.value.copy(
+                    availableCities = citiesList
+                )
+
+                // Set default city if not already set
+                if (_uiState.value.selectedCity == null && citiesList.isNotEmpty()) {
+                    _uiState.value = _uiState.value.copy(
+                        selectedCity = citiesList.first()
                     )
+                    _selectedCity.value = citiesList.first()
                 }
+            },
+            onFailure = {
+                Log.e(TAG, "Failed to load cities", it)
+                // Set default cities if API fails
+                val defaultCities = listOf("תל אביב", "ירושלים", "חיפה", "ראשון לציון")
+                _uiState.value = _uiState.value.copy(
+                    availableCities = defaultCities,
+                    selectedCity = defaultCities.first()
+                )
             }
+        )
+    }
 
-            // Cart items
-            else -> {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues),
-                    contentPadding = PaddingValues(
-                        start = SpacingTokens.L,
-                        end = SpacingTokens.L,
-                        top = SpacingTokens.L,
-                        bottom = 200.dp // Space for summary card
-                    ),
-                    verticalArrangement = Arrangement.spacedBy(SpacingTokens.M)
-                ) {
-                    // Store selector (if multiple stores available)
-                    if (uiState.availableStores.size > 1) {
-                        item {
-                            Column {
-                                SectionHeader(
-                                    title = "בחר חנות",
-                                    subtitle = "השווה מחירים בין חנויות"
-                                )
+    private suspend fun loadFeaturedProducts() {
+        _uiState.value = _uiState.value.copy(isLoading = true)
 
-                                Spacer(modifier = Modifier.height(SpacingTokens.S))
-
-                                StoreSelector(
-                                    stores = uiState.availableStores.map { store ->
-                                        StoreOption(
-                                            id = store.id,
-                                            name = store.name,
-                                            address = store.address,
-                                            totalPrice = store.totalPrice,
-                                            savings = store.savings
-                                        )
-                                    },
-                                    selectedStoreId = uiState.selectedStoreId,
-                                    onStoreSelected = { storeId ->
-                                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                                        viewModel.selectStore(storeId)
-                                    }
-                                )
-                            }
-                        }
-
-                        item {
-                            HorizontalDivider(
-                                modifier = Modifier.padding(vertical = SpacingTokens.M)
-                            )
-                        }
-                    }
-
-                    // Cart items header
-                    item {
-                        SectionHeader(
-                            title = "המוצרים שלך",
-                            subtitle = "${uiState.items.size} מוצרים"
-                        )
-                    }
-
-                    // Cart items
-                    items(
-                        items = uiState.items,
-                        key = { it.id }
-                    ) { item ->
-                        CartItemCard(
-                            item = item,
-                            onQuantityChange = { newQuantity ->
-                                viewModel.updateQuantity(item.id, newQuantity)
-                            },
-                            onRemove = {
-                                viewModel.removeItem(item.id)
-                            },
-                            onProductClick = {
-                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                                navController.navigate(
-                                    Screen.ProductDetail.createRoute(item.productId)
-                                )
-                            }
-                        )
-                    }
-
-                    // Recommended products
-                    if (uiState.recommendedProducts.isNotEmpty()) {
-                        item {
-                            Spacer(modifier = Modifier.height(SpacingTokens.L))
-                            SectionHeader(
-                                title = "מומלץ עבורך",
-                                subtitle = "על סמך העגלה שלך"
-                            )
-                        }
-
-                        item {
-                            LazyRow(
-                                horizontalArrangement = Arrangement.spacedBy(SpacingTokens.M),
-                                contentPadding = PaddingValues(horizontal = SpacingTokens.L)
-                            ) {
-                                items(uiState.recommendedProducts) { product ->
-                                    CompactProductCard(
-                                        product = product,
-                                        onProductClick = {
-                                            navController.navigate(
-                                                Screen.ProductDetail.createRoute(product.itemCode)
-                                            )
-                                        },
-                                        onAddToCart = {
-                                            viewModel.addRecommendedProduct(product)
-                                        },
-                                        modifier = Modifier.width(180.dp)
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        // Dialogs
-        if (showClearCartDialog) {
-            ChampionCartAlertDialog(
-                title = "נקה עגלה",
-                text = "האם אתה בטוח שברצונך להסיר את כל המוצרים מהעגלה?",
-                confirmButtonText = "נקה",
-                dismissButtonText = "ביטול",
-                onConfirm = {
-                    viewModel.clearCart()
-                    showClearCartDialog = false
+        try {
+            // Load milk products
+            searchProductsUseCase("חלב", _selectedCity.value ?: "תל אביב").fold(
+                onSuccess = { products ->
+                    _uiState.value = _uiState.value.copy(
+                        milkProducts = products.take(3),
+                        featuredDeals = products.filter { it.savings > 0 }.take(5)
+                    )
                 },
-                onDismiss = { showClearCartDialog = false },
-                confirmButtonColor = MaterialTheme.colorScheme.error
+                onFailure = {
+                    Log.e(TAG, "Failed to load milk products", it)
+                }
+            )
+
+            // Load bread products
+            searchProductsUseCase("לחם", _selectedCity.value ?: "תל אביב").fold(
+                onSuccess = { products ->
+                    _uiState.value = _uiState.value.copy(
+                        breadProducts = products.take(3)
+                    )
+                },
+                onFailure = {
+                    Log.e(TAG, "Failed to load bread products", it)
+                }
+            )
+
+            // Load eggs products
+            searchProductsUseCase("ביצים", _selectedCity.value ?: "תל אביב").fold(
+                onSuccess = { products ->
+                    _uiState.value = _uiState.value.copy(
+                        eggProducts = products.take(3)
+                    )
+                },
+                onFailure = {
+                    Log.e(TAG, "Failed to load egg products", it)
+                }
+            )
+
+            // Set popular products from all categories
+            val allProducts = _uiState.value.milkProducts +
+                    _uiState.value.breadProducts +
+                    _uiState.value.eggProducts
+
+            _uiState.value = _uiState.value.copy(
+                popularProducts = allProducts.sortedByDescending { it.savings }.take(10)
+            )
+
+            // Calculate quick stats
+            calculateQuickStats()
+
+        } finally {
+            _uiState.value = _uiState.value.copy(isLoading = false)
+        }
+    }
+
+    private fun calculateQuickStats() {
+        val totalSavings = _uiState.value.featuredDeals.sumOf { it.savings }
+        val savedCarts = 3 // Mock value, should come from repository
+
+        _uiState.value = _uiState.value.copy(
+            quickStats = QuickStats(
+                savedThisMonth = String.format("%.2f", totalSavings),
+                savedCarts = savedCarts,
+                itemsTracked = _uiState.value.popularProducts.size
+            ),
+            totalSavings = totalSavings
+        )
+    }
+
+    fun showCitySelector() {
+        _uiState.value = _uiState.value.copy(showCitySelector = true)
+    }
+
+    fun hideCitySelector() {
+        _uiState.value = _uiState.value.copy(showCitySelector = false)
+    }
+
+    fun updateCity(city: String) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(
+                selectedCity = city,
+                showCitySelector = false
+            )
+            _selectedCity.value = city
+
+            // Reload products for new city
+            loadFeaturedProducts()
+        }
+    }
+
+    fun navigateToProduct(product: GroupedProduct) {
+        // Navigation will be handled by the UI layer
+        Log.d(TAG, "Navigate to product: ${product.itemName}")
+    }
+
+    fun searchProducts(query: String) {
+        viewModelScope.launch {
+            searchProductsUseCase(query, _selectedCity.value).fold(
+                onSuccess = { products ->
+                    // Handle search results
+                    Log.d(TAG, "Search found ${products.size} products")
+                },
+                onFailure = {
+                    Log.e(TAG, "Search failed", it)
+                }
             )
         }
+    }
 
-        // Success message for checkout
-        if (uiState.showCheckoutSuccess) {
-            LaunchedEffect(Unit) {
-                kotlinx.coroutines.delay(2000)
-                viewModel.dismissCheckoutSuccess()
-                // Navigate to checkout screen
-            }
-
-            Snackbar(
-                modifier = Modifier.padding(SpacingTokens.L),
-                containerColor = MaterialTheme.colorScheme.extended.electricMint,
-                contentColor = MaterialTheme.colorScheme.onPrimary
-            ) {
-                Text("מעבר לתשלום...")
-            }
+    fun addToCart(product: GroupedProduct) {
+        // Convert GroupedProduct to Product for cart
+        val lowestPriceStore = product.prices.minByOrNull { it.price }
+        if (lowestPriceStore != null) {
+            val cartProduct = Product(
+                itemCode = product.itemCode,
+                itemName = product.itemName,
+                chain = lowestPriceStore.chain,
+                storeId = lowestPriceStore.storeId,
+                price = lowestPriceStore.price,
+                city = lowestPriceStore.city
+            )
+            // Add to cart logic here
+            Log.d(TAG, "Add to cart: ${product.itemName}")
         }
+    }
 
-        // Error handling
-        uiState.error?.let { error ->
-            LaunchedEffect(error) {
-                // Show error snackbar
-            }
+    fun refreshData() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isRefreshing = true)
+            loadFeaturedProducts()
+            _uiState.value = _uiState.value.copy(isRefreshing = false)
         }
+    }
+
+    fun refresh() {
+        refreshData()
+    }
+
+    fun clearError() {
+        _uiState.value = _uiState.value.copy(error = null)
+    }
+
+    fun selectCategory(category: String) {
+        _uiState.value = _uiState.value.copy(selectedCategory = category)
+    }
+
+    fun getUserEmail(): String {
+        return _uiState.value.userName
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun CartTopBar(
-    itemCount: Int,
-    onBackClick: () -> Unit,
-    onClearCartClick: () -> Unit
-) {
-    ChampionCartTopBar(
-        title = "העגלה שלי",
-        showBackButton = true,
-        onBackClick = onBackClick,
-        actions = {
-            if (itemCount > 0) {
-                IconButton(onClick = onClearCartClick) {
-                    Icon(
-                        Icons.Default.DeleteSweep,
-                        contentDescription = "נקה עגלה",
-                        tint = MaterialTheme.colorScheme.error
-                    )
-                }
-            }
-        }
-    )
-}
+// Updated HomeUiState with all required properties
+data class HomeUiState(
+    val isLoading: Boolean = false,
+    val isRefreshing: Boolean = false,
+    val userName: String = "Guest",
+    val isGuest: Boolean = true,
+    val selectedCity: String? = null,
+    val availableCities: List<String> = emptyList(),
+    val showCitySelector: Boolean = false,
+    val quickStats: QuickStats? = null,
+    val milkProducts: List<GroupedProduct> = emptyList(),
+    val breadProducts: List<GroupedProduct> = emptyList(),
+    val eggProducts: List<GroupedProduct> = emptyList(),
+    val featuredDeals: List<GroupedProduct> = emptyList(),
+    val popularProducts: List<GroupedProduct> = emptyList(),
+    val categories: List<ProductCategory> = emptyList(),
+    val selectedCategory: String? = null,
+    val totalSavings: Double = 0.0,
+    val error: String? = null
+)
+
+data class ProductCategory(
+    val name: String,
+    val productCount: Int,
+    val averagePrice: Double
+)
+
+data class QuickStats(
+    val savedThisMonth: String,
+    val savedCarts: Int,
+    val itemsTracked: Int
+)

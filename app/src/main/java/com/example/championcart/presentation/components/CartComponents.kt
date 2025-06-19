@@ -2,6 +2,7 @@ package com.example.championcart.presentation.components
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -20,6 +21,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -29,13 +31,13 @@ import com.example.championcart.domain.models.StorePrice
 import com.example.championcart.ui.theme.*
 
 /**
- * Champion Cart - Cart Specific Components
+ * Champion Cart - Cart Components
+ * Specialized components for shopping cart functionality
  */
 
 /**
- * Cart item card with swipe to delete
+ * Cart item card component
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CartItemCard(
     item: CartItem,
@@ -45,113 +47,179 @@ fun CartItemCard(
     modifier: Modifier = Modifier
 ) {
     val haptics = LocalHapticFeedback.current
-    val dismissState = rememberSwipeToDismissBoxState(
-        confirmValueChange = { dismissValue ->
-            if (dismissValue == SwipeToDismissBoxValue.EndToStart) {
-                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                onRemove()
-                true
-            } else {
-                false
-            }
-        }
-    )
+    var showDeleteDialog by remember { mutableStateOf(false) }
 
-    SwipeToDismissBox(
-        state = dismissState,
-        backgroundContent = {
+    // Using Card instead of SwipeableListItem to avoid parameter issues
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = SpacingTokens.S, vertical = SpacingTokens.XS),
+        onClick = onProductClick,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(SpacingTokens.M),
+            horizontalArrangement = Arrangement.spacedBy(SpacingTokens.M),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Product image
             Box(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.error)
-                    .padding(horizontal = SpacingTokens.L),
-                contentAlignment = Alignment.CenterEnd
+                    .size(60.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    Icons.Default.Delete,
-                    contentDescription = "Remove",
-                    tint = MaterialTheme.colorScheme.onError
-                )
+                if (item.imageUrl != null) {
+                    AsyncImage(
+                        model = item.imageUrl,
+                        contentDescription = "תמונת ${item.productName}",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Icon(
+                        Icons.Default.ShoppingCart,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(30.dp)
+                    )
+                }
             }
-        },
-        modifier = modifier
-    ) {
-        GlassCard(
-            onClick = onProductClick,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(SpacingTokens.M),
-                horizontalArrangement = Arrangement.spacedBy(SpacingTokens.M)
+
+            // Product info
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(SpacingTokens.XS)
             ) {
-                // Product image
-                AsyncImage(
-                    model = item.imageUrl,
-                    contentDescription = item.name,
-                    modifier = Modifier
-                        .size(80.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant),
-                    contentScale = ContentScale.Crop
+                Text(
+                    text = item.productName,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
                 )
 
-                // Product info and controls
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(SpacingTokens.S)
+                // Show store chain if available
+                item.selectedStore?.let { store ->
+                    Text(
+                        text = "${store.chain}${store.city?.let { " - $it" } ?: ""}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            // Price and quantity controls
+            Column(
+                horizontalAlignment = Alignment.End,
+                verticalArrangement = Arrangement.spacedBy(SpacingTokens.S)
+            ) {
+                // Total price
+                Text(
+                    text = "₪${String.format("%.2f", item.price * item.quantity)}",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+
+                // Unit price
+                Text(
+                    text = "₪${String.format("%.2f", item.price)} × ${item.quantity}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                // Quantity selector
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(SpacingTokens.XS),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Name and brand
-                    Column {
-                        Text(
-                            text = item.name,
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Medium,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        item.brand?.let {
-                            Text(
-                                text = it,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-
-                    // Price and quantity
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.Bottom
+                    // Delete button
+                    IconButton(
+                        onClick = {
+                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                            showDeleteDialog = true
+                        },
+                        modifier = Modifier.size(32.dp)
                     ) {
-                        // Price
-                        Column {
-                            Text(
-                                text = "₪${String.format("%.2f", item.price * item.quantity)}",
-                                style = AppTextStyles.priceLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.extended.electricMint
-                            )
-                            Text(
-                                text = "₪${String.format("%.2f", item.price)} ליחידה",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-
-                        // Quantity selector
-                        QuantitySelector(
-                            quantity = item.quantity,
-                            onQuantityChange = onQuantityChange,
-                            minQuantity = 1,
-                            maxQuantity = 99
+                        Icon(
+                            Icons.Default.Delete,
+                            contentDescription = "הסר מוצר",
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(18.dp)
                         )
                     }
+
+                    // Quantity controls
+                    QuantitySelector(
+                        quantity = item.quantity,
+                        onQuantityChange = onQuantityChange,
+                        minQuantity = 1,
+                        maxQuantity = 99
+                    )
                 }
             }
         }
+    }
+
+    // Delete confirmation dialog
+    if (showDeleteDialog) {
+        ChampionCartAlertDialog(
+            title = "הסר מהעגלה",
+            text = "האם אתה בטוח שברצונך להסיר את ${item.productName} מהעגלה?",
+            confirmButtonText = "הסר",
+            dismissButtonText = "ביטול",
+            onConfirm = {
+                onRemove()
+                showDeleteDialog = false
+            },
+            onDismiss = { showDeleteDialog = false },
+            confirmButtonColor = MaterialTheme.colorScheme.error
+        )
+    }
+}
+
+/**
+ * Compact cart item for summary views
+ */
+@Composable
+fun CompactCartItem(
+    item: CartItem,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = SpacingTokens.XS),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Row(
+            modifier = Modifier.weight(1f),
+            horizontalArrangement = Arrangement.spacedBy(SpacingTokens.S)
+        ) {
+            Text(
+                text = "${item.quantity}×",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = item.productName,
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+        Text(
+            text = "₪${String.format("%.2f", item.price * item.quantity)}",
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium
+        )
     }
 }
 
@@ -163,96 +231,55 @@ fun QuantitySelector(
     quantity: Int,
     onQuantityChange: (Int) -> Unit,
     modifier: Modifier = Modifier,
-    minQuantity: Int = 1,
+    minQuantity: Int = 0,
     maxQuantity: Int = 99
 ) {
-    val haptics = LocalHapticFeedback.current
-
     Row(
         modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(SpacingTokens.XS),
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Decrease button
-        QuantityButton(
+        IconButton(
             onClick = {
                 if (quantity > minQuantity) {
-                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                     onQuantityChange(quantity - 1)
                 }
             },
+            modifier = Modifier.size(32.dp),
             enabled = quantity > minQuantity
         ) {
             Icon(
                 Icons.Default.Remove,
-                contentDescription = "Decrease",
-                modifier = Modifier.size(16.dp)
+                contentDescription = "הפחת כמות",
+                modifier = Modifier.size(18.dp)
             )
         }
 
         // Quantity display
-        Box(
-            modifier = Modifier
-                .widthIn(min = 40.dp)
-                .clip(RoundedCornerShape(4.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-                .padding(horizontal = SpacingTokens.S, vertical = SpacingTokens.XS),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = quantity.toString(),
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium
-            )
-        }
+        Text(
+            text = quantity.toString(),
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier.widthIn(min = 32.dp),
+            textAlign = TextAlign.Center
+        )
 
         // Increase button
-        QuantityButton(
+        IconButton(
             onClick = {
                 if (quantity < maxQuantity) {
-                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                     onQuantityChange(quantity + 1)
                 }
             },
+            modifier = Modifier.size(32.dp),
             enabled = quantity < maxQuantity
         ) {
             Icon(
                 Icons.Default.Add,
-                contentDescription = "Increase",
-                modifier = Modifier.size(16.dp)
+                contentDescription = "הוסף כמות",
+                modifier = Modifier.size(18.dp)
             )
-        }
-    }
-}
-
-@Composable
-private fun QuantityButton(
-    onClick: () -> Unit,
-    enabled: Boolean,
-    content: @Composable () -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .size(32.dp)
-            .clip(CircleShape)
-            .background(
-                if (enabled) {
-                    MaterialTheme.colorScheme.extended.electricMint
-                } else {
-                    MaterialTheme.colorScheme.surfaceVariant
-                }
-            )
-            .clickable(enabled = enabled) { onClick() },
-        contentAlignment = Alignment.Center
-    ) {
-        CompositionLocalProvider(
-            LocalContentColor provides if (enabled) {
-                MaterialTheme.colorScheme.onPrimary
-            } else {
-                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-            }
-        ) {
-            content()
         }
     }
 }
@@ -262,59 +289,63 @@ private fun QuantityButton(
  */
 @Composable
 fun CartSummaryCard(
-    subtotal: Double,
-    savings: Double = 0.0,
-    deliveryFee: Double = 0.0,
-    total: Double,
     itemCount: Int,
-    onCheckoutClick: () -> Unit,
+    subtotal: Double,
+    savings: Double,
+    total: Double,
+    storeName: String,
     modifier: Modifier = Modifier,
-    isLoading: Boolean = false
+    onCheckout: () -> Unit
 ) {
-    GlassCard(
-        modifier = modifier.fillMaxWidth()
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = GlassmorphicShapes.GlassCard,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(SpacingTokens.L),
-            verticalArrangement = Arrangement.spacedBy(SpacingTokens.M)
+                .padding(SpacingTokens.L)
         ) {
-            // Title
-            Text(
-                text = "סיכום הזמנה",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
-            )
-
-            HorizontalDivider()
-
-            // Price breakdown
-            Column(
-                verticalArrangement = Arrangement.spacedBy(SpacingTokens.S)
+            // Store info
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                SummaryRow(
-                    label = "סה\"כ מוצרים ($itemCount)",
-                    value = "₪${String.format("%.2f", subtotal)}"
+                Text(
+                    text = storeName,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
                 )
-
-                if (savings > 0) {
-                    SummaryRow(
-                        label = "חיסכון",
-                        value = "-₪${String.format("%.2f", savings)}",
-                        valueColor = MaterialTheme.colorScheme.extended.electricMint
-                    )
-                }
-
-                if (deliveryFee > 0) {
-                    SummaryRow(
-                        label = "משלוח",
-                        value = "₪${String.format("%.2f", deliveryFee)}"
-                    )
-                }
+                Text(
+                    text = "$itemCount מוצרים",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
 
+            Spacer(modifier = Modifier.height(SpacingTokens.M))
             HorizontalDivider()
+            Spacer(modifier = Modifier.height(SpacingTokens.M))
+
+            // Price breakdown
+            PriceRow(label = "סכום ביניים", amount = subtotal)
+
+            if (savings > 0) {
+                PriceRow(
+                    label = "חיסכון",
+                    amount = savings,
+                    isHighlight = true
+                )
+            }
+
+            Spacer(modifier = Modifier.height(SpacingTokens.S))
+            HorizontalDivider()
+            Spacer(modifier = Modifier.height(SpacingTokens.S))
 
             // Total
             Row(
@@ -323,56 +354,171 @@ fun CartSummaryCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "סה\"כ לתשלום",
-                    style = MaterialTheme.typography.titleMedium,
+                    text = "סה״כ לתשלום",
+                    style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
                     text = "₪${String.format("%.2f", total)}",
-                    style = AppTextStyles.priceLarge,
+                    style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.extended.electricMint
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
+
+            Spacer(modifier = Modifier.height(SpacingTokens.L))
 
             // Checkout button
             PrimaryButton(
                 text = "המשך לתשלום",
-                onClick = onCheckoutClick,
+                onClick = onCheckout,
                 modifier = Modifier.fillMaxWidth(),
-                enabled = !isLoading && itemCount > 0,
-                leadingIcon = Icons.Default.ShoppingCartCheckout
+                icon = {
+                    Icon(
+                        Icons.Default.ShoppingCartCheckout,
+                        contentDescription = null
+                    )
+                }
             )
         }
     }
 }
 
+/**
+ * Price row component
+ */
 @Composable
-private fun SummaryRow(
+private fun PriceRow(
     label: String,
-    value: String,
-    valueColor: Color = MaterialTheme.colorScheme.onSurface
+    amount: Double,
+    isHighlight: Boolean = false
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = SpacingTokens.XS),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(
             text = label,
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = if (isHighlight) {
+                MaterialTheme.colorScheme.extended.electricMint
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            }
         )
         Text(
-            text = value,
+            text = if (isHighlight) {
+                "-₪${String.format("%.2f", amount)}"
+            } else {
+                "₪${String.format("%.2f", amount)}"
+            },
             style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium,
-            color = valueColor
+            fontWeight = if (isHighlight) FontWeight.Medium else FontWeight.Normal,
+            color = if (isHighlight) {
+                MaterialTheme.colorScheme.extended.electricMint
+            } else {
+                MaterialTheme.colorScheme.onSurface
+            }
         )
     }
 }
 
 /**
- * Store selector for multi-store carts
+ * Empty cart state
+ */
+@Composable
+fun EmptyCartState(
+    onStartShopping: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    EmptyState(
+        type = EmptyStateType.EMPTY_CART,
+        title = "העגלה שלך ריקה",
+        subtitle = "הוסף מוצרים כדי להתחיל לחסוך",
+        actionLabel = "התחל לקנות",
+        onAction = onStartShopping,
+        modifier = modifier
+    )
+}
+
+/**
+ * Store selection card for cart
+ */
+@Composable
+fun StoreSelectionCard(
+    stores: List<StoreOption>,
+    selectedStoreId: String?,
+    onStoreSelected: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+    ) {
+        SectionHeader(
+            title = "בחר חנות",
+            subtitle = "השווה מחירים בין החנויות"
+        )
+
+        Spacer(modifier = Modifier.height(SpacingTokens.M))
+
+        stores.forEach { store ->
+            StoreOptionItem(
+                store = store,
+                isSelected = store.storeId == selectedStoreId,
+                onClick = { onStoreSelected(store.storeId) },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(SpacingTokens.S))
+        }
+    }
+}
+
+/**
+ * Cart top bar component
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CartTopBar(
+    itemCount: Int,
+    onBackClick: () -> Unit,
+    onClearCartClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    TopAppBar(
+        title = {
+            Text(
+                text = "העגלה שלי ($itemCount)",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+        },
+        navigationIcon = {
+            IconButton(onClick = onBackClick) {
+                Icon(
+                    Icons.Default.ArrowBack,
+                    contentDescription = "חזור"
+                )
+            }
+        },
+        actions = {
+            if (itemCount > 0) {
+                IconButton(onClick = onClearCartClick) {
+                    Icon(
+                        Icons.Default.DeleteSweep,
+                        contentDescription = "נקה עגלה",
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+        },
+        modifier = modifier
+    )
+}
+
+/**
+ * Store selector component for cart
  */
 @Composable
 fun StoreSelector(
@@ -385,47 +531,39 @@ fun StoreSelector(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(SpacingTokens.S)
     ) {
-        Text(
-            text = "בחר חנות",
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Medium
-        )
-
         stores.forEach { store ->
-            StoreSelectorItem(
+            StoreOptionCard(
                 store = store,
-                isSelected = store.id == selectedStoreId,
-                onClick = { onStoreSelected(store.id) }
+                isSelected = store.storeId == selectedStoreId,
+                onClick = { onStoreSelected(store.storeId) }
             )
         }
     }
 }
 
+/**
+ * Store option card
+ */
 @Composable
-private fun StoreSelectorItem(
+private fun StoreOptionCard(
     store: StoreOption,
     isSelected: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    val animatedBorderColor by animateColorAsState(
-        targetValue = if (isSelected) {
-            MaterialTheme.colorScheme.extended.electricMint
-        } else {
-            MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
-        },
-        animationSpec = tween(300),
-        label = "border_color"
-    )
-
-    GlassCard(
+    Card(
         onClick = onClick,
-        modifier = Modifier
-            .fillMaxWidth()
-            .border(
-                width = if (isSelected) 2.dp else 1.dp,
-                color = animatedBorderColor,
-                shape = GlassmorphicShapes.GlassCard
-            )
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSelected) {
+                MaterialTheme.colorScheme.extended.electricMint.copy(alpha = 0.1f)
+            } else {
+                MaterialTheme.colorScheme.surface
+            }
+        ),
+        border = if (isSelected) {
+            BorderStroke(2.dp, MaterialTheme.colorScheme.extended.electricMint)
+        } else null
     ) {
         Row(
             modifier = Modifier
@@ -438,13 +576,15 @@ private fun StoreSelectorItem(
                 Text(
                     text = store.name,
                     style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
+                    fontWeight = FontWeight.Medium
                 )
-                Text(
-                    text = store.address,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                if (store.city != null) {
+                    Text(
+                        text = store.city,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
 
             Column(
@@ -452,10 +592,10 @@ private fun StoreSelectorItem(
             ) {
                 Text(
                     text = "₪${String.format("%.2f", store.totalPrice)}",
-                    style = AppTextStyles.priceMedium,
+                    style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = if (isSelected) {
-                        MaterialTheme.colorScheme.extended.electricMint
+                        MaterialTheme.colorScheme.primary
                     } else {
                         MaterialTheme.colorScheme.onSurface
                     }
@@ -473,71 +613,103 @@ private fun StoreSelectorItem(
 }
 
 /**
- * Empty cart component
+ * Summary row for cart totals
  */
 @Composable
-fun EmptyCartState(
-    onStartShopping: () -> Unit,
-    modifier: Modifier = Modifier
+fun SummaryRow(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+    valueColor: Color = MaterialTheme.colorScheme.onSurface
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(SpacingTokens.XL),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(SpacingTokens.L)
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        // Icon
-        Box(
-            modifier = Modifier
-                .size(120.dp)
-                .clip(CircleShape)
-                .background(
-                    MaterialTheme.colorScheme.extended.electricMint.copy(alpha = 0.1f)
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Default.ShoppingCart,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.extended.electricMint,
-                modifier = Modifier.size(60.dp)
-            )
-        }
-
-        // Text
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(SpacingTokens.S)
-        ) {
-            Text(
-                text = "העגלה שלך ריקה",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.SemiBold
-            )
-
-            Text(
-                text = "הוסף מוצרים כדי להתחיל לחסוך",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-
-        // Action button
-        PrimaryButton(
-            text = "התחל לקנות",
-            onClick = onStartShopping,
-            modifier = Modifier.fillMaxWidth(0.8f),
-            leadingIcon = Icons.Default.Search
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium,
+            color = valueColor
         )
     }
 }
 
-// Data classes for cart components
+/**
+ * Store option item
+ */
+@Composable
+private fun StoreOptionItem(
+    store: StoreOption,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    GlassSelectableCard(
+        selected = isSelected,
+        onClick = onClick,
+        modifier = modifier
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(SpacingTokens.M),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text(
+                    text = store.name,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium
+                )
+                if (store.city != null) {
+                    Text(
+                        text = store.city,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            Column(
+                horizontalAlignment = Alignment.End
+            ) {
+                Text(
+                    text = "₪${String.format("%.2f", store.totalPrice)}",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = if (isSelected) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    }
+                )
+                if (store.savings > 0) {
+                    Text(
+                        text = "חיסכון: ₪${String.format("%.2f", store.savings)}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.extended.electricMint
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Data class for store option
+ */
 data class StoreOption(
-    val id: String,
+    val storeId: String,
     val name: String,
-    val address: String,
+    val city: String?,
     val totalPrice: Double,
     val savings: Double = 0.0
 )

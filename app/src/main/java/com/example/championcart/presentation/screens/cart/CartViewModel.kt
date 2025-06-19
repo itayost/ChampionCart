@@ -66,75 +66,71 @@ class CartViewModel @Inject constructor(
             onSuccess = { items ->
                 _uiState.value = _uiState.value.copy(
                     items = items,
-                    totalPrice = calculateTotal(items)
+                    isLoading = false
                 )
+                calculateTotals()
             },
             onFailure = {
                 Log.e(TAG, "Failed to load cart items", it)
                 _uiState.value = _uiState.value.copy(
+                    isLoading = false,
                     error = "Failed to load cart items"
                 )
             }
         )
     }
 
-    private suspend fun loadSavedCarts() {
-        priceRepository.getSavedCarts().fold(
-            onSuccess = { carts ->
-                _uiState.value = _uiState.value.copy(savedCarts = carts)
-            },
-            onFailure = {
-                Log.e(TAG, "Failed to load saved carts", it)
-            }
+    private fun calculateTotals() {
+        val items = _uiState.value.items
+        val subtotal = items.sumOf { it.price * it.quantity }
+        val deliveryFee = if (subtotal < 100) 15.0 else 0.0 // Free delivery over 100
+        val savings = _uiState.value.cheapestOption?.savings ?: 0.0
+        val total = subtotal - savings + deliveryFee
+
+        _uiState.value = _uiState.value.copy(
+            subtotal = subtotal,
+            deliveryFee = deliveryFee,
+            savings = savings,
+            total = total
         )
     }
 
-    fun selectCity(city: String) {
-        _selectedCity.value = city
-        // Recalculate cheapest cart for new city
-        findCheapestCart()
-    }
-
-    fun updateQuantity(productId: String, newQuantity: Int) {
-        if (newQuantity <= 0) {
-            removeItem(productId)
-            return
-        }
-
+    fun updateQuantity(itemId: String, newQuantity: Int) {
         viewModelScope.launch {
-            val updatedItems = _uiState.value.items.map { item ->
-                if (item.productId == productId) {
-                    item.copy(quantity = newQuantity)
-                } else {
-                    item
-                }
+            if (newQuantity <= 0) {
+                removeItem(itemId)
+                return@launch
             }
 
-            _uiState.value = _uiState.value.copy(
-                items = updatedItems,
-                totalPrice = calculateTotal(updatedItems)
+            cartRepository.updateQuantity(itemId, newQuantity).fold(
+                onSuccess = {
+                    val updatedItems = _uiState.value.items.map { item ->
+                        if (item.id == itemId) {
+                            item.copy(quantity = newQuantity)
+                        } else {
+                            item
+                        }
+                    }
+                    _uiState.value = _uiState.value.copy(items = updatedItems)
+                    calculateTotals()
+                },
+                onFailure = {
+                    Log.e(TAG, "Failed to update quantity", it)
+                }
             )
-
-            // Update in repository
-            cartRepository.updateQuantity(productId, newQuantity)
         }
     }
 
-    fun removeItem(productId: String) {
+    fun removeItem(itemId: String) {
         viewModelScope.launch {
-            cartRepository.removeFromCart(productId).fold(
+            cartRepository.removeFromCart(itemId).fold(
                 onSuccess = {
-                    val updatedItems = _uiState.value.items.filter { it.productId != productId }
-                    _uiState.value = _uiState.value.copy(
-                        items = updatedItems,
-                        totalPrice = calculateTotal(updatedItems)
-                    )
+                    val updatedItems = _uiState.value.items.filter { it.id != itemId }
+                    _uiState.value = _uiState.value.copy(items = updatedItems)
+                    calculateTotals()
                 },
                 onFailure = {
                     Log.e(TAG, "Failed to remove item", it)
-                    _uiState.value = _uiState.value.copy(
-                        error = "Failed to remove item"
-                    )
                 }
             )
         }
@@ -146,25 +142,41 @@ class CartViewModel @Inject constructor(
                 onSuccess = {
                     _uiState.value = _uiState.value.copy(
                         items = emptyList(),
-                        totalPrice = 0.0,
-                        cheapestOption = null
+                        subtotal = 0.0,
+                        savings = 0.0,
+                        deliveryFee = 0.0,
+                        total = 0.0
                     )
                 },
                 onFailure = {
                     Log.e(TAG, "Failed to clear cart", it)
-                    _uiState.value = _uiState.value.copy(
-                        error = "Failed to clear cart"
-                    )
                 }
             )
         }
     }
 
-    private fun calculateTotal(items: List<CartItem>): Double {
-        return items.sumOf { it.price * it.quantity }
+    fun proceedToCheckout() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true)
+            // Implement checkout logic
+            _uiState.value = _uiState.value.copy(
+                isLoading = false,
+                showCheckoutSuccess = true
+            )
+        }
     }
 
-    fun findCheapestCart() {
+    fun dismissCheckoutSuccess() {
+        _uiState.value = _uiState.value.copy(showCheckoutSuccess = false)
+    }
+
+    fun selectStore(storeId: String) {
+        _uiState.value = _uiState.value.copy(selectedStoreId = storeId)
+        // Recalculate based on selected store
+        calculateTotals()
+    }
+
+    fun findCheapestStore() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isCalculating = true)
 
@@ -185,38 +197,76 @@ class CartViewModel @Inject constructor(
                             store = cheapestCart.store,
                             city = cheapestCart.city,
                             total = cheapestCart.total,
-                            savings = _uiState.value.totalPrice - cheapestCart.total
+                            savings = cheapestCart.total - _uiState.value.subtotal
                         ),
+                        availableStores = cheapestCart.items.map { item ->
+                            StoreOption(
+                                storeId = item.itemCode,
+                                name = cheapestCart.store,
+                                city = cheapestCart.city,
+                                totalPrice = item.totalPrice,
+                                savings = 0.0
+                            )
+                        },
                         isCalculating = false
                     )
+                    calculateTotals()
                 },
                 onFailure = {
-                    Log.e(TAG, "Failed to calculate cheapest cart", it)
+                    Log.e(TAG, "Failed to find cheapest store", it)
                     _uiState.value = _uiState.value.copy(
                         isCalculating = false,
-                        error = "Failed to find cheapest option"
+                        error = "Failed to find cheapest store"
                     )
                 }
             )
         }
     }
 
+    fun addRecommendedProduct(product: GroupedProduct) {
+        viewModelScope.launch {
+            val lowestPrice = product.prices.minByOrNull { it.price }
+            if (lowestPrice != null) {
+                val cartProduct = Product(
+                    itemCode = product.itemCode,
+                    itemName = product.itemName,
+                    chain = lowestPrice.chain,
+                    storeId = lowestPrice.storeId,
+                    price = lowestPrice.price,
+                    city = lowestPrice.city
+                )
+                cartRepository.addToCart(cartProduct).fold(
+                    onSuccess = {
+                        loadCartItems()
+                    },
+                    onFailure = {
+                        Log.e(TAG, "Failed to add product", it)
+                    }
+                )
+            }
+        }
+    }
+
+    private suspend fun loadSavedCarts() {
+        priceRepository.getSavedCarts().fold(
+            onSuccess = { carts ->
+                _uiState.value = _uiState.value.copy(savedCarts = carts)
+            },
+            onFailure = {
+                Log.e(TAG, "Failed to load saved carts", it)
+            }
+        )
+    }
+
     fun saveCart(cartName: String) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isSaving = true)
 
-            val currentUser = authRepository.getCurrentUser()
-            if (currentUser == null) {
-                _uiState.value = _uiState.value.copy(
-                    isSaving = false,
-                    error = "Please login to save cart"
-                )
-                return@launch
-            }
-
             val cart = Cart(
                 name = cartName,
                 items = _uiState.value.items,
+                total = _uiState.value.total,
+                store = _uiState.value.selectedStoreId,
                 city = _selectedCity.value
             )
 
@@ -239,40 +289,6 @@ class CartViewModel @Inject constructor(
         }
     }
 
-    fun loadSavedCart(cart: Cart) {
-        viewModelScope.launch {
-            // Convert saved cart items to current cart items
-            val cartItems = cart.items.map { item ->
-                CartItem(
-                    productName = item.productName,
-                    quantity = item.quantity,
-                    price = item.price
-                )
-            }
-
-            _uiState.value = _uiState.value.copy(
-                items = cartItems,
-                totalPrice = calculateTotal(cartItems)
-            )
-        }
-    }
-
-    fun deleteSavedCart(cartName: String) {
-        viewModelScope.launch {
-            priceRepository.deleteCart(cartName).fold(
-                onSuccess = {
-                    loadSavedCarts()
-                },
-                onFailure = {
-                    Log.e(TAG, "Failed to delete cart", it)
-                    _uiState.value = _uiState.value.copy(
-                        error = "Failed to delete cart"
-                    )
-                }
-            )
-        }
-    }
-
     fun dismissError() {
         _uiState.value = _uiState.value.copy(error = null)
     }
@@ -282,14 +298,23 @@ class CartViewModel @Inject constructor(
     }
 }
 
+// Updated CartUiState with all required properties
 data class CartUiState(
     val items: List<CartItem> = emptyList(),
-    val totalPrice: Double = 0.0,
+    val subtotal: Double = 0.0,
+    val savings: Double = 0.0,
+    val deliveryFee: Double = 0.0,
+    val total: Double = 0.0,
+    val selectedStoreId: String? = null,
+    val availableStores: List<StoreOption> = emptyList(),
     val cheapestOption: CheapestOption? = null,
     val savedCarts: List<Cart> = emptyList(),
+    val recommendedProducts: List<GroupedProduct> = emptyList(),
+    val isLoading: Boolean = false,
     val isCalculating: Boolean = false,
     val isSaving: Boolean = false,
     val saveSuccess: Boolean = false,
+    val showCheckoutSuccess: Boolean = false,
     val error: String? = null
 )
 
@@ -298,4 +323,12 @@ data class CheapestOption(
     val city: String,
     val total: Double,
     val savings: Double
+)
+
+data class StoreOption(
+    val storeId: String,
+    val name: String,
+    val city: String?,
+    val totalPrice: Double,
+    val savings: Double = 0.0
 )
