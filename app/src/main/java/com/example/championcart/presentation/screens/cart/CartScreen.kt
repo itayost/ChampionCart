@@ -1,256 +1,220 @@
 package com.example.championcart.presentation.screens.cart
 
 import androidx.compose.animation.*
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.example.championcart.presentation.components.*
-import com.example.championcart.presentation.navigation.Screen
 import com.example.championcart.ui.theme.*
 
+/**
+ * Champion Cart - Cart Screen (Coming Soon)
+ * Placeholder screen while cart functionality is being developed
+ */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CartScreen(
-    navController: NavController,
-    viewModel: CartViewModel = hiltViewModel()
+    navController: NavController
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val haptics = LocalHapticFeedback.current
-
-    var showStoreSelector by remember { mutableStateOf(false) }
-    var showClearCartDialog by remember { mutableStateOf(false) }
-
-    ChampionCartScreen(
+    Scaffold(
         topBar = {
-            CartTopBar(
-                itemCount = uiState.items.size,
-                onBackClick = { navController.popBackStack() },
-                onClearCartClick = {
-                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                    showClearCartDialog = true
+            TopAppBar(
+                title = {
+                    Text(
+                        text = "העגלה שלי",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = { navController.navigateUp() }) {
+                        Icon(
+                            Icons.Default.ArrowBack,
+                            contentDescription = "חזור"
+                        )
+                    }
                 }
             )
-        },
-        bottomBar = {
-            // Show summary card at bottom on mobile
-            if (uiState.items.isNotEmpty()) {
-                CartSummaryCard(
-                    subtotal = uiState.subtotal,
-                    savings = uiState.savings,
-                    total = uiState.total,
-                    itemCount = uiState.items.size,
-                    onCheckout = {
-                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                        viewModel.proceedToCheckout()
-                    },
-                )
-            }
         }
     ) { paddingValues ->
-        when {
-            // Loading state
-            uiState.isLoading && uiState.items.isEmpty() -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues),
-                    contentAlignment = Alignment.Center
-                ) {
-                    LoadingIndicator(size = 60.dp)
-                }
-            }
-
-            // Empty cart
-            uiState.items.isEmpty() -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues),
-                    contentAlignment = Alignment.Center
-                ) {
-                    EmptyCartState(
-                        onStartShopping = {
-                            navController.navigate(Screen.Search.route)
-                        }
-                    )
-                }
-            }
-
-            // Cart with items
-            else -> {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues),
-                    contentPadding = PaddingValues(SpacingTokens.L),
-                    verticalArrangement = Arrangement.spacedBy(SpacingTokens.M)
-                ) {
-                    // Store selector section
-                    if (uiState.availableStores.isNotEmpty()) {
-                        item {
-                            Column {
-                                SectionHeader(
-                                    title = "בחר חנות",
-                                    subtitle = "השווה מחירים בין החנויות"
-                                )
-
-                                Spacer(modifier = Modifier.height(SpacingTokens.M))
-
-                                StoreSelector(
-                                    stores = uiState.availableStores,
-                                    selectedStoreId = uiState.selectedStoreId,
-                                    onStoreSelected = { storeId ->
-                                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                                        viewModel.selectStore(storeId)
-                                    }
-                                )
-                            }
-                        }
-
-                        item {
-                            HorizontalDivider(
-                                modifier = Modifier.padding(vertical = SpacingTokens.M)
-                            )
-                        }
-                    }
-
-                    // Cart items header
-                    item {
-                        SectionHeader(
-                            title = "המוצרים שלך",
-                            subtitle = "${uiState.items.size} מוצרים"
-                        )
-                    }
-
-                    // Cart items
-                    items(
-                        items = uiState.items,
-                        key = { it.id }
-                    ) { item ->
-                        CartItemCard(
-                            item = item,
-                            onQuantityChange = { newQuantity ->
-                                viewModel.updateQuantity(item.id, newQuantity)
-                            },
-                            onRemove = {
-                                viewModel.removeItem(item.id)
-                            },
-                            onProductClick = {
-                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                                navController.navigate(
-                                    Screen.ProductDetail.createRoute(item.productId)
-                                )
-                            }
-                        )
-                    }
-
-                    // Recommended products section
-                    if (uiState.recommendedProducts.isNotEmpty()) {
-                        item {
-                            Spacer(modifier = Modifier.height(SpacingTokens.L))
-                            HorizontalDivider()
-                            Spacer(modifier = Modifier.height(SpacingTokens.L))
-                        }
-
-                        item {
-                            Column {
-                                SectionHeader(
-                                    title = "מומלצים עבורך",
-                                    subtitle = "על סמך העגלה שלך"
-                                )
-
-                                Spacer(modifier = Modifier.height(SpacingTokens.M))
-
-                                LazyRow(
-                                    horizontalArrangement = Arrangement.spacedBy(SpacingTokens.M),
-                                    contentPadding = PaddingValues(horizontal = SpacingTokens.S)
-                                ) {
-                                    items(
-                                        items = uiState.recommendedProducts,
-                                        key = { it.itemCode }
-                                    ) { product ->
-                                        CompactProductCard(
-                                            product = product,
-                                            onProductClick = {
-                                                navController.navigate(
-                                                    Screen.ProductDetail.createRoute(product.itemCode)
-                                                )
-                                            },
-                                            onAddToCart = { _ ->
-                                                viewModel.addRecommendedProduct(product)
-                                            },
-                                            modifier = Modifier.width(160.dp)
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    // Bottom spacing for FAB
-                    item {
-                        Spacer(modifier = Modifier.height(80.dp))
-                    }
-                }
-            }
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues),
+            contentAlignment = Alignment.Center
+        ) {
+            ComingSoonContent()
         }
     }
+}
 
-    // Dialogs
-    if (showClearCartDialog) {
-        ChampionCartAlertDialog(
-            title = "נקה עגלה",
-            text = "האם אתה בטוח שברצונך לנקות את כל העגלה?",
-            confirmButtonText = "נקה",
-            dismissButtonText = "ביטול",
-            onConfirm = {
-                viewModel.clearCart()
-                showClearCartDialog = false
-            },
-            onDismiss = { showClearCartDialog = false },
-            confirmButtonColor = MaterialTheme.colorScheme.error
+@Composable
+private fun ComingSoonContent() {
+    val infiniteTransition = rememberInfiniteTransition()
+
+    // Floating animation for the icon
+    val floatAnimation by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 10f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
         )
-    }
+    )
 
-    // Checkout success dialog
-    if (uiState.showCheckoutSuccess) {
-        ChampionCartAlertDialog(
-            title = "ההזמנה נשלחה!",
-            text = "ההזמנה שלך התקבלה בהצלחה",
-            confirmButtonText = "אישור",
-            onConfirm = {
-                viewModel.dismissCheckoutSuccess()
-                navController.navigate(Screen.Home.route) {
-                    popUpTo(Screen.Cart.route) { inclusive = true }
-                }
-            },
-            onDismiss = viewModel::dismissCheckoutSuccess,
-            icon = {
+    // Scale animation for the badge
+    val scaleAnimation by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1500, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        )
+    )
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(SpacingTokens.XL),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(SpacingTokens.L)
+    ) {
+        // Animated icon container
+        Box(
+            modifier = Modifier
+                .size(120.dp)
+                .offset(y = floatAnimation.dp)
+                .clip(CircleShape)
+                .background(
+                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.ShoppingCart,
+                contentDescription = null,
+                modifier = Modifier.size(60.dp),
+                tint = MaterialTheme.colorScheme.primary
+            )
+        }
+
+        // Coming Soon text
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(SpacingTokens.S)
+        ) {
+            Text(
+                text = "בקרוב!",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            Text(
+                text = "אנחנו עובדים על תכונת העגלה החכמה",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+        }
+
+        // Feature preview badge
+        Surface(
+            modifier = Modifier.scale(scaleAnimation),
+            shape = MaterialTheme.shapes.small,
+            color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.1f),
+            tonalElevation = 2.dp
+        ) {
+            Row(
+                modifier = Modifier.padding(
+                    horizontal = SpacingTokens.L,
+                    vertical = SpacingTokens.M
+                ),
+                horizontalArrangement = Arrangement.spacedBy(SpacingTokens.S),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Icon(
-                    Icons.Default.CheckCircle,
+                    imageVector = Icons.Default.AutoAwesome,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.extended.electricMint,
-                    modifier = Modifier.size(48.dp)
+                    modifier = Modifier.size(SizingTokens.IconS),
+                    tint = MaterialTheme.colorScheme.tertiary
+                )
+                Text(
+                    text = "השוואת מחירים אוטומטית",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.tertiary
                 )
             }
-        )
-    }
-
-    // Error handling
-    uiState.error?.let { error ->
-        LaunchedEffect(error) {
-            // Show snackbar or handle error
         }
+
+        // Feature list
+        Column(
+            modifier = Modifier.padding(top = SpacingTokens.L),
+            verticalArrangement = Arrangement.spacedBy(SpacingTokens.M)
+        ) {
+            Text(
+                text = "מה מחכה לך:",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.padding(bottom = SpacingTokens.S)
+            )
+
+            ComingSoonFeature(
+                icon = Icons.Default.CompareArrows,
+                text = "השוואת מחירים בין כל החנויות"
+            )
+
+            ComingSoonFeature(
+                icon = Icons.Default.Savings,
+                text = "מציאת העגלה הזולה ביותר"
+            )
+
+            ComingSoonFeature(
+                icon = Icons.Default.LocationOn,
+                text = "חנויות קרובות למיקום שלך"
+            )
+
+            ComingSoonFeature(
+                icon = Icons.Default.Analytics,
+                text = "ניתוח חיסכון חכם"
+            )
+        }
+    }
+}
+
+@Composable
+private fun ComingSoonFeature(
+    icon: ImageVector,
+    text: String
+) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(SpacingTokens.M),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(SizingTokens.IconM),
+            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
+        )
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }

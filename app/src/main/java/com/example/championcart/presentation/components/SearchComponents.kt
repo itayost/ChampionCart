@@ -23,6 +23,7 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.championcart.ui.theme.*
 
@@ -126,28 +127,30 @@ fun ChampionCartSearchBar(
                             Icon(
                                 Icons.Default.Mic,
                                 contentDescription = "חיפוש קולי",
-                                tint = MaterialTheme.colorScheme.extended.electricMint
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
                 }
             },
-            singleLine = true,
             enabled = enabled,
+            singleLine = true,
             keyboardOptions = KeyboardOptions(
                 imeAction = ImeAction.Search
             ),
             keyboardActions = KeyboardActions(
                 onSearch = {
-                    keyboardController?.hide()
                     onSearch()
+                    keyboardController?.hide()
                 }
             ),
             shape = GlassmorphicShapes.SearchField,
             colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = MaterialTheme.colorScheme.extended.electricMint,
-                unfocusedContainerColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
-                containerColor = MaterialTheme.colorScheme.extended.surfaceGlass
+                focusedBorderColor = MaterialTheme.colorScheme.extended.electricMint,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                focusedContainerColor = MaterialTheme.colorScheme.extended.surfaceGlass,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
+                disabledContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.3f)
             )
         )
     }
@@ -208,28 +211,22 @@ private fun SearchSuggestionItem(
 
         Text(
             text = text,
-            style = MaterialTheme.typography.bodyLarge,
+            style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f)
-        )
-
-        Icon(
-            imageVector = Icons.Default.NorthWest,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-            modifier = Modifier.size(SizingTokens.IconXS)
         )
     }
 }
 
 /**
- * Search results header with count and sort options
+ * Search results count indicator
  */
 @Composable
-fun SearchResultsHeader(
-    resultCount: Int,
-    sortOption: String,
-    onSortClick: () -> Unit,
+fun SearchResultsCount(
+    count: Int,
+    query: String,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -240,36 +237,18 @@ fun SearchResultsHeader(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = "נמצאו $resultCount מוצרים",
+            text = "נמצאו $count תוצאות עבור \"$query\"",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-
-        TextButton(
-            onClick = onSortClick,
-            colors = ButtonDefaults.textButtonColors(
-                contentColor = MaterialTheme.colorScheme.extended.electricMint
-            )
-        ) {
-            Icon(
-                imageVector = Icons.Default.Sort,
-                contentDescription = null,
-                modifier = Modifier.size(SizingTokens.IconS)
-            )
-            Spacer(modifier = Modifier.width(SpacingTokens.XS))
-            Text(
-                text = sortOption,
-                style = MaterialTheme.typography.bodyMedium
-            )
-        }
     }
 }
 
 /**
- * No search results component
+ * Empty search state
  */
 @Composable
-fun NoSearchResults(
+fun EmptySearchState(
     query: String,
     onClearSearch: () -> Unit,
     modifier: Modifier = Modifier

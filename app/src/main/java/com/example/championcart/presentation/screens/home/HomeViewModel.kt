@@ -162,9 +162,8 @@ class HomeViewModel @Inject constructor(
 
         _uiState.value = _uiState.value.copy(
             quickStats = QuickStats(
-                savedThisMonth = String.format("%.2f", totalSavings),
-                savedCarts = savedCarts,
-                itemsTracked = _uiState.value.popularProducts.size
+                savedThisMonth =  totalSavings,
+                savedCarts = savedCarts
             ),
             totalSavings = totalSavings
         )

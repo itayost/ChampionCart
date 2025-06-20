@@ -98,20 +98,7 @@ fun SavedCartsScreen(
 
     Scaffold(
         topBar = {
-            GlassmorphicTopAppBar(
-                title = "Saved Carts",
-                onNavigationClick = onNavigateBack,
-                actions = {
-                    GlassmorphicIconButton(
-                        onClick = {
-                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                            viewModel.refresh()
-                        },
-                        icon = Icons.Default.Refresh,
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
-            )
+
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->

@@ -40,7 +40,7 @@ fun HomeScreen(
     ChampionCartScreen(
         topBar = {
             HomeTopBar(
-                selectedCity = uiState.selectedCity,
+                selectedCity = uiState.selectedCity.toString(),
                 onCityClick = { viewModel.showCitySelector() },
                 onSearchClick = {
                     haptics.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -66,13 +66,6 @@ fun HomeScreen(
                         navController.navigate(Screen.Auth.route)
                     }
                 )
-            }
-
-            // Quick stats
-            if (!uiState.isGuest && uiState.quickStats != null) {
-                item {
-                    QuickStatsSection(stats = uiState.quickStats)
-                }
             }
 
             // Featured deals

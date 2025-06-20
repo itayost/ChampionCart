@@ -87,7 +87,7 @@ fun SearchScreen(
 
                 // No results
                 uiState.hasSearched && uiState.groupedProducts.isEmpty() -> {
-                    NoSearchResults(
+                    EmptySearchState(
                         query = searchQuery,
                         onClearSearch = {
                             viewModel.updateSearchQuery("")
@@ -148,7 +148,7 @@ fun SearchScreen(
                 items = uiState.availableCities,
                 selectedItem = uiState.selectedCity,
                 onItemSelected = { city ->
-                    viewModel.updateCity(city)
+                    viewModel.selectCity(city)
                     showFilterDialog = false
                 },
                 onDismiss = { showFilterDialog = false }
@@ -287,11 +287,6 @@ private fun SearchResultsList(
     ) {
         // Results header
         item {
-            SearchResultsHeader(
-                resultCount = resultCount,
-                sortOption = "", // Handled in filter row
-                onSortClick = { } // Handled in filter row
-            )
         }
 
         // Product list
