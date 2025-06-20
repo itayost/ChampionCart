@@ -250,8 +250,6 @@ private fun AuthForm(
                 )
             )
 
-            FormFieldSpace()
-
             // Password field
             PasswordTextField(
                 value = password,
@@ -276,7 +274,6 @@ private fun AuthForm(
                 exit = shrinkVertically() + fadeOut()
             ) {
                 Column {
-                    FormFieldSpace()
 
                     PasswordTextField(
                         value = confirmPassword,

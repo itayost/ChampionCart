@@ -13,7 +13,8 @@ import androidx.navigation.compose.composable
 import com.example.championcart.data.local.preferences.TokenManager
 import com.example.championcart.presentation.screens.auth.LoginRegisterScreen
 import com.example.championcart.presentation.screens.cart.CartScreen
-import com.example.championcart.presentation.screens.home.ModernHomeScreen
+import com.example.championcart.presentation.screens.home.HomeScreen
+import com.example.championcart.presentation.screens.home.HomeScreen
 import com.example.championcart.presentation.screens.profile.ProfileScreen
 import com.example.championcart.presentation.screens.search.SearchScreen
 import com.example.championcart.presentation.screens.product.ProductDetailScreen
@@ -88,7 +89,7 @@ fun ChampionCartNavHost(
                         popUpTo(Screen.Auth.route) { inclusive = true }
                     }
                 },
-                onGuestMode = {
+                onSkipLogin = {
                     navController.navigate(Screen.Home.route) {
                         popUpTo(Screen.Auth.route) { inclusive = true }
                     }
@@ -110,7 +111,7 @@ fun ChampionCartNavHost(
                 }
             }
         ) {
-            ModernHomeScreen(navController)
+            HomeScreen(navController)
         }
 
         // Search Screen

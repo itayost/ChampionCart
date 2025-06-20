@@ -62,7 +62,10 @@ class HomeViewModel @Inject constructor(
             },
             onFailure = {
                 Log.e(TAG, "Failed to load user info", it)
-                _uiState.value = _uiState.value.copy(isGuest = true)
+                _uiState.value = _uiState.value.copy(
+                    userName = "Guest",
+                    isGuest = true
+                )
             }
         )
     }
@@ -71,159 +74,121 @@ class HomeViewModel @Inject constructor(
         priceRepository.getCities().fold(
             onSuccess = { citiesList ->
                 _cities.value = citiesList
-                if (citiesList.isNotEmpty() && _selectedCity.value == null) {
+                _uiState.value = _uiState.value.copy(
+                    availableCities = citiesList
+                )
+
+                // Set default city if not already set
+                if (_uiState.value.selectedCity == null && citiesList.isNotEmpty()) {
+                    _uiState.value = _uiState.value.copy(
+                        selectedCity = citiesList.first()
+                    )
                     _selectedCity.value = citiesList.first()
                 }
             },
             onFailure = {
                 Log.e(TAG, "Failed to load cities", it)
+                // Set default cities if API fails
+                val defaultCities = listOf("תל אביב", "ירושלים", "חיפה", "ראשון לציון")
+                _uiState.value = _uiState.value.copy(
+                    availableCities = defaultCities,
+                    selectedCity = defaultCities.first()
+                )
             }
         )
     }
 
-    fun selectCity(city: String) {
-        _selectedCity.value = city
-        loadFeaturedProducts()
-    }
+    private suspend fun loadFeaturedProducts() {
+        _uiState.value = _uiState.value.copy(isLoading = true)
 
-    private fun loadFeaturedProducts() {
-        viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true)
+        try {
+            // Load milk products
+            searchProductsUseCase("חלב", _selectedCity.value ?: "תל אביב").fold(
+                onSuccess = { products ->
+                    _uiState.value = _uiState.value.copy(
+                        milkProducts = products.take(3),
+                        featuredDeals = products.filter { it.savings > 0 }.take(5)
+                    )
+                },
+                onFailure = {
+                    Log.e(TAG, "Failed to load milk products", it)
+                }
+            )
 
-            try {
-                // Load milk products
-                loadMilkProducts()
+            // Load bread products
+            searchProductsUseCase("לחם", _selectedCity.value ?: "תל אביב").fold(
+                onSuccess = { products ->
+                    _uiState.value = _uiState.value.copy(
+                        breadProducts = products.take(3)
+                    )
+                },
+                onFailure = {
+                    Log.e(TAG, "Failed to load bread products", it)
+                }
+            )
 
-                // Load bread products
-                loadBreadProducts()
+            // Load eggs products
+            searchProductsUseCase("ביצים", _selectedCity.value ?: "תל אביב").fold(
+                onSuccess = { products ->
+                    _uiState.value = _uiState.value.copy(
+                        eggProducts = products.take(3)
+                    )
+                },
+                onFailure = {
+                    Log.e(TAG, "Failed to load egg products", it)
+                }
+            )
 
-                // Load egg products
-                loadEggProducts()
-
-                // Calculate total savings
-                calculateTotalSavings()
-
-                // Set featured deals and popular products
-                val allProducts = listOf(
-                    _uiState.value.milkProducts,
-                    _uiState.value.breadProducts,
+            // Set popular products from all categories
+            val allProducts = _uiState.value.milkProducts +
+                    _uiState.value.breadProducts +
                     _uiState.value.eggProducts
-                ).flatten()
 
-                _uiState.value = _uiState.value.copy(
-                    featuredDeals = allProducts.sortedByDescending { it.priceComparison?.savings ?: 0.0 }.take(5),
-                    popularProducts = allProducts.shuffled().take(5)
-                )
+            _uiState.value = _uiState.value.copy(
+                popularProducts = allProducts.sortedByDescending { it.savings }.take(10)
+            )
 
-            } catch (e: Exception) {
-                Log.e(TAG, "Error loading featured products", e)
-            } finally {
-                _uiState.value = _uiState.value.copy(isLoading = false)
-            }
+            // Calculate quick stats
+            calculateQuickStats()
+
+        } finally {
+            _uiState.value = _uiState.value.copy(isLoading = false)
         }
     }
 
-    private suspend fun loadMilkProducts() {
-        priceRepository.searchProducts(
-            query = "חלב",
-            city = _selectedCity.value
-        ).fold(
-            onSuccess = { products ->
-                val topMilk = products.take(5)
-                _uiState.value = _uiState.value.copy(
-                    milkProducts = topMilk,
-                    categories = updateCategory("חלב", topMilk)
-                )
-            },
-            onFailure = {
-                Log.e(TAG, "Failed to load milk products", it)
-            }
-        )
-    }
-
-    private suspend fun loadBreadProducts() {
-        priceRepository.searchProducts(
-            query = "לחם",
-            city = _selectedCity.value
-        ).fold(
-            onSuccess = { products ->
-                val topBread = products.take(5)
-                _uiState.value = _uiState.value.copy(
-                    breadProducts = topBread,
-                    categories = updateCategory("לחם", topBread)
-                )
-            },
-            onFailure = {
-                Log.e(TAG, "Failed to load bread products", it)
-            }
-        )
-    }
-
-    private suspend fun loadEggProducts() {
-        priceRepository.searchProducts(
-            query = "ביצים",
-            city = _selectedCity.value
-        ).fold(
-            onSuccess = { products ->
-                val topEggs = products.take(5)
-                _uiState.value = _uiState.value.copy(
-                    eggProducts = topEggs,
-                    categories = updateCategory("ביצים", topEggs)
-                )
-            },
-            onFailure = {
-                Log.e(TAG, "Failed to load egg products", it)
-            }
-        )
-    }
-
-    private fun updateCategory(name: String, products: List<GroupedProduct>): List<ProductCategory> {
-        val currentCategories = _uiState.value.categories.toMutableList()
-        val existingIndex = currentCategories.indexOfFirst { it.name == name }
-
-        val category = ProductCategory(
-            name = name,
-            productCount = products.size,
-            averagePrice = calculateAveragePrice(products)
-        )
-
-        if (existingIndex >= 0) {
-            currentCategories[existingIndex] = category
-        } else {
-            currentCategories.add(category)
-        }
-
-        return currentCategories
-    }
-
-    private fun calculateAveragePrice(products: List<GroupedProduct>): Double {
-        if (products.isEmpty()) return 0.0
-
-        val prices = products.mapNotNull { product ->
-            product.prices.minByOrNull { it.price }?.price
-        }
-
-        return if (prices.isNotEmpty()) {
-            prices.average()
-        } else {
-            0.0
-        }
-    }
-
-    private fun calculateTotalSavings() {
-        val allProducts = listOf(
-            _uiState.value.milkProducts,
-            _uiState.value.breadProducts,
-            _uiState.value.eggProducts
-        ).flatten()
-
-        val totalSavings = allProducts.sumOf { product ->
-            product.priceComparison?.savings ?: 0.0
-        }
+    private fun calculateQuickStats() {
+        val totalSavings = _uiState.value.featuredDeals.sumOf { it.savings }
+        val savedCarts = 3 // Mock value, should come from repository
 
         _uiState.value = _uiState.value.copy(
+            quickStats = QuickStats(
+                savedThisMonth = String.format("%.2f", totalSavings),
+                savedCarts = savedCarts,
+                itemsTracked = _uiState.value.popularProducts.size
+            ),
             totalSavings = totalSavings
         )
+    }
+
+    fun showCitySelector() {
+        _uiState.value = _uiState.value.copy(showCitySelector = true)
+    }
+
+    fun hideCitySelector() {
+        _uiState.value = _uiState.value.copy(showCitySelector = false)
+    }
+
+    fun updateCity(city: String) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(
+                selectedCity = city,
+                showCitySelector = false
+            )
+            _selectedCity.value = city
+
+            // Reload products for new city
+            loadFeaturedProducts()
+        }
     }
 
     fun navigateToProduct(product: GroupedProduct) {
@@ -287,11 +252,16 @@ class HomeViewModel @Inject constructor(
     }
 }
 
+// Updated HomeUiState with ALL required properties
 data class HomeUiState(
     val isLoading: Boolean = false,
     val isRefreshing: Boolean = false,
     val userName: String = "Guest",
     val isGuest: Boolean = true,
+    val selectedCity: String? = null,          // ADDED - for city selection
+    val availableCities: List<String> = emptyList(),  // ADDED - list of cities
+    val showCitySelector: Boolean = false,     // ADDED - dialog visibility
+    val quickStats: QuickStats? = null,        // ADDED - user statistics
     val milkProducts: List<GroupedProduct> = emptyList(),
     val breadProducts: List<GroupedProduct> = emptyList(),
     val eggProducts: List<GroupedProduct> = emptyList(),

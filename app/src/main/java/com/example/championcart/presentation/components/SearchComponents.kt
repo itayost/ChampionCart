@@ -145,8 +145,8 @@ fun ChampionCartSearchBar(
             ),
             shape = GlassmorphicShapes.SearchField,
             colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = MaterialTheme.colorScheme.extended.electricMint,
-                unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                focusedContainerColor = MaterialTheme.colorScheme.extended.electricMint,
+                unfocusedContainerColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
                 containerColor = MaterialTheme.colorScheme.extended.surfaceGlass
             )
         )

@@ -108,7 +108,7 @@ fun SavedCartsScreen(
                             viewModel.refresh()
                         },
                         icon = Icons.Default.Refresh,
-                        tint = MaterialTheme.colorScheme.extended.electricMint
+                        tint = MaterialTheme.colorScheme.primary
                     )
                 }
             )
@@ -120,8 +120,6 @@ fun SavedCartsScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Floating orbs background
-            FloatingOrbsBackground()
 
             // Content
             when {
