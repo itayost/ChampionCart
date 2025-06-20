@@ -34,34 +34,12 @@ fun LoginRegisterScreen(
     onSkipLogin: () -> Unit,
     viewModel: AuthViewModel = hiltViewModel()
 ) {
-    // Fix: Change from 'uiState' to 'state' to match the AuthViewModel
     val uiState by viewModel.state.collectAsState()
     val haptics = LocalHapticFeedback.current
     val focusManager = LocalFocusManager.current
 
     ChampionCartScreen(
-        topBar = {
-            // Custom minimal top bar for auth screen
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .statusBarsPadding()
-                    .padding(horizontal = SpacingTokens.L, vertical = SpacingTokens.M),
-                contentAlignment = Alignment.CenterEnd
-            ) {
-                TextButton(
-                    onClick = {
-                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                        onSkipLogin()
-                    }
-                ) {
-                    Text(
-                        text = "דלג",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-        }
+
     ) { paddingValues ->
         Box(
             modifier = Modifier
