@@ -193,4 +193,5 @@ class HomeViewModel @Inject constructor(
 
     fun navigateToProduct(product: GroupedProduct) {
         // Navigation will be handled by the UI layer
-        Log.d(TAG, "Navigate
+        Log.d(TAG, "Navigate)
+    }
