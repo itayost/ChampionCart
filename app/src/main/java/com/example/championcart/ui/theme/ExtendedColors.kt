@@ -113,38 +113,16 @@ data class ExtendedColors(
     val interactiveDisabled: Color,
     val interactiveFocus: Color,
 
-    // Surface Variants
+    // Surface Variations
     val surfaceGlass: Color,
     val surfaceElevated: Color,
-    val surfaceCard: Color,
-    val surfaceModal: Color,
-    val surfaceNavigation: Color,
-
-    // Border & Outline Variants
-    val borderSubtle: Color,
-    val borderDefault: Color,
-    val borderStrong: Color,
-    val borderGlass: Color,
-
-    // Text Variants
-    val textPrimary: Color,
-    val textSecondary: Color,
-    val textTertiary: Color,
-    val textInverse: Color,
-    val textOnGlass: Color,
-
-    // Special Effects
-    val shadow: Color,
-    val glow: Color,
-    val shimmer: Color,
-    val highlight: Color
+    val surfaceSubtle: Color,
+    val surfaceOverlay: Color
 )
 
-/**
- * Light theme extended colors
- */
-val lightExtendedColors = ExtendedColors(
-    // Primary Brand Colors
+// Light Theme Extended Colors
+val LightExtendedColors = ExtendedColors(
+    // Primary Brand
     electricMint = BrandColors.ElectricMint,
     electricMintVariant = BrandColors.ElectricMintVariant,
     electricMintLight = BrandColors.ElectricMintLight,
@@ -157,7 +135,6 @@ val lightExtendedColors = ExtendedColors(
     cosmicPurpleDark = BrandColors.CosmicPurpleDark,
     cosmicPurpleGlow = BrandColors.CosmicPurpleGlow,
 
-    // NEW: Neon Coral
     neonCoral = BrandColors.NeonCoral,
     neonCoralLight = BrandColors.NeonCoralLight,
     neonCoralDark = BrandColors.NeonCoralDark,
@@ -166,332 +143,275 @@ val lightExtendedColors = ExtendedColors(
     deepNavy = BrandColors.DeepNavy,
     deepNavyVariant = BrandColors.DeepNavyVariant,
 
-    // Glassmorphic Overlays - Updated with correct values
-    glassLight = BrandColors.GlassLight,     // 8% white
-    glassMedium = BrandColors.GlassMedium,   // 16% white
-    glassHeavy = BrandColors.GlassHeavy,     // 20% white
-    glassAccent = Color(0x26FFFFFF),         // 15% white for accents
+    // Glass
+    glassLight = BrandColors.GlassLight,
+    glassMedium = BrandColors.GlassMedium,
+    glassHeavy = BrandColors.GlassHeavy,
+    glassAccent = Color(0x1A00D9A3),
 
-    // Semantic State Colors
+    // Semantic States
     success = BrandColors.Success,
-    successContainer = Color(0xFFE8F5E8),
+    successContainer = BrandColors.SuccessContainer,
     onSuccess = Color.White,
-    onSuccessContainer = Color(0xFF1B5E20),
+    onSuccessContainer = Color(0xFF002106),
 
     warning = BrandColors.Warning,
-    warningContainer = Color(0xFFFFF3E0),
-    onWarning = Color.White,
-    onWarningContainer = Color(0xFFE65100),
+    warningContainer = BrandColors.WarningContainer,
+    onWarning = Color.Black,
+    onWarningContainer = Color(0xFF2E1500),
 
     info = BrandColors.Info,
-    infoContainer = Color(0xFFE3F2FD),
+    infoContainer = BrandColors.InfoContainer,
     onInfo = Color.White,
-    onInfoContainer = Color(0xFF0D47A1),
+    onInfoContainer = Color(0xFF001D36),
 
-    // Price Comparison Colors
+    // Price Comparison
     bestPrice = BrandColors.BestPrice,
-    bestPriceContainer = Color(0xFFE8F5E8),
+    bestPriceContainer = Color(0xFFE8F5E9),
     bestPriceGlow = BrandColors.BestPriceGlow,
     onBestPrice = Color.White,
 
     midPrice = BrandColors.MidPrice,
-    midPriceContainer = Color(0xFFFFF8E1),
-    onMidPrice = Color.White,
+    midPriceContainer = Color(0xFFFFF3E0),
+    onMidPrice = Color.Black,
 
     highPrice = BrandColors.HighPrice,
     highPriceContainer = Color(0xFFFFEBEE),
     onHighPrice = Color.White,
 
-    // Store Chain Colors (Based on actual brand colors)
-    shufersal = Color(0xFF0066CC),     // Shufersal Blue
-    ramiLevi = Color(0xFFFF6B35),      // Rami Levy Orange
-    victory = Color(0xFF8BC34A),       // Victory Green
-    mega = Color(0xFFE91E63),          // Mega Pink
-    osherAd = Color(0xFFFF9800),       // Osher Ad Orange
-    coop = Color(0xFF9C27B0),          // Coop Purple
+    // Store Chains
+    shufersal = StoreColors.Shufersal,
+    ramiLevi = StoreColors.RamiLevi,
+    victory = StoreColors.Victory,
+    mega = StoreColors.Mega,
+    osherAd = StoreColors.OsherAd,
+    coop = StoreColors.Coop,
 
-    // Product Category Colors
-    dairy = Color(0xFF81C784),         // Fresh Green
-    meat = Color(0xFFE57373),          // Meat Red
-    produce = Color(0xFF4CAF50),       // Produce Green
-    bakery = Color(0xFFFFB74D),        // Bakery Orange
-    frozen = Color(0xFF64B5F6),        // Frozen Blue
-    household = Color(0xFF9575CD),     // Household Purple
-    kosher = Color(0xFF5C6BC0),        // Kosher Blue
-    organic = Color(0xFF8BC34A),       // Organic Green
+    // Categories
+    dairy = CategoryColors.Dairy,
+    meat = CategoryColors.Meat,
+    produce = CategoryColors.Produce,
+    bakery = CategoryColors.Bakery,
+    frozen = CategoryColors.Frozen,
+    household = CategoryColors.Household,
+    kosher = CategoryColors.Kosher,
+    organic = CategoryColors.Organic,
 
-    // Time-Based Accent Colors
-    morningAccent = TimeBasedColors.MorningPrimary,
-    afternoonAccent = TimeBasedColors.AfternoonPrimary,
-    eveningAccent = TimeBasedColors.EveningPrimary,
-    nightAccent = TimeBasedColors.NightPrimary,
+    // Time-Based
+    morningAccent = TimeBasedColors.MorningAccent,
+    afternoonAccent = TimeBasedColors.AfternoonAccent,
+    eveningAccent = TimeBasedColors.EveningAccent,
+    nightAccent = TimeBasedColors.NightAccent,
 
-    // Gradient Colors - Updated with Neon Coral
-    gradientStart = BrandColors.ElectricMint,
-    gradientMiddle = BrandColors.CosmicPurple,
-    gradientEnd = BrandColors.NeonCoral,
+    // Gradients
+    gradientStart = BrandColors.GradientStart,
+    gradientMiddle = BrandColors.GradientMiddle,
+    gradientEnd = BrandColors.GradientEnd,
 
-    // Interactive States
+    // Interactive
     interactiveDefault = BrandColors.ElectricMint,
-    interactiveHover = Color(0xFF00C893),
-    interactivePressed = Color(0xFF00B085),
-    interactiveDisabled = Color(0xFFBDBDBD),
-    interactiveFocus = Color(0xFF00E6A8),
+    interactiveHover = BrandColors.ElectricMintLight,
+    interactivePressed = BrandColors.ElectricMintDark,
+    interactiveDisabled = Color(0xFF9E9E9E),
+    interactiveFocus = BrandColors.ElectricMintVariant,
 
-    // Surface Variants
+    // Surfaces
     surfaceGlass = Color(0x0AFFFFFF),
-    surfaceElevated = Color(0xFFFAFAFA),
-    surfaceCard = Color.White,
-    surfaceModal = Color(0xFFFEFEFE),
-    surfaceNavigation = Color(0xFFFDFDFD),
-
-    // Border & Outline Variants
-    borderSubtle = Color(0xFFF0F0F0),
-    borderDefault = Color(0xFFE0E0E0),
-    borderStrong = Color(0xFFBDBDBD),
-    borderGlass = Color(0x1AFFFFFF),
-
-    // Text Variants
-    textPrimary = BrandColors.DeepNavy,
-    textSecondary = Color(0xFF5A6178),
-    textTertiary = Color(0xFF9E9E9E),
-    textInverse = Color.White,
-    textOnGlass = Color(0xFF2A2F4A),
-
-    // Special Effects
-    shadow = Color(0x1A000000),
-    glow = BrandColors.ElectricMintGlow,
-    shimmer = Color(0x80FFFFFF),
-    highlight = Color(0x4000E676)
+    surfaceElevated = Color(0xFFF8F9FA),
+    surfaceSubtle = Color(0xFFF5F6F7),
+    surfaceOverlay = Color(0x33000000)
 )
 
-/**
- * Dark theme extended colors
- */
-val darkExtendedColors = ExtendedColors(
-    // Primary Brand Colors
-    electricMint = Color(0xFF80F5D4),  // Lighter for dark mode
-    electricMintVariant = Color(0xFF00E676),
-    electricMintLight = Color(0xFFB3FFE6),
-    electricMintDark = Color(0xFF4DCCB3),
-    electricMintGlow = Color(0x5480F5D4),
+// Dark Theme Extended Colors
+val DarkExtendedColors = ExtendedColors(
+    // Primary Brand (adjusted for dark)
+    electricMint = BrandColors.ElectricMintLight,
+    electricMintVariant = BrandColors.ElectricMint,
+    electricMintLight = Color(0xFF80FFE4),
+    electricMintDark = BrandColors.ElectricMintDark,
+    electricMintGlow = Color(0x8000D9A3),
 
-    cosmicPurple = Color(0xFF9D6FFF),  // Lighter for dark mode
-    cosmicPurpleVariant = Color(0xFFCE93D8),
-    cosmicPurpleLight = Color(0xFFBE9FFF),
-    cosmicPurpleDark = Color(0xFF7B3FF2),
-    cosmicPurpleGlow = Color(0x549D6FFF),
+    cosmicPurple = BrandColors.CosmicPurpleLight,
+    cosmicPurpleVariant = BrandColors.CosmicPurple,
+    cosmicPurpleLight = Color(0xFFBB86FC),
+    cosmicPurpleDark = BrandColors.CosmicPurpleDark,
+    cosmicPurpleGlow = Color(0x807B3FF2),
 
-    // NEW: Neon Coral for dark theme
-    neonCoral = Color(0xFFFF8FB3),  // Lighter for dark mode
-    neonCoralLight = Color(0xFFFFB3CC),
-    neonCoralDark = Color(0xFFFF6B9D),
-    neonCoralGlow = Color(0x54FF8FB3),
+    neonCoral = BrandColors.NeonCoralLight,
+    neonCoralLight = Color(0xFFFFB4C8),
+    neonCoralDark = BrandColors.NeonCoralDark,
+    neonCoralGlow = Color(0x80FF6B9D),
 
-    deepNavy = Color(0xFF2A2F4A),
-    deepNavyVariant = Color(0xFF353A54),
+    deepNavy = BrandColors.DeepNavy,
+    deepNavyVariant = BrandColors.DeepNavyVariant,
 
-    // Glassmorphic Overlays - Dark mode
-    glassLight = BrandColors.GlassDark,       // 8% black
-    glassMedium = BrandColors.GlassDarkMedium, // 16% black
-    glassHeavy = Color(0x26FFFFFF),           // 15% white for dark mode
-    glassAccent = Color(0x33FFFFFF),          // 20% white for accents
+    // Glass (dark variants)
+    glassLight = BrandColors.GlassDark,
+    glassMedium = BrandColors.GlassDarkMedium,
+    glassHeavy = Color(0x40000000),
+    glassAccent = Color(0x267B3FF2),
 
-    // Semantic State Colors
-    success = Color(0xFF81C784),
-    successContainer = Color(0xFF2E7D32),
-    onSuccess = Color.White,
-    onSuccessContainer = Color(0xFFC8E6C9),
+    // Semantic States (adjusted for dark)
+    success = Color(0xFF69F0AE),
+    successContainer = Color(0xFF003A20),
+    onSuccess = Color(0xFF003A20),
+    onSuccessContainer = Color(0xFF69F0AE),
 
-    warning = Color(0xFFFFB74D),
-    warningContainer = Color(0xFFEF6C00),
-    onWarning = Color.White,
-    onWarningContainer = Color(0xFFFFE0B2),
+    warning = Color(0xFFFFD54F),
+    warningContainer = Color(0xFF624000),
+    onWarning = Color(0xFF3E2800),
+    onWarningContainer = Color(0xFFFFDF9D),
 
-    info = Color(0xFF64B5F6),
-    infoContainer = Color(0xFF1565C0),
-    onInfo = Color.White,
-    onInfoContainer = Color(0xFFBBDEFB),
+    info = Color(0xFF82B1FF),
+    infoContainer = Color(0xFF004B8F),
+    onInfo = Color(0xFF003062),
+    onInfoContainer = Color(0xFFD1E4FF),
 
-    // Price Comparison Colors
-    bestPrice = Color(0xFF81C784),
-    bestPriceContainer = Color(0xFF2E7D32),
-    bestPriceGlow = Color(0x5481C784),
-    onBestPrice = Color.White,
+    // Price Comparison (dark adjusted)
+    bestPrice = Color(0xFF69F0AE),
+    bestPriceContainer = Color(0xFF00382B),
+    bestPriceGlow = Color(0x8069F0AE),
+    onBestPrice = Color(0xFF003A20),
 
-    midPrice = Color(0xFFFFB74D),
-    midPriceContainer = Color(0xFFEF6C00),
-    onMidPrice = Color.White,
+    midPrice = Color(0xFFFFD54F),
+    midPriceContainer = Color(0xFF624000),
+    onMidPrice = Color(0xFF3E2800),
 
-    highPrice = Color(0xFFE57373),
-    highPriceContainer = Color(0xFFC62828),
-    onHighPrice = Color.White,
+    highPrice = Color(0xFFFF8A80),
+    highPriceContainer = Color(0xFF930000),
+    onHighPrice = Color(0xFF690000),
 
-    // Store Chain Colors (Adjusted for dark theme)
-    shufersal = Color(0xFF42A5F5),
-    ramiLevi = Color(0xFFFF8A65),
-    victory = Color(0xFFA5D6A7),
-    mega = Color(0xFFF48FB1),
-    osherAd = Color(0xFFFFB74D),
-    coop = Color(0xFFCE93D8),
+    // Store Chains (slightly adjusted for dark)
+    shufersal = Color(0xFFEF5350),
+    ramiLevi = Color(0xFF42A5F5),
+    victory = Color(0xFFFFEE58),
+    mega = Color(0xFFFF9800),
+    osherAd = Color(0xFF66BB6A),
+    coop = Color(0xFFAB47BC),
 
-    // Product Category Colors (Adjusted for dark theme)
-    dairy = Color(0xFFA5D6A7),
-    meat = Color(0xFFEF9A9A),
+    // Categories (adjusted for dark)
+    dairy = Color(0xFF90CAF9),
+    meat = Color(0xFFEF5350),
     produce = Color(0xFF81C784),
-    bakery = Color(0xFFFFCC02),
-    frozen = Color(0xFF90CAF9),
-    household = Color(0xFFB39DDB),
+    bakery = Color(0xFFFFD54F),
+    frozen = Color(0xFF64B5F6),
+    household = Color(0xFFBA68C8),
     kosher = Color(0xFF7986CB),
-    organic = Color(0xFFA5D6A7),
+    organic = Color(0xFFAED581),
 
-    // Time-Based Accent Colors
-    morningAccent = TimeBasedColors.MorningSecondary,
-    afternoonAccent = TimeBasedColors.AfternoonSecondary,
-    eveningAccent = TimeBasedColors.EveningSecondary,
-    nightAccent = TimeBasedColors.NightSecondary,
+    // Time-Based (dark variants)
+    morningAccent = Color(0xFFFFCCBC),
+    afternoonAccent = Color(0xFF80DEEA),
+    eveningAccent = Color(0xFFB39DDB),
+    nightAccent = Color(0xFF546E7A),
 
-    // Gradient Colors - Dark mode
-    gradientStart = Color(0xFF80F5D4),
-    gradientMiddle = Color(0xFF9D6FFF),
-    gradientEnd = Color(0xFFFF8FB3),
+    // Gradients (dark adjusted)
+    gradientStart = BrandColors.ElectricMintLight,
+    gradientMiddle = BrandColors.CosmicPurpleLight,
+    gradientEnd = BrandColors.NeonCoralLight,
 
-    // Interactive States
-    interactiveDefault = Color(0xFF80F5D4),
-    interactiveHover = Color(0xFF9FF7DE),
-    interactivePressed = Color(0xFF66F2CF),
-    interactiveDisabled = Color(0xFF4A4F66),
-    interactiveFocus = Color(0xFFB3F5E6),
+    // Interactive (dark adjusted)
+    interactiveDefault = BrandColors.ElectricMintLight,
+    interactiveHover = Color(0xFF80FFE4),
+    interactivePressed = BrandColors.ElectricMint,
+    interactiveDisabled = Color(0xFF424242),
+    interactiveFocus = Color(0xFF4DFFCE),
 
-    // Surface Variants
-    surfaceGlass = Color(0x0AFFFFFF),
-    surfaceElevated = Color(0xFF2A2F4A),
-    surfaceCard = Color(0xFF1A1F3A),
-    surfaceModal = Color(0xFF353A54),
-    surfaceNavigation = Color(0xFF2A2F4A),
-
-    // Border & Outline Variants
-    borderSubtle = Color(0xFF2A2F4A),
-    borderDefault = Color(0xFF4A4F66),
-    borderStrong = Color(0xFF5A6178),
-    borderGlass = Color(0x1AFFFFFF),
-
-    // Text Variants
-    textPrimary = Color(0xFFE8EBF2),
-    textSecondary = Color(0xFFB8BCC8),
-    textTertiary = Color(0xFF757575),
-    textInverse = BrandColors.DeepNavy,
-    textOnGlass = Color(0xFFE8EBF2),
-
-    // Special Effects
-    shadow = Color(0x40000000),
-    glow = Color(0x6680F5D4),
-    shimmer = Color(0x40FFFFFF),
-    highlight = Color(0x6000E676)
+    // Surfaces (dark)
+    surfaceGlass = Color(0x1AFFFFFF),
+    surfaceElevated = Color(0xFF1E1E1E),
+    surfaceSubtle = Color(0xFF121212),
+    surfaceOverlay = Color(0x80000000)
 )
 
-/**
- * High contrast light extended colors
- */
-val highContrastLightExtendedColors = lightExtendedColors.copy(
-    // Enhanced contrast for accessibility
-    textPrimary = Color.Black,
-    textSecondary = Color(0xFF333333),
-    borderDefault = Color.Black,
-    borderStrong = Color.Black,
-    interactiveDefault = BrandColors.ElectricMintDark,
-    interactiveHover = Color(0xFF00A67C),
-    bestPrice = Color(0xFF1B5E20),
-    midPrice = Color(0xFFE65100),
-    highPrice = Color(0xFFB71C1C)
-)
-
-/**
- * High contrast dark extended colors
- */
-val highContrastDarkExtendedColors = darkExtendedColors.copy(
-    // Enhanced contrast for accessibility
-    textPrimary = Color.White,
-    textSecondary = Color(0xFFCCCCCC),
-    borderDefault = Color.White,
-    borderStrong = Color.White,
-    interactiveDefault = Color(0xFFB3F5E6),
-    interactiveHover = Color(0xFFCCF7ED),
-    bestPrice = Color(0xFFC8E6C9),
-    midPrice = Color(0xFFFFE0B2),
-    highPrice = Color(0xFFFFCDD2)
-)
-
-/**
- * Composition Local for Extended Colors
- */
-val LocalExtendedColors = staticCompositionLocalOf { lightExtendedColors }
+// Composition Local
+val LocalExtendedColors = staticCompositionLocalOf { LightExtendedColors }
 
 /**
  * Extension property for easy access from MaterialTheme
+ * This allows using MaterialTheme.colorScheme.extended in composables
  */
-val androidx.compose.material3.ColorScheme.extended: ExtendedColors
-    @Composable get() = LocalExtendedColors.current
-
-/**
- * Gradient definitions using extended colors
- */
-object ExtendedGradients {
+val ColorScheme.extended: ExtendedColors
     @Composable
-    fun electricGradient(): Brush = Brush.linearGradient(
+    @ReadOnlyComposable
+    get() = LocalExtendedColors.current
+
+// Helper Functions
+@Composable
+fun getTimeBasedAccentColor(): Color {
+    val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
+    val colors = LocalExtendedColors.current
+
+    return when (hour) {
+        in 6..11 -> colors.morningAccent
+        in 12..17 -> colors.afternoonAccent
+        in 18..23 -> colors.eveningAccent
+        else -> colors.nightAccent
+    }
+}
+
+@Composable
+fun getStoreColor(storeName: String): Color {
+    val colors = LocalExtendedColors.current
+
+    return when (storeName.lowercase()) {
+        "shufersal", "שופרסל" -> colors.shufersal
+        "rami levi", "רמי לוי" -> colors.ramiLevi
+        "victory", "ויקטורי" -> colors.victory
+        "mega", "מגה" -> colors.mega
+        "osher ad", "אושר עד" -> colors.osherAd
+        "coop", "קופ", "כל-בו חצי חינם" -> colors.coop
+        else -> colors.interactiveDefault
+    }
+}
+
+@Composable
+fun getCategoryColor(category: String): Color {
+    val colors = LocalExtendedColors.current
+
+    return when (category.lowercase()) {
+        "dairy", "חלב", "מוצרי חלב" -> colors.dairy
+        "meat", "בשר" -> colors.meat
+        "produce", "ירקות", "פירות" -> colors.produce
+        "bakery", "מאפה", "לחם" -> colors.bakery
+        "frozen", "קפואים" -> colors.frozen
+        "household", "ניקיון", "בית" -> colors.household
+        "kosher", "כשר" -> colors.kosher
+        "organic", "אורגני" -> colors.organic
+        else -> colors.interactiveDefault
+    }
+}
+
+// Gradient Brushes
+fun getElectricGradient(
+    colors: ExtendedColors = LightExtendedColors
+): Brush {
+    return Brush.linearGradient(
         colors = listOf(
-            LocalExtendedColors.current.electricMint,
-            LocalExtendedColors.current.cosmicPurple
-        )
+            colors.gradientStart,
+            colors.gradientMiddle,
+            colors.gradientEnd
+        ),
+        tileMode = TileMode.Clamp
     )
+}
 
-    @Composable
-    fun neonGradient(): Brush = Brush.linearGradient(
-        colors = listOf(
-            LocalExtendedColors.current.cosmicPurple,
-            LocalExtendedColors.current.neonCoral
-        )
-    )
-
-    @Composable
-    fun fullSpectrumGradient(): Brush = Brush.linearGradient(
-        colors = listOf(
-            LocalExtendedColors.current.electricMint,
-            LocalExtendedColors.current.cosmicPurple,
-            LocalExtendedColors.current.neonCoral
-        )
-    )
-
-    @Composable
-    fun timeBasedGradient(hour: Int): Brush {
-        val colors = LocalExtendedColors.current
-        val (start, end) = when (hour) {
-            in 6..11 -> colors.morningAccent to colors.afternoonAccent
-            in 12..17 -> colors.afternoonAccent to colors.eveningAccent
-            in 18..23 -> colors.eveningAccent to colors.nightAccent
-            else -> colors.nightAccent to colors.morningAccent
-        }
-
-        return Brush.linearGradient(
-            colors = listOf(start, end),
-            tileMode = TileMode.Clamp
-        )
+fun getGlassmorphicGradient(
+    intensity: GlassIntensity = GlassIntensity.Medium,
+    isDark: Boolean = false
+): Brush {
+    val baseColor = if (isDark) Color.Black else Color.White
+    val alpha = when (intensity) {
+        GlassIntensity.Light -> 0.05f
+        GlassIntensity.Medium -> 0.10f
+        GlassIntensity.Heavy -> 0.15f
+        GlassIntensity.Ultra -> 0.20f
     }
 
-    @Composable
-    fun glassGradient(): Brush = Brush.verticalGradient(
+    return Brush.linearGradient(
         colors = listOf(
-            LocalExtendedColors.current.glassLight,
-            LocalExtendedColors.current.glassMedium
-        )
-    )
-
-    @Composable
-    fun priceGradient(): Brush = Brush.horizontalGradient(
-        colors = listOf(
-            LocalExtendedColors.current.bestPrice,
-            LocalExtendedColors.current.midPrice,
-            LocalExtendedColors.current.highPrice
+            baseColor.copy(alpha = alpha),
+            baseColor.copy(alpha = alpha * 0.5f)
         )
     )
 }

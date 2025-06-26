@@ -1,165 +1,85 @@
 package com.example.championcart.ui.theme
 
 import androidx.compose.material3.Typography
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontVariation
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.sp
 import com.example.championcart.R
 
 /**
- * Champion Cart - Hebrew-First Modern Typography System
- * Electric Harmony design with variable fonts and RTL support
- * Following 2025 mobile design trends with expressive hierarchy
+ * Champion Cart - Typography System
+ * Electric Harmony design with Hebrew-first considerations
+ * Following Material Design 3 with optimized mobile readability
  */
 
-@OptIn(ExperimentalTextApi::class)
-// Space Grotesk Variable - For display text and Latin headlines
+// Font Families - Primary Latin fonts
 val SpaceGroteskFontFamily = FontFamily(
-    Font(
-        R.font.space_grotesk_variable,
-        variationSettings = FontVariation.Settings(
-            FontVariation.weight(300)
-        )
-    ),
-    Font(
-        R.font.space_grotesk_variable,
-        variationSettings = FontVariation.Settings(
-            FontVariation.weight(400)
-        )
-    ),
-    Font(
-        R.font.space_grotesk_variable,
-        variationSettings = FontVariation.Settings(
-            FontVariation.weight(500)
-        )
-    ),
-    Font(
-        R.font.space_grotesk_variable,
-        variationSettings = FontVariation.Settings(
-            FontVariation.weight(600)
-        )
-    ),
-    Font(
-        R.font.space_grotesk_variable,
-        variationSettings = FontVariation.Settings(
-            FontVariation.weight(700)
-        )
-    ),
-    Font(
-        R.font.space_grotesk_variable,
-        variationSettings = FontVariation.Settings(
-            FontVariation.weight(800)
-        )
-    )
+    Font(R.font.space_grotesk_light, FontWeight.Light),
+    Font(R.font.space_grotesk_regular, FontWeight.Normal),
+    Font(R.font.space_grotesk_medium, FontWeight.Medium),
+    Font(R.font.space_grotesk_semibold, FontWeight.SemiBold),
+    Font(R.font.space_grotesk_bold, FontWeight.Bold)
 )
 
-// Heebo - Primary Hebrew display font
+val InterFontFamily = FontFamily(
+    Font(R.font.inter_thin, FontWeight.Thin),
+    Font(R.font.inter_extralight, FontWeight.ExtraLight),
+    Font(R.font.inter_light, FontWeight.Light),
+    Font(R.font.inter_regular, FontWeight.Normal),
+    Font(R.font.inter_medium, FontWeight.Medium),
+    Font(R.font.inter_semibold, FontWeight.SemiBold),
+    Font(R.font.inter_bold, FontWeight.Bold),
+    Font(R.font.inter_extrabold, FontWeight.ExtraBold),
+    Font(R.font.inter_black, FontWeight.Black)
+)
+
+val JetBrainsMonoFontFamily = FontFamily(
+    Font(R.font.jetbrains_mono_thin, FontWeight.Thin),
+    Font(R.font.jetbrains_mono_extralight, FontWeight.ExtraLight),
+    Font(R.font.jetbrains_mono_light, FontWeight.Light),
+    Font(R.font.jetbrains_mono_regular, FontWeight.Normal),
+    Font(R.font.jetbrains_mono_medium, FontWeight.Medium),
+    Font(R.font.jetbrains_mono_semibold, FontWeight.SemiBold),
+    Font(R.font.jetbrains_mono_bold, FontWeight.Bold),
+    Font(R.font.jetbrains_mono_extrabold, FontWeight.ExtraBold),
+    Font(R.font.jetbrains_mono_italic, FontWeight.Normal, FontStyle.Italic),
+    Font(R.font.jetbrains_mono_bold_italic, FontWeight.Bold, FontStyle.Italic)
+)
+
+// Font Families - Hebrew fonts
 val HeeboFontFamily = FontFamily(
+    Font(R.font.heebo_thin, FontWeight.Thin),
+    Font(R.font.heebo_extralight, FontWeight.ExtraLight),
     Font(R.font.heebo_light, FontWeight.Light),
     Font(R.font.heebo_regular, FontWeight.Normal),
     Font(R.font.heebo_medium, FontWeight.Medium),
+    Font(R.font.heebo_semibold, FontWeight.SemiBold),
     Font(R.font.heebo_bold, FontWeight.Bold),
+    Font(R.font.heebo_extrabold, FontWeight.ExtraBold),
     Font(R.font.heebo_black, FontWeight.Black)
 )
 
-@OptIn(ExperimentalTextApi::class)
-// Inter Variable - Primary body text font (300-800 weight range)
-val InterFontFamily = FontFamily(
-    Font(
-        R.font.inter_variable,
-        variationSettings = FontVariation.Settings(
-            FontVariation.weight(300)
-        )
-    ),
-    Font(
-        R.font.inter_variable,
-        variationSettings = FontVariation.Settings(
-            FontVariation.weight(400)
-        )
-    ),
-    Font(
-        R.font.inter_variable,
-        variationSettings = FontVariation.Settings(
-            FontVariation.weight(500)
-        )
-    ),
-    Font(
-        R.font.inter_variable,
-        variationSettings = FontVariation.Settings(
-            FontVariation.weight(600)
-        )
-    ),
-    Font(
-        R.font.inter_variable,
-        variationSettings = FontVariation.Settings(
-            FontVariation.weight(700)
-        )
-    ),
-    Font(
-        R.font.inter_variable,
-        variationSettings = FontVariation.Settings(
-            FontVariation.weight(800)
-        )
-    )
-)
-
-// Rubik - Hebrew body text font
 val RubikFontFamily = FontFamily(
     Font(R.font.rubik_light, FontWeight.Light),
     Font(R.font.rubik_regular, FontWeight.Normal),
     Font(R.font.rubik_medium, FontWeight.Medium),
-    Font(R.font.rubik_bold, FontWeight.Bold)
+    Font(R.font.rubik_semibold, FontWeight.SemiBold),
+    Font(R.font.rubik_bold, FontWeight.Bold),
+    Font(R.font.rubik_extrabold, FontWeight.ExtraBold),
+    Font(R.font.rubik_black, FontWeight.Black)
 )
 
-@OptIn(ExperimentalTextApi::class)
-// JetBrains Mono Variable - For prices, numbers, and tabular data
-val JetBrainsMonoFontFamily = FontFamily(
-    Font(
-        R.font.jetbrains_mono_variable,
-        variationSettings = FontVariation.Settings(
-            FontVariation.weight(400)
-        )
-    ),
-    Font(
-        R.font.jetbrains_mono_variable,
-        variationSettings = FontVariation.Settings(
-            FontVariation.weight(500)
-        )
-    ),
-    Font(
-        R.font.jetbrains_mono_variable,
-        variationSettings = FontVariation.Settings(
-            FontVariation.weight(600)
-        )
-    ),
-    Font(
-        R.font.jetbrains_mono_variable,
-        variationSettings = FontVariation.Settings(
-            FontVariation.weight(700)
-        )
-    ),
-    Font(
-        R.font.jetbrains_mono_variable,
-        variationSettings = FontVariation.Settings(
-            FontVariation.weight(800)
-        )
-    )
-)
-
-// Material3 Typography - Electric Harmony Style (FIXED to match design system)
+// Material3 Typography - FIXED: Mobile-optimized sizes
 val Typography = Typography(
-    // Display - FIXED sizes to match design system
+    // Display - Space Grotesk for impact (reduced sizes for mobile)
     displayLarge = TextStyle(
         fontFamily = SpaceGroteskFontFamily,
         fontWeight = FontWeight(800),
-        fontSize = 48.sp,  // FIXED: Was 57sp, now matches Hero spec
-        lineHeight = 56.sp,
+        fontSize = 45.sp,  // FIXED: Was 57sp
+        lineHeight = 52.sp,
         letterSpacing = (-0.5).sp
     ),
     displayMedium = TextStyle(
@@ -177,7 +97,7 @@ val Typography = Typography(
         letterSpacing = 0.sp
     ),
 
-    // Headlines - Inter Variable with proper weights (already correct)
+    // Headlines - Inter Variable with proper weights
     headlineLarge = TextStyle(
         fontFamily = InterFontFamily,
         fontWeight = FontWeight(700),
@@ -243,10 +163,10 @@ val Typography = Typography(
         fontWeight = FontWeight(400),
         fontSize = 12.sp,
         lineHeight = 16.sp,
-        letterSpacing = 0.4.sp
+        letterSpacing = 0.1.sp
     ),
 
-    // Labels - Inter Variable with enhanced legibility
+    // Labels - Inter Variable for UI elements
     labelLarge = TextStyle(
         fontFamily = InterFontFamily,
         fontWeight = FontWeight(500),
@@ -270,98 +190,15 @@ val Typography = Typography(
     )
 )
 
-// Extended Typography System - Brand-Specific Styles
-object AppTextStyles {
-    // Hero Display - Maximum impact for onboarding and splash
-    val heroDisplay = TextStyle(
-        fontFamily = SpaceGroteskFontFamily,
-        fontWeight = FontWeight(800),
-        fontSize = 48.sp,  // Matches design system Hero spec
-        lineHeight = 56.sp,
-        letterSpacing = (-0.5).sp
-    )
-
-    val heroSubtitle = TextStyle(
-        fontFamily = InterFontFamily,
-        fontWeight = FontWeight(400),
-        fontSize = 18.sp,
-        lineHeight = 24.sp,
-        letterSpacing = 0.15.sp
-    )
-
-    // Hebrew Display Styles - First-class Hebrew support
-    val hebrewDisplayLarge = TextStyle(
-        fontFamily = HeeboFontFamily,
-        fontWeight = FontWeight.Black,
-        fontSize = 48.sp,
-        lineHeight = 56.sp,
-        letterSpacing = (-0.25).sp,
-        textDirection = TextDirection.Rtl
-    )
-
-    val hebrewDisplayMedium = TextStyle(
-        fontFamily = HeeboFontFamily,
-        fontWeight = FontWeight.Black,
-        fontSize = 36.sp,
-        lineHeight = 44.sp,
-        letterSpacing = 0.sp,
-        textDirection = TextDirection.Rtl
-    )
-
-    val hebrewHeadline = TextStyle(
-        fontFamily = HeeboFontFamily,
-        fontWeight = FontWeight.Bold,
-        fontSize = 24.sp,
-        lineHeight = 32.sp,
-        letterSpacing = 0.sp,
-        textDirection = TextDirection.Rtl
-    )
-
-    val hebrewTitle = TextStyle(
-        fontFamily = HeeboFontFamily,
-        fontWeight = FontWeight.Medium,
-        fontSize = 18.sp,
-        lineHeight = 24.sp,
-        letterSpacing = 0.sp,
-        textDirection = TextDirection.Rtl
-    )
-
-    // Hebrew Body Text - Rubik for optimal readability
-    val hebrewBodyLarge = TextStyle(
-        fontFamily = RubikFontFamily,
-        fontWeight = FontWeight(400),
-        fontSize = 16.sp,
-        lineHeight = 24.sp,
-        letterSpacing = 0.25.sp,
-        textDirection = TextDirection.Rtl
-    )
-
-    val hebrewBodyMedium = TextStyle(
-        fontFamily = RubikFontFamily,
-        fontWeight = FontWeight(400),
-        fontSize = 14.sp,
-        lineHeight = 20.sp,
-        letterSpacing = 0.15.sp,
-        textDirection = TextDirection.Rtl
-    )
-
-    val hebrewBodySmall = TextStyle(
-        fontFamily = RubikFontFamily,
-        fontWeight = FontWeight(400),
-        fontSize = 12.sp,
-        lineHeight = 16.sp,
-        letterSpacing = 0.25.sp,
-        textDirection = TextDirection.Rtl
-    )
-
-    // Price Display - JetBrains Mono for tabular numbers
-    val priceHero = TextStyle(
+// Custom Typography Extensions
+object ExtendedTypography {
+    // Price Typography - JetBrains Mono for tabular numbers
+    val priceDisplay = TextStyle(
         fontFamily = JetBrainsMonoFontFamily,
         fontWeight = FontWeight(700),
-        fontSize = 36.sp,
-        lineHeight = 40.sp,
-        letterSpacing = (-0.5).sp,
-        fontFeatureSettings = "tnum" // Tabular numbers for alignment
+        fontSize = 32.sp,
+        lineHeight = 36.sp,
+        letterSpacing = (-0.5).sp
     )
 
     val priceLarge = TextStyle(
@@ -369,8 +206,7 @@ object AppTextStyles {
         fontWeight = FontWeight(600),
         fontSize = 24.sp,
         lineHeight = 28.sp,
-        letterSpacing = 0.sp,
-        fontFeatureSettings = "tnum"
+        letterSpacing = 0.sp
     )
 
     val priceMedium = TextStyle(
@@ -378,8 +214,7 @@ object AppTextStyles {
         fontWeight = FontWeight(500),
         fontSize = 18.sp,
         lineHeight = 24.sp,
-        letterSpacing = 0.sp,
-        fontFeatureSettings = "tnum"
+        letterSpacing = 0.sp
     )
 
     val priceSmall = TextStyle(
@@ -387,206 +222,95 @@ object AppTextStyles {
         fontWeight = FontWeight(500),
         fontSize = 14.sp,
         lineHeight = 20.sp,
-        letterSpacing = 0.sp,
-        fontFeatureSettings = "tnum"
-    )
-
-    // Crossed out price (for original/sale prices)
-    val priceCrossed = priceSmall.copy(
-        fontWeight = FontWeight(400),
-        color = Color(0xFF9E9E9E)
-    )
-
-        val productNameSmall = TextStyle(
-            fontFamily = InterFontFamily,
-            fontWeight = FontWeight(500),
-            fontSize = 14.sp,
-            lineHeight = 20.sp,
-            letterSpacing = 0.sp
-        )
-
-        val storeNameSmall = TextStyle(
-            fontFamily = InterFontFamily,
-            fontWeight = FontWeight(500),
-            fontSize = 12.sp,
-            lineHeight = 16.sp,
-            letterSpacing = 0.1.sp
-        )
-
-        val buttonTextSmall = TextStyle(
-            fontFamily = InterFontFamily,
-            fontWeight = FontWeight(600),
-            fontSize = 12.sp,
-            lineHeight = 16.sp,
-            letterSpacing = 0.1.sp
-        )
-
-    // Product & Store Names - Enhanced hierarchy
-    val productNameLarge = TextStyle(
-        fontFamily = InterFontFamily,
-        fontWeight = FontWeight(600),
-        fontSize = 18.sp,
-        lineHeight = 24.sp,
         letterSpacing = 0.sp
     )
 
-    val productName = TextStyle(
+    // Hebrew Typography - Heebo for display, Rubik for body
+    val hebrewDisplayLarge = TextStyle(
+        fontFamily = HeeboFontFamily,
+        fontWeight = FontWeight(900),
+        fontSize = 48.sp,  // Slightly larger for Hebrew emphasis
+        lineHeight = 56.sp,
+        letterSpacing = 0.sp
+    )
+
+    val hebrewHeadlineLarge = TextStyle(
+        fontFamily = HeeboFontFamily,
+        fontWeight = FontWeight(700),
+        fontSize = 26.sp,  // 10% larger than Latin
+        lineHeight = 34.sp,
+        letterSpacing = 0.sp
+    )
+
+    val hebrewBodyLarge = TextStyle(
+        fontFamily = RubikFontFamily,
+        fontWeight = FontWeight(400),
+        fontSize = 17.sp,  // Slightly larger for readability
+        lineHeight = 26.sp,
+        letterSpacing = 0.15.sp
+    )
+
+    // Marketing/Promotional Typography
+    val promoDisplay = TextStyle(
+        fontFamily = SpaceGroteskFontFamily,
+        fontWeight = FontWeight(800),
+        fontSize = 36.sp,
+        lineHeight = 40.sp,
+        letterSpacing = (-1).sp
+    )
+
+    val dealBadge = TextStyle(
         fontFamily = InterFontFamily,
-        fontWeight = FontWeight(500),
+        fontWeight = FontWeight(700),
+        fontSize = 12.sp,
+        lineHeight = 16.sp,
+        letterSpacing = 0.5.sp
+    )
+
+    // UI Component Typography
+    val buttonLarge = TextStyle(
+        fontFamily = InterFontFamily,
+        fontWeight = FontWeight(600),
         fontSize = 16.sp,
-        lineHeight = 22.sp,
-        letterSpacing = 0.sp
-    )
-
-    val productBrand = TextStyle(
-        fontFamily = InterFontFamily,
-        fontWeight = FontWeight(400),
-        fontSize = 14.sp,
-        lineHeight = 20.sp,
-        letterSpacing = 0.25.sp
-    )
-
-    val storeName = TextStyle(
-        fontFamily = InterFontFamily,
-        fontWeight = FontWeight(600),
-        fontSize = 14.sp,
-        lineHeight = 20.sp,
-        letterSpacing = 0.1.sp
-    )
-
-    // UI Elements - Buttons, chips, badges
-    val buttonText = TextStyle(
-        fontFamily = InterFontFamily,
-        fontWeight = FontWeight(600),
-        fontSize = 14.sp,
-        lineHeight = 20.sp,
-        letterSpacing = 0.1.sp
+        lineHeight = 24.sp,
+        letterSpacing = 0.5.sp
     )
 
     val chipText = TextStyle(
         fontFamily = InterFontFamily,
         fontWeight = FontWeight(500),
-        fontSize = 12.sp,
-        lineHeight = 16.sp,
+        fontSize = 13.sp,
+        lineHeight = 18.sp,
         letterSpacing = 0.25.sp
     )
 
-    val badge = TextStyle(
-        fontFamily = InterFontFamily,
-        fontWeight = FontWeight(700),
-        fontSize = 10.sp,
-        lineHeight = 14.sp,
-        letterSpacing = 0.5.sp
-    )
-
-    // Navigation & Headers
-    val navigationLabel = TextStyle(
+    val navLabel = TextStyle(
         fontFamily = InterFontFamily,
         fontWeight = FontWeight(500),
         fontSize = 12.sp,
         lineHeight = 16.sp,
-        letterSpacing = 0.4.sp
-    )
-
-    val sectionHeader = TextStyle(
-        fontFamily = InterFontFamily,
-        fontWeight = FontWeight(700),
-        fontSize = 12.sp,
-        lineHeight = 16.sp,
-        letterSpacing = 0.8.sp
-    )
-
-    // Supporting Text
-    val caption = TextStyle(
-        fontFamily = InterFontFamily,
-        fontWeight = FontWeight(400),
-        fontSize = 12.sp,
-        lineHeight = 16.sp,
-        letterSpacing = 0.4.sp
-    )
-
-    val overline = TextStyle(
-        fontFamily = InterFontFamily,
-        fontWeight = FontWeight(500),
-        fontSize = 10.sp,
-        lineHeight = 14.sp,
-        letterSpacing = 1.5.sp
-    )
-
-    // Special Effects - For glassmorphic design
-    val glowText = TextStyle(
-        fontFamily = SpaceGroteskFontFamily,
-        fontWeight = FontWeight(700),
-        fontSize = 20.sp,
-        lineHeight = 24.sp,
         letterSpacing = 0.5.sp
     )
-
-    // Aliases for backward compatibility
-    val badgeText = badge
 }
 
-/**
- * Smart Hebrew Detection & Font Selection
- * Automatically applies Hebrew fonts when Hebrew characters are detected
- */
-fun TextStyle.withSmartHebrewSupport(text: String): TextStyle {
-    val hasHebrew = text.any { char ->
-        Character.UnicodeBlock.of(char) == Character.UnicodeBlock.HEBREW
-    }
+// Typography Helper Functions
+fun getHebrewTypography(): Typography {
+    return Typography.copy(
+        displayLarge = ExtendedTypography.hebrewDisplayLarge,
+        headlineLarge = ExtendedTypography.hebrewHeadlineLarge,
+        bodyLarge = ExtendedTypography.hebrewBodyLarge
+    )
+}
 
-    return if (hasHebrew) {
-        when {
-            fontSize >= 24.sp -> copy(
-                fontFamily = HeeboFontFamily,
-                textDirection = TextDirection.Rtl
-            )
-            fontSize >= 16.sp -> copy(
-                fontFamily = RubikFontFamily,
-                textDirection = TextDirection.Rtl
-            )
-            else -> copy(
-                fontFamily = RubikFontFamily,
-                textDirection = TextDirection.Rtl
-            )
-        }
-    } else {
-        this
+fun getPriceTypography(size: PriceSize): TextStyle {
+    return when (size) {
+        PriceSize.Display -> ExtendedTypography.priceDisplay
+        PriceSize.Large -> ExtendedTypography.priceLarge
+        PriceSize.Medium -> ExtendedTypography.priceMedium
+        PriceSize.Small -> ExtendedTypography.priceSmall
     }
 }
 
-/**
- * Apply appropriate font based on content language
- */
-fun TextStyle.withContentLanguage(isHebrew: Boolean): TextStyle {
-    return if (isHebrew) {
-        when {
-            fontSize >= 24.sp -> copy(
-                fontFamily = HeeboFontFamily,
-                textDirection = TextDirection.Rtl
-            )
-            else -> copy(
-                fontFamily = RubikFontFamily,
-                textDirection = TextDirection.Rtl
-            )
-        }
-    } else {
-        this
-    }
+enum class PriceSize {
+    Display, Large, Medium, Small
 }
-
-/**
- * Price-specific text style with tabular numbers
- */
-fun TextStyle.asPrice(): TextStyle = copy(
-    fontFamily = JetBrainsMonoFontFamily,
-    fontFeatureSettings = "tnum"
-)
-
-/**
- * Display text with maximum visual impact
- */
-fun TextStyle.asDisplay(): TextStyle = copy(
-    fontFamily = SpaceGroteskFontFamily,
-    fontWeight = FontWeight(700)
-)

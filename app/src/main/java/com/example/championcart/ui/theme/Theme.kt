@@ -1,8 +1,10 @@
 package com.example.championcart.ui.theme
 
+import android.app.Activity
 import android.os.Build
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.*
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -52,6 +54,27 @@ val LocalThemeConfig = staticCompositionLocalOf { ThemeConfig() }
 val LocalReduceMotion = staticCompositionLocalOf { false }
 val LocalHapticsEnabled = staticCompositionLocalOf { true }
 val LocalGlassEffectsEnabled = staticCompositionLocalOf { true }
+val LocalResponsiveConfig = staticCompositionLocalOf { ResponsiveConfig() }
+val LocalTimeOfDay = staticCompositionLocalOf { TimeOfDay.AFTERNOON }
+
+/**
+ * Time of day enumeration for time-based theming
+ */
+enum class TimeOfDay {
+    MORNING,    // 6am-12pm
+    AFTERNOON,  // 12pm-6pm
+    EVENING,    // 6pm-12am
+    NIGHT       // 12am-6am
+}
+
+/**
+ * Responsive configuration
+ */
+data class ResponsiveConfig(
+    val isCompact: Boolean = true,
+    val isMedium: Boolean = false,
+    val isExpanded: Boolean = false
+)
 
 /**
  * Main Champion Cart Theme Composable
@@ -68,15 +91,20 @@ fun ChampionCartTheme(
     performanceMode: Boolean = false,
     content: @Composable () -> Unit
 ) {
+    // Calculate current time of day
+    val timeOfDay = remember { getCurrentTimeOfDay() }
+
     // Time-based color determination
-    val timeBasedColors = getTimeBasedColorsIfEnabled(timeBasedTheme)
+    val timeBasedColors = if (timeBasedTheme) {
+        getTimeBasedColors(timeOfDay)
+    } else null
 
     // Theme configuration
     val themeConfig = ThemeConfig(
         darkTheme = darkTheme,
         dynamicColor = dynamicColor,
         highContrast = highContrast,
-        timeBasedColors = timeBasedColors,
+        timeBasedColors = timeBasedTheme,
         reduceMotion = reduceMotion,
         hapticsEnabled = hapticsEnabled,
         glassEffectsEnabled = glassEffectsEnabled,
@@ -84,108 +112,81 @@ fun ChampionCartTheme(
     )
 
     // Color schemes
-    val colorScheme = getColorScheme(themeConfig)
-    val extendedColors = getExtendedColors(themeConfig)
+    val baseColorScheme = when {
+        darkTheme -> DarkColorScheme
+        else -> LightColorScheme
+    }
+
+    // Apply time-based color overrides
+    val colorScheme = if (timeBasedColors != null) {
+        baseColorScheme.copy(
+            primary = timeBasedColors.primary,
+            secondary = timeBasedColors.secondary,
+            tertiary = timeBasedColors.tertiary
+        )
+    } else {
+        baseColorScheme
+    }
+
+    // Extended colors
+    val extendedColors = when {
+        darkTheme -> DarkExtendedColors
+        else -> LightExtendedColors
+    }
 
     // Animated color transitions
-    val animatedColorScheme = createAnimatedColorScheme(colorScheme)
-    val animatedExtendedColors = createAnimatedExtendedColors(extendedColors)
+    val animatedColorScheme = if (!reduceMotion) {
+        createAnimatedColorScheme(colorScheme)
+    } else {
+        colorScheme
+    }
 
     // Glass theme configuration
     val glassConfig = GlassThemeConfig(
         defaultIntensity = if (performanceMode) GlassIntensity.Light else GlassIntensity.Medium,
-        enableAnimations = !reduceMotion && glassEffectsEnabled,
-        enableBlur = glassEffectsEnabled && !performanceMode,
-        performanceMode = performanceMode
+        blurEnabled = glassEffectsEnabled && !performanceMode,
+        borderEnabled = glassEffectsEnabled,
+        shadowEnabled = !performanceMode
     )
 
-    // Configure system UI
-    ConfigureSystemUI(
-        useDarkTheme = themeConfig.shouldUseDarkTheme(),
-        colorScheme = animatedColorScheme
-    )
+    // Responsive configuration
+    val responsiveConfig = rememberResponsiveConfig()
 
-    // Apply theme
+    // Component tokens based on screen size
+    val componentTokens = when {
+        responsiveConfig.isExpanded -> ExpandedComponentTokens
+        responsiveConfig.isMedium -> DefaultComponentTokens
+        else -> CompactComponentTokens
+    }
+
+    // Apply window decoration
+    val view = LocalView.current
+    if (!view.isInEditMode) {
+        SideEffect {
+            val window = (view.context as Activity).window
+            window.statusBarColor = colorScheme.primary.toArgb()
+            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
+        }
+    }
+
+    // Provide theme values
     CompositionLocalProvider(
         LocalThemeConfig provides themeConfig,
-        LocalExtendedColors provides animatedExtendedColors,
         LocalReduceMotion provides reduceMotion,
         LocalHapticsEnabled provides hapticsEnabled,
-        LocalGlassEffectsEnabled provides glassEffectsEnabled
+        LocalGlassEffectsEnabled provides glassEffectsEnabled,
+        LocalExtendedColors provides extendedColors,
+        LocalGlassThemeConfig provides glassConfig,
+        LocalResponsiveConfig provides responsiveConfig,
+        LocalComponentTokens provides componentTokens,
+        LocalTimeOfDay provides timeOfDay
     ) {
-        ProvideGlassTheme(config = glassConfig) {
-            MaterialTheme(
-                colorScheme = animatedColorScheme,
-                typography = Typography,
-                shapes = Shapes,
-                content = content
-            )
-        }
-    }
-}
-
-/**
- * Get appropriate color scheme based on configuration
- */
-@Composable
-private fun getColorScheme(config: ThemeConfig): ColorScheme {
-    val context = LocalContext.current
-
-    return when {
-        // Dynamic color support (Android 12+)
-        config.dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            if (config.shouldUseDarkTheme()) {
-                dynamicDarkColorScheme(context)
-            } else {
-                dynamicLightColorScheme(context)
-            }
-        }
-
-        // High contrast themes
-        config.highContrast -> {
-            if (config.shouldUseDarkTheme()) {
-                HighContrastDarkColorScheme
-            } else {
-                HighContrastLightColorScheme
-            }
-        }
-
-        // Time-based color modifications
-        config.timeBasedColors -> {
-            val baseScheme = if (config.shouldUseDarkTheme()) {
-                DarkColorScheme
-            } else {
-                LightColorScheme
-            }
-            applyTimeBasedColors(baseScheme)
-        }
-
-        // Standard themes
-        else -> {
-            if (config.shouldUseDarkTheme()) {
-                DarkColorScheme
-            } else {
-                LightColorScheme
-            }
-        }
-    }
-}
-
-/**
- * Get extended colors based on configuration
- */
-@Composable
-private fun getExtendedColors(config: ThemeConfig): ExtendedColors {
-    return when {
-        config.highContrast -> {
-            if (config.shouldUseDarkTheme()) {
-                highContrastDarkExtendedColors
-            } else {
-                highContrastLightExtendedColors
-            }
-        }
-        config.shouldUseDarkTheme() -> darkExtendedColors
-        else -> lightExtendedColors
+        MaterialTheme(
+            colorScheme = animatedColorScheme,
+            typography = Typography,
+            shapes = Shapes,
+            content = content
+        )
     }
 }
 
@@ -194,616 +195,181 @@ private fun getExtendedColors(config: ThemeConfig): ExtendedColors {
  */
 @Composable
 private fun createAnimatedColorScheme(targetScheme: ColorScheme): ColorScheme {
-    val animationSpec: AnimationSpec<Color> = if (LocalReduceMotion.current) {
-        snap()
-    } else {
-        spring(
-            dampingRatio = SpringSpecs.DampingRatioLowBounce,
-            stiffness = SpringSpecs.StiffnessMedium
-        )
-    }
+    val animationSpec = spring<Color>(
+        dampingRatio = Spring.DampingRatioMediumBouncy,
+        stiffness = Spring.StiffnessLow
+    )
 
     return ColorScheme(
-        primary = animateColorAsState(
-            targetValue = targetScheme.primary,
-            animationSpec = animationSpec,
-            label = "primary"
-        ).value,
-        onPrimary = animateColorAsState(
-            targetValue = targetScheme.onPrimary,
-            animationSpec = animationSpec,
-            label = "onPrimary"
-        ).value,
-        primaryContainer = animateColorAsState(
-            targetValue = targetScheme.primaryContainer,
-            animationSpec = animationSpec,
-            label = "primaryContainer"
-        ).value,
-        onPrimaryContainer = animateColorAsState(
-            targetValue = targetScheme.onPrimaryContainer,
-            animationSpec = animationSpec,
-            label = "onPrimaryContainer"
-        ).value,
-        inversePrimary = animateColorAsState(
-            targetValue = targetScheme.inversePrimary,
-            animationSpec = animationSpec,
-            label = "inversePrimary"
-        ).value,
-        secondary = animateColorAsState(
-            targetValue = targetScheme.secondary,
-            animationSpec = animationSpec,
-            label = "secondary"
-        ).value,
-        onSecondary = animateColorAsState(
-            targetValue = targetScheme.onSecondary,
-            animationSpec = animationSpec,
-            label = "onSecondary"
-        ).value,
-        secondaryContainer = animateColorAsState(
-            targetValue = targetScheme.secondaryContainer,
-            animationSpec = animationSpec,
-            label = "secondaryContainer"
-        ).value,
-        onSecondaryContainer = animateColorAsState(
-            targetValue = targetScheme.onSecondaryContainer,
-            animationSpec = animationSpec,
-            label = "onSecondaryContainer"
-        ).value,
-        tertiary = animateColorAsState(
-            targetValue = targetScheme.tertiary,
-            animationSpec = animationSpec,
-            label = "tertiary"
-        ).value,
-        onTertiary = animateColorAsState(
-            targetValue = targetScheme.onTertiary,
-            animationSpec = animationSpec,
-            label = "onTertiary"
-        ).value,
-        tertiaryContainer = animateColorAsState(
-            targetValue = targetScheme.tertiaryContainer,
-            animationSpec = animationSpec,
-            label = "tertiaryContainer"
-        ).value,
-        onTertiaryContainer = animateColorAsState(
-            targetValue = targetScheme.onTertiaryContainer,
-            animationSpec = animationSpec,
-            label = "onTertiaryContainer"
-        ).value,
-        error = animateColorAsState(
-            targetValue = targetScheme.error,
-            animationSpec = animationSpec,
-            label = "error"
-        ).value,
-        onError = animateColorAsState(
-            targetValue = targetScheme.onError,
-            animationSpec = animationSpec,
-            label = "onError"
-        ).value,
-        errorContainer = animateColorAsState(
-            targetValue = targetScheme.errorContainer,
-            animationSpec = animationSpec,
-            label = "errorContainer"
-        ).value,
-        onErrorContainer = animateColorAsState(
-            targetValue = targetScheme.onErrorContainer,
-            animationSpec = animationSpec,
-            label = "onErrorContainer"
-        ).value,
-        background = animateColorAsState(
-            targetValue = targetScheme.background,
-            animationSpec = animationSpec,
-            label = "background"
-        ).value,
-        onBackground = animateColorAsState(
-            targetValue = targetScheme.onBackground,
-            animationSpec = animationSpec,
-            label = "onBackground"
-        ).value,
-        surface = animateColorAsState(
-            targetValue = targetScheme.surface,
-            animationSpec = animationSpec,
-            label = "surface"
-        ).value,
-        onSurface = animateColorAsState(
-            targetValue = targetScheme.onSurface,
-            animationSpec = animationSpec,
-            label = "onSurface"
-        ).value,
-        surfaceVariant = animateColorAsState(
-            targetValue = targetScheme.surfaceVariant,
-            animationSpec = animationSpec,
-            label = "surfaceVariant"
-        ).value,
-        onSurfaceVariant = animateColorAsState(
-            targetValue = targetScheme.onSurfaceVariant,
-            animationSpec = animationSpec,
-            label = "onSurfaceVariant"
-        ).value,
-        surfaceTint = animateColorAsState(
-            targetValue = targetScheme.surfaceTint,
-            animationSpec = animationSpec,
-            label = "surfaceTint"
-        ).value,
-        outline = animateColorAsState(
-            targetValue = targetScheme.outline,
-            animationSpec = animationSpec,
-            label = "outline"
-        ).value,
-        outlineVariant = animateColorAsState(
-            targetValue = targetScheme.outlineVariant,
-            animationSpec = animationSpec,
-            label = "outlineVariant"
-        ).value,
-        scrim = animateColorAsState(
-            targetValue = targetScheme.scrim,
-            animationSpec = animationSpec,
-            label = "scrim"
-        ).value,
-        inverseSurface = animateColorAsState(
-            targetValue = targetScheme.inverseSurface,
-            animationSpec = animationSpec,
-            label = "inverseSurface"
-        ).value,
-        inverseOnSurface = animateColorAsState(
-            targetValue = targetScheme.inverseOnSurface,
-            animationSpec = animationSpec,
-            label = "inverseOnSurface"
-        ).value,
-        surfaceDim = animateColorAsState(
-            targetValue = targetScheme.surfaceDim,
-            animationSpec = animationSpec,
-            label = "surfaceDim"
-        ).value,
-        surfaceBright = animateColorAsState(
-            targetValue = targetScheme.surfaceBright,
-            animationSpec = animationSpec,
-            label = "surfaceBright"
-        ).value,
-        surfaceContainerLowest = animateColorAsState(
-            targetValue = targetScheme.surfaceContainerLowest,
-            animationSpec = animationSpec,
-            label = "surfaceContainerLowest"
-        ).value,
-        surfaceContainerLow = animateColorAsState(
-            targetValue = targetScheme.surfaceContainerLow,
-            animationSpec = animationSpec,
-            label = "surfaceContainerLow"
-        ).value,
-        surfaceContainer = animateColorAsState(
-            targetValue = targetScheme.surfaceContainer,
-            animationSpec = animationSpec,
-            label = "surfaceContainer"
-        ).value,
-        surfaceContainerHigh = animateColorAsState(
-            targetValue = targetScheme.surfaceContainerHigh,
-            animationSpec = animationSpec,
-            label = "surfaceContainerHigh"
-        ).value,
-        surfaceContainerHighest = animateColorAsState(
-            targetValue = targetScheme.surfaceContainerHighest,
-            animationSpec = animationSpec,
-            label = "surfaceContainerHighest"
-        ).value
+        primary = animateColorAsState(targetScheme.primary, animationSpec).value,
+        onPrimary = animateColorAsState(targetScheme.onPrimary, animationSpec).value,
+        primaryContainer = animateColorAsState(targetScheme.primaryContainer, animationSpec).value,
+        onPrimaryContainer = animateColorAsState(targetScheme.onPrimaryContainer, animationSpec).value,
+        inversePrimary = animateColorAsState(targetScheme.inversePrimary, animationSpec).value,
+        secondary = animateColorAsState(targetScheme.secondary, animationSpec).value,
+        onSecondary = animateColorAsState(targetScheme.onSecondary, animationSpec).value,
+        secondaryContainer = animateColorAsState(targetScheme.secondaryContainer, animationSpec).value,
+        onSecondaryContainer = animateColorAsState(targetScheme.onSecondaryContainer, animationSpec).value,
+        tertiary = animateColorAsState(targetScheme.tertiary, animationSpec).value,
+        onTertiary = animateColorAsState(targetScheme.onTertiary, animationSpec).value,
+        tertiaryContainer = animateColorAsState(targetScheme.tertiaryContainer, animationSpec).value,
+        onTertiaryContainer = animateColorAsState(targetScheme.onTertiaryContainer, animationSpec).value,
+        background = animateColorAsState(targetScheme.background, animationSpec).value,
+        onBackground = animateColorAsState(targetScheme.onBackground, animationSpec).value,
+        surface = animateColorAsState(targetScheme.surface, animationSpec).value,
+        onSurface = animateColorAsState(targetScheme.onSurface, animationSpec).value,
+        surfaceVariant = animateColorAsState(targetScheme.surfaceVariant, animationSpec).value,
+        onSurfaceVariant = animateColorAsState(targetScheme.onSurfaceVariant, animationSpec).value,
+        surfaceTint = animateColorAsState(targetScheme.surfaceTint, animationSpec).value,
+        inverseSurface = animateColorAsState(targetScheme.inverseSurface, animationSpec).value,
+        inverseOnSurface = animateColorAsState(targetScheme.inverseOnSurface, animationSpec).value,
+        error = animateColorAsState(targetScheme.error, animationSpec).value,
+        onError = animateColorAsState(targetScheme.onError, animationSpec).value,
+        errorContainer = animateColorAsState(targetScheme.errorContainer, animationSpec).value,
+        onErrorContainer = animateColorAsState(targetScheme.onErrorContainer, animationSpec).value,
+        outline = animateColorAsState(targetScheme.outline, animationSpec).value,
+        outlineVariant = animateColorAsState(targetScheme.outlineVariant, animationSpec).value,
+        scrim = animateColorAsState(targetScheme.scrim, animationSpec).value
     )
 }
 
 /**
- * Create animated extended colors - COMPLETE VERSION
+ * Get current time of day
  */
-@Composable
-private fun createAnimatedExtendedColors(targetColors: ExtendedColors): ExtendedColors {
-    val animationSpec: AnimationSpec<Color> = if (LocalReduceMotion.current) {
-        snap()
-    } else {
-        spring(
-            dampingRatio = Spring.DampingRatioNoBouncy,
-            stiffness = Spring.StiffnessLow
+private fun getCurrentTimeOfDay(): TimeOfDay {
+    val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
+    return when (hour) {
+        in 6..11 -> TimeOfDay.MORNING
+        in 12..17 -> TimeOfDay.AFTERNOON
+        in 18..23 -> TimeOfDay.EVENING
+        else -> TimeOfDay.NIGHT
+    }
+}
+
+/**
+ * Get time-based color overrides
+ */
+private fun getTimeBasedColors(timeOfDay: TimeOfDay): TimeBasedColorOverrides? {
+    return when (timeOfDay) {
+        TimeOfDay.MORNING -> TimeBasedColorOverrides(
+            primary = TimeBasedColors.MorningPrimary,
+            secondary = TimeBasedColors.MorningSecondary,
+            tertiary = TimeBasedColors.MorningTertiary
+        )
+        TimeOfDay.AFTERNOON -> TimeBasedColorOverrides(
+            primary = TimeBasedColors.AfternoonPrimary,
+            secondary = TimeBasedColors.AfternoonSecondary,
+            tertiary = TimeBasedColors.AfternoonTertiary
+        )
+        TimeOfDay.EVENING -> TimeBasedColorOverrides(
+            primary = TimeBasedColors.EveningPrimary,
+            secondary = TimeBasedColors.EveningSecondary,
+            tertiary = TimeBasedColors.EveningTertiary
+        )
+        TimeOfDay.NIGHT -> TimeBasedColorOverrides(
+            primary = TimeBasedColors.NightPrimary,
+            secondary = TimeBasedColors.NightSecondary,
+            tertiary = TimeBasedColors.NightTertiary
         )
     }
+}
 
-    return ExtendedColors(
-        // Primary Brand Colors
-        electricMint = animateColorAsState(
-            targetValue = targetColors.electricMint,
-            animationSpec = animationSpec,
-            label = "electricMint"
-        ).value,
-        electricMintVariant = animateColorAsState(
-            targetValue = targetColors.electricMintVariant,
-            animationSpec = animationSpec,
-            label = "electricMintVariant"
-        ).value,
-        electricMintLight = animateColorAsState(
-            targetValue = targetColors.electricMintLight,
-            animationSpec = animationSpec,
-            label = "electricMintLight"
-        ).value,
-        electricMintDark = animateColorAsState(
-            targetValue = targetColors.electricMintDark,
-            animationSpec = animationSpec,
-            label = "electricMintDark"
-        ).value,
-        electricMintGlow = animateColorAsState(
-            targetValue = targetColors.electricMintGlow,
-            animationSpec = animationSpec,
-            label = "electricMintGlow"
-        ).value,
+/**
+ * Time-based color overrides
+ */
+private data class TimeBasedColorOverrides(
+    val primary: Color,
+    val secondary: Color,
+    val tertiary: Color
+)
 
-        cosmicPurple = animateColorAsState(
-            targetValue = targetColors.cosmicPurple,
-            animationSpec = animationSpec,
-            label = "cosmicPurple"
-        ).value,
-        cosmicPurpleVariant = animateColorAsState(
-            targetValue = targetColors.cosmicPurpleVariant,
-            animationSpec = animationSpec,
-            label = "cosmicPurpleVariant"
-        ).value,
-        cosmicPurpleLight = animateColorAsState(
-            targetValue = targetColors.cosmicPurpleLight,
-            animationSpec = animationSpec,
-            label = "cosmicPurpleLight"
-        ).value,
-        cosmicPurpleDark = animateColorAsState(
-            targetValue = targetColors.cosmicPurpleDark,
-            animationSpec = animationSpec,
-            label = "cosmicPurpleDark"
-        ).value,
-        cosmicPurpleGlow = animateColorAsState(
-            targetValue = targetColors.cosmicPurpleGlow,
-            animationSpec = animationSpec,
-            label = "cosmicPurpleGlow"
-        ).value,
-
-        // Neon Coral
-        neonCoral = animateColorAsState(
-            targetValue = targetColors.neonCoral,
-            animationSpec = animationSpec,
-            label = "neonCoral"
-        ).value,
-        neonCoralLight = animateColorAsState(
-            targetValue = targetColors.neonCoralLight,
-            animationSpec = animationSpec,
-            label = "neonCoralLight"
-        ).value,
-        neonCoralDark = animateColorAsState(
-            targetValue = targetColors.neonCoralDark,
-            animationSpec = animationSpec,
-            label = "neonCoralDark"
-        ).value,
-        neonCoralGlow = animateColorAsState(
-            targetValue = targetColors.neonCoralGlow,
-            animationSpec = animationSpec,
-            label = "neonCoralGlow"
-        ).value,
-
-        deepNavy = animateColorAsState(
-            targetValue = targetColors.deepNavy,
-            animationSpec = animationSpec,
-            label = "deepNavy"
-        ).value,
-        deepNavyVariant = animateColorAsState(
-            targetValue = targetColors.deepNavyVariant,
-            animationSpec = animationSpec,
-            label = "deepNavyVariant"
-        ).value,
-
-        // Glassmorphic Overlays
-        glassLight = targetColors.glassLight,
-        glassMedium = targetColors.glassMedium,
-        glassHeavy = targetColors.glassHeavy,
-        glassAccent = targetColors.glassAccent,
-
-        // Semantic State Colors
-        success = animateColorAsState(
-            targetValue = targetColors.success,
-            animationSpec = animationSpec,
-            label = "success"
-        ).value,
-        successContainer = animateColorAsState(
-            targetValue = targetColors.successContainer,
-            animationSpec = animationSpec,
-            label = "successContainer"
-        ).value,
-        onSuccess = animateColorAsState(
-            targetValue = targetColors.onSuccess,
-            animationSpec = animationSpec,
-            label = "onSuccess"
-        ).value,
-        onSuccessContainer = animateColorAsState(
-            targetValue = targetColors.onSuccessContainer,
-            animationSpec = animationSpec,
-            label = "onSuccessContainer"
-        ).value,
-
-        warning = animateColorAsState(
-            targetValue = targetColors.warning,
-            animationSpec = animationSpec,
-            label = "warning"
-        ).value,
-        warningContainer = animateColorAsState(
-            targetValue = targetColors.warningContainer,
-            animationSpec = animationSpec,
-            label = "warningContainer"
-        ).value,
-        onWarning = animateColorAsState(
-            targetValue = targetColors.onWarning,
-            animationSpec = animationSpec,
-            label = "onWarning"
-        ).value,
-        onWarningContainer = animateColorAsState(
-            targetValue = targetColors.onWarningContainer,
-            animationSpec = animationSpec,
-            label = "onWarningContainer"
-        ).value,
-
-        info = animateColorAsState(
-            targetValue = targetColors.info,
-            animationSpec = animationSpec,
-            label = "info"
-        ).value,
-        infoContainer = animateColorAsState(
-            targetValue = targetColors.infoContainer,
-            animationSpec = animationSpec,
-            label = "infoContainer"
-        ).value,
-        onInfo = animateColorAsState(
-            targetValue = targetColors.onInfo,
-            animationSpec = animationSpec,
-            label = "onInfo"
-        ).value,
-        onInfoContainer = animateColorAsState(
-            targetValue = targetColors.onInfoContainer,
-            animationSpec = animationSpec,
-            label = "onInfoContainer"
-        ).value,
-
-        // Price Comparison Colors
-        bestPrice = animateColorAsState(
-            targetValue = targetColors.bestPrice,
-            animationSpec = animationSpec,
-            label = "bestPrice"
-        ).value,
-        bestPriceContainer = animateColorAsState(
-            targetValue = targetColors.bestPriceContainer,
-            animationSpec = animationSpec,
-            label = "bestPriceContainer"
-        ).value,
-        bestPriceGlow = animateColorAsState(
-            targetValue = targetColors.bestPriceGlow,
-            animationSpec = animationSpec,
-            label = "bestPriceGlow"
-        ).value,
-        onBestPrice = animateColorAsState(
-            targetValue = targetColors.onBestPrice,
-            animationSpec = animationSpec,
-            label = "onBestPrice"
-        ).value,
-
-        midPrice = animateColorAsState(
-            targetValue = targetColors.midPrice,
-            animationSpec = animationSpec,
-            label = "midPrice"
-        ).value,
-        midPriceContainer = animateColorAsState(
-            targetValue = targetColors.midPriceContainer,
-            animationSpec = animationSpec,
-            label = "midPriceContainer"
-        ).value,
-        onMidPrice = animateColorAsState(
-            targetValue = targetColors.onMidPrice,
-            animationSpec = animationSpec,
-            label = "onMidPrice"
-        ).value,
-
-        highPrice = animateColorAsState(
-            targetValue = targetColors.highPrice,
-            animationSpec = animationSpec,
-            label = "highPrice"
-        ).value,
-        highPriceContainer = animateColorAsState(
-            targetValue = targetColors.highPriceContainer,
-            animationSpec = animationSpec,
-            label = "highPriceContainer"
-        ).value,
-        onHighPrice = animateColorAsState(
-            targetValue = targetColors.onHighPrice,
-            animationSpec = animationSpec,
-            label = "onHighPrice"
-        ).value,
-
-        // Store Chain Colors
-        shufersal = targetColors.shufersal,
-        ramiLevi = targetColors.ramiLevi,
-        victory = targetColors.victory,
-        mega = targetColors.mega,
-        osherAd = targetColors.osherAd,
-        coop = targetColors.coop,
-
-        // Product Category Colors
-        dairy = targetColors.dairy,
-        meat = targetColors.meat,
-        produce = targetColors.produce,
-        bakery = targetColors.bakery,
-        frozen = targetColors.frozen,
-        household = targetColors.household,
-        kosher = targetColors.kosher,
-        organic = targetColors.organic,
-
-        // Time-Based Accent Colors
-        morningAccent = targetColors.morningAccent,
-        afternoonAccent = targetColors.afternoonAccent,
-        eveningAccent = targetColors.eveningAccent,
-        nightAccent = targetColors.nightAccent,
-
-        // Gradient Colors
-        gradientStart = animateColorAsState(
-            targetValue = targetColors.gradientStart,
-            animationSpec = animationSpec,
-            label = "gradientStart"
-        ).value,
-        gradientMiddle = animateColorAsState(
-            targetValue = targetColors.gradientMiddle,
-            animationSpec = animationSpec,
-            label = "gradientMiddle"
-        ).value,
-        gradientEnd = animateColorAsState(
-            targetValue = targetColors.gradientEnd,
-            animationSpec = animationSpec,
-            label = "gradientEnd"
-        ).value,
-
-        // Interactive States
-        interactiveDefault = animateColorAsState(
-            targetValue = targetColors.interactiveDefault,
-            animationSpec = animationSpec,
-            label = "interactiveDefault"
-        ).value,
-        interactiveHover = animateColorAsState(
-            targetValue = targetColors.interactiveHover,
-            animationSpec = animationSpec,
-            label = "interactiveHover"
-        ).value,
-        interactivePressed = animateColorAsState(
-            targetValue = targetColors.interactivePressed,
-            animationSpec = animationSpec,
-            label = "interactivePressed"
-        ).value,
-        interactiveDisabled = animateColorAsState(
-            targetValue = targetColors.interactiveDisabled,
-            animationSpec = animationSpec,
-            label = "interactiveDisabled"
-        ).value,
-        interactiveFocus = animateColorAsState(
-            targetValue = targetColors.interactiveFocus,
-            animationSpec = animationSpec,
-            label = "interactiveFocus"
-        ).value,
-
-        // Surface Variants
-        surfaceGlass = animateColorAsState(
-            targetValue = targetColors.surfaceGlass,
-            animationSpec = animationSpec,
-            label = "surfaceGlass"
-        ).value,
-        surfaceElevated = animateColorAsState(
-            targetValue = targetColors.surfaceElevated,
-            animationSpec = animationSpec,
-            label = "surfaceElevated"
-        ).value,
-        surfaceCard = animateColorAsState(
-            targetValue = targetColors.surfaceCard,
-            animationSpec = animationSpec,
-            label = "surfaceCard"
-        ).value,
-        surfaceModal = animateColorAsState(
-            targetValue = targetColors.surfaceModal,
-            animationSpec = animationSpec,
-            label = "surfaceModal"
-        ).value,
-        surfaceNavigation = animateColorAsState(
-            targetValue = targetColors.surfaceNavigation,
-            animationSpec = animationSpec,
-            label = "surfaceNavigation"
-        ).value,
-
-        // Border & Outline Variants
-        borderSubtle = animateColorAsState(
-            targetValue = targetColors.borderSubtle,
-            animationSpec = animationSpec,
-            label = "borderSubtle"
-        ).value,
-        borderDefault = animateColorAsState(
-            targetValue = targetColors.borderDefault,
-            animationSpec = animationSpec,
-            label = "borderDefault"
-        ).value,
-        borderStrong = animateColorAsState(
-            targetValue = targetColors.borderStrong,
-            animationSpec = animationSpec,
-            label = "borderStrong"
-        ).value,
-        borderGlass = animateColorAsState(
-            targetValue = targetColors.borderGlass,
-            animationSpec = animationSpec,
-            label = "borderGlass"
-        ).value,
-
-        // Text Variants
-        textPrimary = animateColorAsState(
-            targetValue = targetColors.textPrimary,
-            animationSpec = animationSpec,
-            label = "textPrimary"
-        ).value,
-        textSecondary = animateColorAsState(
-            targetValue = targetColors.textSecondary,
-            animationSpec = animationSpec,
-            label = "textSecondary"
-        ).value,
-        textTertiary = animateColorAsState(
-            targetValue = targetColors.textTertiary,
-            animationSpec = animationSpec,
-            label = "textTertiary"
-        ).value,
-        textInverse = animateColorAsState(
-            targetValue = targetColors.textInverse,
-            animationSpec = animationSpec,
-            label = "textInverse"
-        ).value,
-        textOnGlass = animateColorAsState(
-            targetValue = targetColors.textOnGlass,
-            animationSpec = animationSpec,
-            label = "textOnGlass"
-        ).value,
-
-        // Special Effects
-        shadow = targetColors.shadow,
-        glow = targetColors.glow,
-        shimmer = targetColors.shimmer,
-        highlight = targetColors.highlight
+/**
+ * Remember responsive configuration based on window size
+ */
+@Composable
+private fun rememberResponsiveConfig(): ResponsiveConfig {
+    // In a real implementation, this would check actual window size
+    // For now, returning compact configuration
+    return ResponsiveConfig(
+        isCompact = true,
+        isMedium = false,
+        isExpanded = false
     )
 }
+
 /**
- * Time-based color helpers
+ * Glass theme configuration
  */
-@Composable
-private fun getTimeBasedColorsIfEnabled(enabled: Boolean): Boolean {
-    return if (enabled) {
-        val calendar = Calendar.getInstance()
-        val hour = calendar.get(Calendar.HOUR_OF_DAY)
-        // Use time-based logic here
-        true
-    } else {
-        false
-    }
+data class GlassThemeConfig(
+    val defaultIntensity: GlassIntensity = GlassIntensity.Medium,
+    val blurEnabled: Boolean = true,
+    val borderEnabled: Boolean = true,
+    val shadowEnabled: Boolean = true
+)
+
+val LocalGlassThemeConfig = staticCompositionLocalOf { GlassThemeConfig() }
+
+/**
+ * Glass intensity levels
+ */
+enum class GlassIntensity {
+    Light,
+    Medium,
+    Heavy,
+    Ultra
 }
 
 /**
- * Apply time-based color modifications
+ * Theme helper functions
  */
-@Composable
-private fun applyTimeBasedColors(baseScheme: ColorScheme): ColorScheme {
-    val calendar = Calendar.getInstance()
-    val hour = calendar.get(Calendar.HOUR_OF_DAY)
+object ChampionCartTheme {
+    val colors: ColorScheme
+        @Composable
+        @ReadOnlyComposable
+        get() = MaterialTheme.colorScheme
 
-    // For now, return the base scheme - time-based modifications can be added here
-    return baseScheme
-}
+    val extendedColors: ExtendedColors
+        @Composable
+        @ReadOnlyComposable
+        get() = LocalExtendedColors.current
 
-/**
- * Configure system UI colors
- */
-@Composable
-private fun ConfigureSystemUI(
-    useDarkTheme: Boolean,
-    colorScheme: ColorScheme
-) {
-    val view = LocalView.current
-    if (!view.isInEditMode) {
-        SideEffect {
-            val window = (view.context as android.app.Activity).window
-            window.statusBarColor = colorScheme.primary.toArgb()
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !useDarkTheme
-        }
-    }
+    val typography: Typography
+        @Composable
+        @ReadOnlyComposable
+        get() = MaterialTheme.typography
+
+    val shapes: Shapes
+        @Composable
+        @ReadOnlyComposable
+        get() = MaterialTheme.shapes
+
+    val spacing: SpacingTokens
+        @Composable
+        @ReadOnlyComposable
+        get() = SpacingTokens
+
+    val sizing: SizingTokens
+        @Composable
+        @ReadOnlyComposable
+        get() = SizingTokens
+
+    val componentTokens: ComponentTokens
+        @Composable
+        @ReadOnlyComposable
+        get() = LocalComponentTokens.current
+
+    val isReduceMotion: Boolean
+        @Composable
+        @ReadOnlyComposable
+        get() = LocalReduceMotion.current
+
+    val isHapticsEnabled: Boolean
+        @Composable
+        @ReadOnlyComposable
+        get() = LocalHapticsEnabled.current
+
+    val isGlassEnabled: Boolean
+        @Composable
+        @ReadOnlyComposable
+        get() = LocalGlassEffectsEnabled.current
 }
