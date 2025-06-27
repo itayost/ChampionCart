@@ -1,7 +1,6 @@
 package com.example.championcart.ui.theme
 
 import android.app.Activity
-import android.os.Build
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
@@ -16,50 +15,31 @@ import androidx.core.view.WindowCompat
 import java.util.*
 
 /**
- * Champion Cart - Main Theme Orchestration
- * Electric Harmony design system with intelligent theming
- * Integrates all theme components for cohesive user experience
+ * Champion Cart Theme
+ * Electric Harmony Design System
+ *
+ * A modern, glassmorphic theme with time-based variations,
+ * accessibility features, and Hebrew-first design considerations.
  */
 
-/**
- * Theme preference types
- */
-enum class ThemePreference(val displayName: String) {
-    System("Follow System"),
-    Light("Light"),
-    Dark("Dark"),
-    Auto("Auto (Time-based)")
-}
-
-/**
- * Theme configuration data class
- */
-data class ThemeConfig(
-    val darkTheme: Boolean = false,
-    val dynamicColor: Boolean = true,
-    val highContrast: Boolean = false,
-    val timeBasedColors: Boolean = false,
+// Theme Configuration
+data class ChampionCartConfig(
+    val useDarkTheme: Boolean = false,
+    val useTimeBasedTheme: Boolean = true,
+    val useHighContrast: Boolean = false,
     val reduceMotion: Boolean = false,
-    val hapticsEnabled: Boolean = true,
-    val glassEffectsEnabled: Boolean = true,
+    val enableHaptics: Boolean = true,
+    val enableGlassEffects: Boolean = true,
     val performanceMode: Boolean = false
-) {
-    fun shouldUseDarkTheme(): Boolean = darkTheme
-}
+)
 
-/**
- * Composition locals for theme configuration
- */
-val LocalThemeConfig = staticCompositionLocalOf { ThemeConfig() }
-val LocalReduceMotion = staticCompositionLocalOf { false }
-val LocalHapticsEnabled = staticCompositionLocalOf { true }
-val LocalGlassEffectsEnabled = staticCompositionLocalOf { true }
-val LocalResponsiveConfig = staticCompositionLocalOf { ResponsiveConfig() }
+// Composition Locals
+val LocalChampionCartConfig = staticCompositionLocalOf { ChampionCartConfig() }
 val LocalTimeOfDay = staticCompositionLocalOf { TimeOfDay.AFTERNOON }
+val LocalSpacing = staticCompositionLocalOf { Spacing }
+val LocalElevation = staticCompositionLocalOf { Elevation }
 
-/**
- * Time of day enumeration for time-based theming
- */
+// Time of Day
 enum class TimeOfDay {
     MORNING,    // 6am-12pm
     AFTERNOON,  // 12pm-6pm
@@ -68,169 +48,68 @@ enum class TimeOfDay {
 }
 
 /**
- * Responsive configuration
- */
-data class ResponsiveConfig(
-    val isCompact: Boolean = true,
-    val isMedium: Boolean = false,
-    val isExpanded: Boolean = false
-)
-
-/**
- * Main Champion Cart Theme Composable
+ * Main Theme Composable
  */
 @Composable
 fun ChampionCartTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = true,
-    highContrast: Boolean = false,
-    timeBasedTheme: Boolean = false,
-    reduceMotion: Boolean = false,
-    hapticsEnabled: Boolean = true,
-    glassEffectsEnabled: Boolean = true,
-    performanceMode: Boolean = false,
+    config: ChampionCartConfig = ChampionCartConfig(
+        useDarkTheme = darkTheme
+    ),
     content: @Composable () -> Unit
 ) {
-    // Calculate current time of day
     val timeOfDay = remember { getCurrentTimeOfDay() }
 
-    // Time-based color determination
-    val timeBasedColors = if (timeBasedTheme) {
-        getTimeBasedColors(timeOfDay)
-    } else null
+    // Determine if we should use dark theme
+    val shouldUseDarkTheme = config.useDarkTheme ||
+            (config.useTimeBasedTheme && timeOfDay == TimeOfDay.NIGHT)
 
-    // Theme configuration
-    val themeConfig = ThemeConfig(
-        darkTheme = darkTheme,
-        dynamicColor = dynamicColor,
-        highContrast = highContrast,
-        timeBasedColors = timeBasedTheme,
-        reduceMotion = reduceMotion,
-        hapticsEnabled = hapticsEnabled,
-        glassEffectsEnabled = glassEffectsEnabled,
-        performanceMode = performanceMode
-    )
-
-    // Color schemes
-    val baseColorScheme = when {
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
+    // Get appropriate color scheme
+    val targetColorScheme = when {
+        config.useHighContrast && shouldUseDarkTheme -> highContrastDarkColorScheme
+        config.useHighContrast -> highContrastLightColorScheme
+        shouldUseDarkTheme -> darkColorScheme
+        else -> lightColorScheme
     }
 
     // Apply time-based color overrides
-    val colorScheme = if (timeBasedColors != null) {
-        baseColorScheme.copy(
-            primary = timeBasedColors.primary,
-            secondary = timeBasedColors.secondary,
-            tertiary = timeBasedColors.tertiary
-        )
+    val colorScheme = if (config.useTimeBasedTheme && !shouldUseDarkTheme) {
+        applyTimeBasedColors(targetColorScheme, timeOfDay)
     } else {
-        baseColorScheme
+        targetColorScheme
     }
 
-    // Extended colors
-    val extendedColors = when {
-        darkTheme -> DarkExtendedColors
-        else -> LightExtendedColors
-    }
-
-    // Animated color transitions
-    val animatedColorScheme = if (!reduceMotion) {
-        createAnimatedColorScheme(colorScheme)
+    // Animate color transitions
+    val animatedColorScheme = if (!config.reduceMotion) {
+        animateColorScheme(colorScheme)
     } else {
         colorScheme
     }
 
-    // Glass theme configuration
-    val glassConfig = GlassThemeConfig(
-        defaultIntensity = if (performanceMode) GlassIntensity.Light else GlassIntensity.Medium,
-        blurEnabled = glassEffectsEnabled && !performanceMode,
-        borderEnabled = glassEffectsEnabled,
-        shadowEnabled = !performanceMode
-    )
-
-    // Responsive configuration
-    val responsiveConfig = rememberResponsiveConfig()
-
-    // Component tokens based on screen size
-    val componentTokens = when {
-        responsiveConfig.isExpanded -> ExpandedComponentTokens
-        responsiveConfig.isMedium -> DefaultComponentTokens
-        else -> CompactComponentTokens
-    }
-
-    // Apply window decoration
+    // Update status bar
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            window.statusBarColor = colorScheme.primary.toArgb()
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
+            window.statusBarColor = animatedColorScheme.surface.toArgb()
+            val insetsController = WindowCompat.getInsetsController(window, view)
+            insetsController.isAppearanceLightStatusBars = !shouldUseDarkTheme
         }
     }
 
     // Provide theme values
     CompositionLocalProvider(
-        LocalThemeConfig provides themeConfig,
-        LocalReduceMotion provides reduceMotion,
-        LocalHapticsEnabled provides hapticsEnabled,
-        LocalGlassEffectsEnabled provides glassEffectsEnabled,
-        LocalExtendedColors provides extendedColors,
-        LocalGlassThemeConfig provides glassConfig,
-        LocalResponsiveConfig provides responsiveConfig,
-        LocalComponentTokens provides componentTokens,
-        LocalTimeOfDay provides timeOfDay
+        LocalChampionCartConfig provides config,
+        LocalTimeOfDay provides timeOfDay,
+        LocalContentColor provides animatedColorScheme.onBackground
     ) {
         MaterialTheme(
             colorScheme = animatedColorScheme,
-            typography = Typography,
-            shapes = Shapes,
+            typography = ChampionCartTypography,
+            shapes = ChampionCartShapes,
             content = content
         )
     }
-}
-
-/**
- * Create animated color scheme for smooth transitions
- */
-@Composable
-private fun createAnimatedColorScheme(targetScheme: ColorScheme): ColorScheme {
-    val animationSpec = spring<Color>(
-        dampingRatio = Spring.DampingRatioMediumBouncy,
-        stiffness = Spring.StiffnessLow
-    )
-
-    return ColorScheme(
-        primary = animateColorAsState(targetScheme.primary, animationSpec).value,
-        onPrimary = animateColorAsState(targetScheme.onPrimary, animationSpec).value,
-        primaryContainer = animateColorAsState(targetScheme.primaryContainer, animationSpec).value,
-        onPrimaryContainer = animateColorAsState(targetScheme.onPrimaryContainer, animationSpec).value,
-        inversePrimary = animateColorAsState(targetScheme.inversePrimary, animationSpec).value,
-        secondary = animateColorAsState(targetScheme.secondary, animationSpec).value,
-        onSecondary = animateColorAsState(targetScheme.onSecondary, animationSpec).value,
-        secondaryContainer = animateColorAsState(targetScheme.secondaryContainer, animationSpec).value,
-        onSecondaryContainer = animateColorAsState(targetScheme.onSecondaryContainer, animationSpec).value,
-        tertiary = animateColorAsState(targetScheme.tertiary, animationSpec).value,
-        onTertiary = animateColorAsState(targetScheme.onTertiary, animationSpec).value,
-        tertiaryContainer = animateColorAsState(targetScheme.tertiaryContainer, animationSpec).value,
-        onTertiaryContainer = animateColorAsState(targetScheme.onTertiaryContainer, animationSpec).value,
-        background = animateColorAsState(targetScheme.background, animationSpec).value,
-        onBackground = animateColorAsState(targetScheme.onBackground, animationSpec).value,
-        surface = animateColorAsState(targetScheme.surface, animationSpec).value,
-        onSurface = animateColorAsState(targetScheme.onSurface, animationSpec).value,
-        surfaceVariant = animateColorAsState(targetScheme.surfaceVariant, animationSpec).value,
-        onSurfaceVariant = animateColorAsState(targetScheme.onSurfaceVariant, animationSpec).value,
-        surfaceTint = animateColorAsState(targetScheme.surfaceTint, animationSpec).value,
-        inverseSurface = animateColorAsState(targetScheme.inverseSurface, animationSpec).value,
-        inverseOnSurface = animateColorAsState(targetScheme.inverseOnSurface, animationSpec).value,
-        error = animateColorAsState(targetScheme.error, animationSpec).value,
-        onError = animateColorAsState(targetScheme.onError, animationSpec).value,
-        errorContainer = animateColorAsState(targetScheme.errorContainer, animationSpec).value,
-        onErrorContainer = animateColorAsState(targetScheme.onErrorContainer, animationSpec).value,
-        outline = animateColorAsState(targetScheme.outline, animationSpec).value,
-        outlineVariant = animateColorAsState(targetScheme.outlineVariant, animationSpec).value,
-        scrim = animateColorAsState(targetScheme.scrim, animationSpec).value
-    )
 }
 
 /**
@@ -247,91 +126,79 @@ private fun getCurrentTimeOfDay(): TimeOfDay {
 }
 
 /**
- * Get time-based color overrides
+ * Apply time-based color modifications
  */
-private fun getTimeBasedColors(timeOfDay: TimeOfDay): TimeBasedColorOverrides? {
+private fun applyTimeBasedColors(
+    baseScheme: ColorScheme,
+    timeOfDay: TimeOfDay
+): ColorScheme {
     return when (timeOfDay) {
-        TimeOfDay.MORNING -> TimeBasedColorOverrides(
-            primary = TimeBasedColors.MorningPrimary,
-            secondary = TimeBasedColors.MorningSecondary,
-            tertiary = TimeBasedColors.MorningTertiary
+        TimeOfDay.MORNING -> baseScheme.copy(
+            primary = ChampionCartColors.Morning.primary,
+            secondary = ChampionCartColors.Morning.secondary,
+            tertiary = ChampionCartColors.Morning.tertiary
         )
-        TimeOfDay.AFTERNOON -> TimeBasedColorOverrides(
-            primary = TimeBasedColors.AfternoonPrimary,
-            secondary = TimeBasedColors.AfternoonSecondary,
-            tertiary = TimeBasedColors.AfternoonTertiary
+        TimeOfDay.AFTERNOON -> baseScheme // Use default Electric Harmony colors
+        TimeOfDay.EVENING -> baseScheme.copy(
+            primary = ChampionCartColors.Evening.primary,
+            secondary = ChampionCartColors.Evening.secondary,
+            tertiary = ChampionCartColors.Evening.tertiary
         )
-        TimeOfDay.EVENING -> TimeBasedColorOverrides(
-            primary = TimeBasedColors.EveningPrimary,
-            secondary = TimeBasedColors.EveningSecondary,
-            tertiary = TimeBasedColors.EveningTertiary
-        )
-        TimeOfDay.NIGHT -> TimeBasedColorOverrides(
-            primary = TimeBasedColors.NightPrimary,
-            secondary = TimeBasedColors.NightSecondary,
-            tertiary = TimeBasedColors.NightTertiary
-        )
+        TimeOfDay.NIGHT -> baseScheme // Night uses dark theme
     }
 }
 
 /**
- * Time-based color overrides
- */
-private data class TimeBasedColorOverrides(
-    val primary: Color,
-    val secondary: Color,
-    val tertiary: Color
-)
-
-/**
- * Remember responsive configuration based on window size
+ * Animate color scheme transitions
  */
 @Composable
-private fun rememberResponsiveConfig(): ResponsiveConfig {
-    // In a real implementation, this would check actual window size
-    // For now, returning compact configuration
-    return ResponsiveConfig(
-        isCompact = true,
-        isMedium = false,
-        isExpanded = false
+private fun animateColorScheme(targetScheme: ColorScheme): ColorScheme {
+    val animationSpec = spring<Color>(
+        dampingRatio = Spring.DampingRatioMediumBouncy,
+        stiffness = Spring.StiffnessLow
+    )
+
+    return ColorScheme(
+        primary = animateColorAsState(targetScheme.primary, animationSpec, label = "primary").value,
+        onPrimary = animateColorAsState(targetScheme.onPrimary, animationSpec, label = "onPrimary").value,
+        primaryContainer = animateColorAsState(targetScheme.primaryContainer, animationSpec, label = "primaryContainer").value,
+        onPrimaryContainer = animateColorAsState(targetScheme.onPrimaryContainer, animationSpec, label = "onPrimaryContainer").value,
+        inversePrimary = animateColorAsState(targetScheme.inversePrimary, animationSpec, label = "inversePrimary").value,
+        secondary = animateColorAsState(targetScheme.secondary, animationSpec, label = "secondary").value,
+        onSecondary = animateColorAsState(targetScheme.onSecondary, animationSpec, label = "onSecondary").value,
+        secondaryContainer = animateColorAsState(targetScheme.secondaryContainer, animationSpec, label = "secondaryContainer").value,
+        onSecondaryContainer = animateColorAsState(targetScheme.onSecondaryContainer, animationSpec, label = "onSecondaryContainer").value,
+        tertiary = animateColorAsState(targetScheme.tertiary, animationSpec, label = "tertiary").value,
+        onTertiary = animateColorAsState(targetScheme.onTertiary, animationSpec, label = "onTertiary").value,
+        tertiaryContainer = animateColorAsState(targetScheme.tertiaryContainer, animationSpec, label = "tertiaryContainer").value,
+        onTertiaryContainer = animateColorAsState(targetScheme.onTertiaryContainer, animationSpec, label = "onTertiaryContainer").value,
+        background = animateColorAsState(targetScheme.background, animationSpec, label = "background").value,
+        onBackground = animateColorAsState(targetScheme.onBackground, animationSpec, label = "onBackground").value,
+        surface = animateColorAsState(targetScheme.surface, animationSpec, label = "surface").value,
+        onSurface = animateColorAsState(targetScheme.onSurface, animationSpec, label = "onSurface").value,
+        surfaceVariant = animateColorAsState(targetScheme.surfaceVariant, animationSpec, label = "surfaceVariant").value,
+        onSurfaceVariant = animateColorAsState(targetScheme.onSurfaceVariant, animationSpec, label = "onSurfaceVariant").value,
+        surfaceTint = animateColorAsState(targetScheme.surfaceTint, animationSpec, label = "surfaceTint").value,
+        inverseSurface = animateColorAsState(targetScheme.inverseSurface, animationSpec, label = "inverseSurface").value,
+        inverseOnSurface = animateColorAsState(targetScheme.inverseOnSurface, animationSpec, label = "inverseOnSurface").value,
+        error = animateColorAsState(targetScheme.error, animationSpec, label = "error").value,
+        onError = animateColorAsState(targetScheme.onError, animationSpec, label = "onError").value,
+        errorContainer = animateColorAsState(targetScheme.errorContainer, animationSpec, label = "errorContainer").value,
+        onErrorContainer = animateColorAsState(targetScheme.onErrorContainer, animationSpec, label = "onErrorContainer").value,
+        outline = animateColorAsState(targetScheme.outline, animationSpec, label = "outline").value,
+        outlineVariant = animateColorAsState(targetScheme.outlineVariant, animationSpec, label = "outlineVariant").value,
+        scrim = animateColorAsState(targetScheme.scrim, animationSpec, label = "scrim").value
     )
 }
 
 /**
- * Glass theme configuration
- */
-data class GlassThemeConfig(
-    val defaultIntensity: GlassIntensity = GlassIntensity.Medium,
-    val blurEnabled: Boolean = true,
-    val borderEnabled: Boolean = true,
-    val shadowEnabled: Boolean = true
-)
-
-val LocalGlassThemeConfig = staticCompositionLocalOf { GlassThemeConfig() }
-
-/**
- * Glass intensity levels
- */
-enum class GlassIntensity {
-    Light,
-    Medium,
-    Heavy,
-    Ultra
-}
-
-/**
- * Theme helper functions
+ * Theme accessor object
  */
 object ChampionCartTheme {
     val colors: ColorScheme
         @Composable
         @ReadOnlyComposable
         get() = MaterialTheme.colorScheme
-
-    val extendedColors: ExtendedColors
-        @Composable
-        @ReadOnlyComposable
-        get() = LocalExtendedColors.current
 
     val typography: Typography
         @Composable
@@ -343,33 +210,18 @@ object ChampionCartTheme {
         @ReadOnlyComposable
         get() = MaterialTheme.shapes
 
-    val spacing: SpacingTokens
+    val spacing: Spacing
         @Composable
         @ReadOnlyComposable
-        get() = SpacingTokens
+        get() = LocalSpacing.current
 
-    val sizing: SizingTokens
+    val elevation: Elevation
         @Composable
         @ReadOnlyComposable
-        get() = SizingTokens
+        get() = LocalElevation.current
 
-    val componentTokens: ComponentTokens
+    val config: ChampionCartConfig
         @Composable
         @ReadOnlyComposable
-        get() = LocalComponentTokens.current
-
-    val isReduceMotion: Boolean
-        @Composable
-        @ReadOnlyComposable
-        get() = LocalReduceMotion.current
-
-    val isHapticsEnabled: Boolean
-        @Composable
-        @ReadOnlyComposable
-        get() = LocalHapticsEnabled.current
-
-    val isGlassEnabled: Boolean
-        @Composable
-        @ReadOnlyComposable
-        get() = LocalGlassEffectsEnabled.current
+        get() = LocalChampionCartConfig.current
 }

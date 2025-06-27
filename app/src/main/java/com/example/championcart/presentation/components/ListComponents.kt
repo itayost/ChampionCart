@@ -2,11 +2,12 @@ package com.example.championcart.presentation.components
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.lazy.*
+import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -16,427 +17,471 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.example.championcart.ui.theme.*
-import kotlin.math.roundToInt
 
 /**
- * Champion Cart List Components
- * Reusable list items for consistent UI
+ * List & Grid Components
+ * Animated lists with Electric Harmony styling
  */
 
 /**
- * Basic list item
+ * Product List Item
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun ListItem(
-    title: String,
+fun ProductListItem(
+    product: ProductItemData,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    subtitle: String? = null,
-    leadingContent: @Composable (() -> Unit)? = null,
-    trailingContent: @Composable (() -> Unit)? = null,
-    onClick: (() -> Unit)? = null,
-    enabled: Boolean = true
+    index: Int = 0,
+    isVisible: Boolean = true
 ) {
-    val haptics = LocalHapticFeedback.current
+    val density = LocalDensity.current
 
-    Row(
+    AnimatedVisibility(
+        visible = isVisible,
+        enter = ChampionCartAnimations.List.staggeredSlideIn(index) +
+                ChampionCartAnimations.List.staggeredFadeIn(index),
+        exit = fadeOut() + slideOutHorizontally(),
         modifier = modifier
-            .fillMaxWidth()
-            .then(
-                if (onClick != null) {
-                    Modifier.clickable(enabled = enabled) {
-                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                        onClick()
-                    }
-                } else Modifier
-            )
-            .padding(
-                horizontal = SpacingTokens.L,
-                vertical = SpacingTokens.M
-            ),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(SpacingTokens.M)
     ) {
-        // Leading content
-        leadingContent?.invoke()
-
-        // Text content
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(SpacingTokens.XXS)
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-
-            subtitle?.let {
-                Text(
-                    text = it,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
+        Card(
+            onClick = onClick,
+            modifier = Modifier
+                .fillMaxWidth()
+                .animateItemPlacement(
+                    animationSpec = ChampionCartAnimations.Springs.smooth()
                 )
+                .glass(
+                    intensity = GlassIntensity.Light,
+                    shape = ComponentShapes.Card.Small
+                ),
+            shape = ComponentShapes.Card.Small,
+            colors = CardDefaults.cardColors(
+                containerColor = Color.Transparent
+            ),
+            elevation = CardDefaults.cardElevation(
+                defaultElevation = Elevation.Component.card
+            )
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(Spacing.Component.paddingM),
+                horizontalArrangement = Arrangement.spacedBy(Spacing.m),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Product Image
+                Box(
+                    modifier = Modifier
+                        .size(60.dp)
+                        .clip(ComponentShapes.Product.Image)
+                        .shimmerGlass(duration = 1000)
+                ) {
+                    // Placeholder for image
+                }
+
+                // Product Info
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(Spacing.xs)
+                ) {
+                    Text(
+                        text = product.name,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+
+                    Text(
+                        text = product.category,
+                        style = CustomTextStyles.category,
+                        color = ChampionCartTheme.colors.onSurfaceVariant
+                    )
+
+                    // Price comparison
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.s)
+                    ) {
+                        PriceTag(
+                            price = product.bestPrice,
+                            priceLevel = PriceLevel.Best,
+                            animate = false
+                        )
+
+                        Text(
+                            text = "ב-${product.bestStore}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = ChampionCartTheme.colors.onSurfaceVariant
+                        )
+                    }
+                }
+
+                // Action buttons
+                Column(
+                    horizontalAlignment = Alignment.End,
+                    verticalArrangement = Arrangement.spacedBy(Spacing.s)
+                ) {
+                    IconButton(
+                        onClick = { /* Toggle favorite */ },
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (product.isFavorite) {
+                                Icons.Default.Favorite
+                            } else {
+                                Icons.Default.FavoriteBorder
+                            },
+                            contentDescription = null,
+                            tint = if (product.isFavorite) {
+                                ChampionCartColors.Brand.NeonCoral
+                            } else {
+                                ChampionCartTheme.colors.onSurfaceVariant
+                            },
+                            modifier = Modifier.size(Sizing.Icon.s)
+                        )
+                    }
+
+                    GlassIconButton(
+                        onClick = { /* Add to cart */ },
+                        icon = {
+                            Icon(
+                                imageVector = Icons.Default.AddShoppingCart,
+                                contentDescription = "Add to cart",
+                                modifier = Modifier.size(Sizing.Icon.s)
+                            )
+                        }
+                    )
+                }
             }
         }
-
-        // Trailing content
-        trailingContent?.invoke()
     }
 }
 
 /**
- * List item with icon
+ * Product Grid
  */
 @Composable
-fun IconListItem(
-    icon: ImageVector,
-    title: String,
+fun ProductGrid(
+    products: List<ProductItemData>,
+    onProductClick: (ProductItemData) -> Unit,
     modifier: Modifier = Modifier,
-    subtitle: String? = null,
-    iconTint: Color = MaterialTheme.colorScheme.onSurface,
-    onClick: (() -> Unit)? = null,
-    trailingContent: @Composable (() -> Unit)? = null
+    contentPadding: PaddingValues = PaddingValues(Spacing.m),
+    isLoading: Boolean = false
 ) {
-    ListItem(
-        title = title,
-        subtitle = subtitle,
+    LazyVerticalGrid(
+        columns = GridCells.Adaptive(minSize = Sizing.Card.productWidth),
         modifier = modifier,
-        leadingContent = {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = iconTint,
-                modifier = Modifier.size(SizingTokens.IconM)
-            )
-        },
-        trailingContent = trailingContent,
-        onClick = onClick
-    )
-}
-
-/**
- * List item with avatar
- */
-@Composable
-fun AvatarListItem(
-    avatarContent: @Composable () -> Unit,
-    title: String,
-    modifier: Modifier = Modifier,
-    subtitle: String? = null,
-    onClick: (() -> Unit)? = null,
-    trailingContent: @Composable (() -> Unit)? = null
-) {
-    ListItem(
-        title = title,
-        subtitle = subtitle,
-        modifier = modifier,
-        leadingContent = {
-            Box(
-                modifier = Modifier.size(40.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                avatarContent()
-            }
-        },
-        trailingContent = trailingContent,
-        onClick = onClick
-    )
-}
-
-/**
- * Swipeable list item
- */
-@Composable
-fun SwipeableListItem(
-    title: String,
-    modifier: Modifier = Modifier,
-    subtitle: String? = null,
-    leadingContent: @Composable (() -> Unit)? = null,
-    onSwipeToDelete: (() -> Unit)? = null,
-    onClick: (() -> Unit)? = null
-) {
-    var offsetX by remember { mutableStateOf(0f) }
-    val haptics = LocalHapticFeedback.current
-
-    Box(
-        modifier = modifier.fillMaxWidth()
+        contentPadding = contentPadding,
+        horizontalArrangement = Arrangement.spacedBy(Spacing.m),
+        verticalArrangement = Arrangement.spacedBy(Spacing.m)
     ) {
-        // Delete background
-        if (onSwipeToDelete != null) {
+        if (isLoading) {
+            items(6) { index ->
+                ProductCardSkeleton(
+                    modifier = Modifier.animateItemPlacement()
+                )
+            }
+        } else {
+            itemsIndexed(
+                items = products,
+                key = { _, product -> product.id }
+            ) { index, product ->
+                ProductGlassCard(
+                    productName = product.name,
+                    productImage = { /* Product image */ },
+                    price = product.bestPrice,
+                    storeName = product.bestStore,
+                    priceLevel = PriceLevel.Best,
+                    onClick = { onProductClick(product) },
+                    isFavorite = product.isFavorite,
+                    modifier = Modifier
+                        .animateItemPlacement()
+                        .graphicsLayer {
+                            // Stagger animation
+                            alpha = 1f
+                        }
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Store List
+ */
+@Composable
+fun StoreList(
+    stores: List<StoreItemData>,
+    onStoreClick: (StoreItemData) -> Unit,
+    modifier: Modifier = Modifier,
+    selectedStoreId: String? = null
+) {
+    LazyColumn(
+        modifier = modifier,
+        contentPadding = PaddingValues(vertical = Spacing.m),
+        verticalArrangement = Arrangement.spacedBy(Spacing.s)
+    ) {
+        itemsIndexed(
+            items = stores,
+            key = { _, store -> store.id }
+        ) { index, store ->
+            StoreListItem(
+                store = store,
+                isSelected = store.id == selectedStoreId,
+                onClick = { onStoreClick(store) },
+                index = index,
+                modifier = Modifier
+                    .padding(horizontal = Spacing.m)
+                    .animateItemPlacement()
+            )
+        }
+    }
+}
+
+/**
+ * Store List Item
+ */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun StoreListItem(
+    store: StoreItemData,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    index: Int = 0
+) {
+    val animatedElevation by animateDpAsState(
+        targetValue = if (isSelected) {
+            Elevation.Component.cardHover
+        } else {
+            Elevation.Component.card
+        },
+        animationSpec = ChampionCartAnimations.Springs.smooth(),
+        label = "storeElevation"
+    )
+
+    AnimatedVisibility(
+        visible = true,
+        enter = ChampionCartAnimations.List.staggeredSlideIn(index, baseDelay = 50) +
+                ChampionCartAnimations.List.staggeredFadeIn(index, baseDelay = 50),
+        modifier = modifier
+    ) {
+        StoreGlassCard(
+            storeName = store.name,
+            storeIcon = { /* Store logo */ },
+            itemCount = store.itemCount,
+            totalPrice = store.totalPrice,
+            onClick = onClick,
+            modifier = Modifier
+                .then(
+                    if (isSelected) {
+                        Modifier.border(
+                            width = 2.dp,
+                            color = ChampionCartColors.Brand.ElectricMint,
+                            shape = ComponentShapes.Store.Card
+                        )
+                    } else {
+                        Modifier
+                    }
+                )
+        )
+    }
+}
+
+/**
+ * Cart Item List
+ */
+@Composable
+fun CartItemList(
+    items: List<CartItemData>,
+    onQuantityChange: (CartItemData, Int) -> Unit,
+    onRemoveItem: (CartItemData) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    LazyColumn(
+        modifier = modifier,
+        contentPadding = PaddingValues(vertical = Spacing.m),
+        verticalArrangement = Arrangement.spacedBy(Spacing.s)
+    ) {
+        itemsIndexed(
+            items = items,
+            key = { _, item -> item.id }
+        ) { index, item ->
+            CartListItem(
+                item = item,
+                onQuantityChange = { newQuantity ->
+                    onQuantityChange(item, newQuantity)
+                },
+                onRemove = { onRemoveItem(item) },
+                index = index,
+                modifier = Modifier
+                    .padding(horizontal = Spacing.m)
+                    .animateItemPlacement()
+            )
+        }
+
+        // Total section
+        item {
+            Spacer(modifier = Modifier.height(Spacing.m))
+            TotalPriceDisplay(
+                totalPrice = items.sumOf {
+                    it.price.toDoubleOrNull() ?: 0.0 * it.quantity
+                }.toString(),
+                itemCount = items.sumOf { it.quantity },
+                modifier = Modifier.padding(horizontal = Spacing.m)
+            )
+        }
+    }
+}
+
+/**
+ * Cart List Item
+ */
+@OptIn(ExperimentalMaterialApi::class)
+@Composable
+fun CartListItem(
+    item: CartItemData,
+    onQuantityChange: (Int) -> Unit,
+    onRemove: () -> Unit,
+    modifier: Modifier = Modifier,
+    index: Int = 0
+) {
+    val dismissState = rememberDismissState(
+        confirmStateChange = { dismissValue ->
+            if (dismissValue == DismissValue.DismissedToStart) {
+                onRemove()
+                true
+            } else {
+                false
+            }
+        }
+    )
+
+    SwipeToDismiss(
+        state = dismissState,
+        directions = setOf(DismissDirection.EndToStart),
+        background = {
             Box(
                 modifier = Modifier
-                    .matchParentSize()
-                    .background(MaterialTheme.colorScheme.error),
+                    .fillMaxSize()
+                    .background(
+                        ChampionCartColors.Semantic.Error,
+                        shape = ComponentShapes.Card.Small
+                    )
+                    .padding(horizontal = Spacing.l),
                 contentAlignment = Alignment.CenterEnd
             ) {
                 Icon(
-                    Icons.Default.Delete,
-                    contentDescription = "Delete",
-                    tint = MaterialTheme.colorScheme.onError,
-                    modifier = Modifier.padding(end = SpacingTokens.L)
-                )
-            }
-        }
-
-        // Swipeable content
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .offset { IntOffset(offsetX.roundToInt(), 0) }
-                .pointerInput(Unit) {
-                    if (onSwipeToDelete != null) {
-                        detectHorizontalDragGestures(
-                            onDragEnd = {
-                                if (offsetX < -100) {
-                                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    onSwipeToDelete()
-                                }
-                                offsetX = 0f
-                            }
-                        ) { _, dragAmount ->
-                            offsetX = (offsetX + dragAmount).coerceIn(-200f, 0f)
-                        }
-                    }
-                }
-                .background(MaterialTheme.colorScheme.surface)
-                .clickable(enabled = onClick != null) {
-                    onClick?.invoke()
-                }
-                .padding(
-                    horizontal = SpacingTokens.L,
-                    vertical = SpacingTokens.M
-                ),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(SpacingTokens.M)
-        ) {
-            leadingContent?.invoke()
-
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(SpacingTokens.XXS)
-            ) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Medium
-                )
-
-                subtitle?.let {
-                    Text(
-                        text = it,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-        }
-    }
-}
-
-/**
- * Expandable list item
- */
-@Composable
-fun ExpandableListItem(
-    title: String,
-    modifier: Modifier = Modifier,
-    subtitle: String? = null,
-    leadingContent: @Composable (() -> Unit)? = null,
-    expandedContent: @Composable () -> Unit,
-    initiallyExpanded: Boolean = false
-) {
-    var isExpanded by remember { mutableStateOf(initiallyExpanded) }
-    val rotationAngle by animateFloatAsState(
-        targetValue = if (isExpanded) 180f else 0f,
-        animationSpec = tween(300),
-        label = "chevron_rotation"
-    )
-
-    Column(modifier = modifier) {
-        ListItem(
-            title = title,
-            subtitle = subtitle,
-            leadingContent = leadingContent,
-            trailingContent = {
-                Icon(
-                    imageVector = Icons.Default.ExpandMore,
-                    contentDescription = if (isExpanded) "Collapse" else "Expand",
-                    modifier = Modifier.graphicsLayer {
-                        rotationZ = rotationAngle
-                    },
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            },
-            onClick = { isExpanded = !isExpanded }
-        )
-
-        AnimatedVisibility(
-            visible = isExpanded,
-            enter = expandVertically() + fadeIn(),
-            exit = shrinkVertically() + fadeOut()
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(
-                        start = SpacingTokens.XXL,
-                        end = SpacingTokens.L,
-                        bottom = SpacingTokens.M
-                    )
-            ) {
-                expandedContent()
-            }
-        }
-    }
-}
-
-/**
- * Checkbox list item
- */
-@Composable
-fun CheckboxListItem(
-    title: String,
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
-    modifier: Modifier = Modifier,
-    subtitle: String? = null,
-    enabled: Boolean = true
-) {
-    ListItem(
-        title = title,
-        subtitle = subtitle,
-        modifier = modifier,
-        onClick = if (enabled) {
-            { onCheckedChange(!checked) }
-        } else null,
-        trailingContent = {
-            Checkbox(
-                checked = checked,
-                onCheckedChange = if (enabled) onCheckedChange else null,
-                enabled = enabled,
-                colors = CheckboxDefaults.colors(
-                    checkedColor = MaterialTheme.colorScheme.extended.electricMint
-                )
-            )
-        }
-    )
-}
-
-/**
- * Radio button list item
- */
-@Composable
-fun RadioButtonListItem(
-    title: String,
-    selected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    subtitle: String? = null,
-    enabled: Boolean = true
-) {
-    ListItem(
-        title = title,
-        subtitle = subtitle,
-        modifier = modifier,
-        onClick = if (enabled) onClick else null,
-        trailingContent = {
-            RadioButton(
-                selected = selected,
-                onClick = null,
-                enabled = enabled,
-                colors = RadioButtonDefaults.colors(
-                    selectedColor = MaterialTheme.colorScheme.extended.electricMint
-                )
-            )
-        }
-    )
-}
-
-/**
- * Switch list item
- */
-@Composable
-fun SwitchListItem(
-    title: String,
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
-    modifier: Modifier = Modifier,
-    subtitle: String? = null,
-    icon: ImageVector? = null,
-    enabled: Boolean = true
-) {
-    ListItem(
-        title = title,
-        subtitle = subtitle,
-        modifier = modifier,
-        leadingContent = icon?.let {
-            {
-                Icon(
-                    imageVector = it,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.extended.electricMint,
-                    modifier = Modifier.size(SizingTokens.IconM)
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = "Remove",
+                    tint = Color.White
                 )
             }
         },
-        onClick = if (enabled) {
-            { onCheckedChange(!checked) }
-        } else null,
-        trailingContent = {
-            Switch(
-                checked = checked,
-                onCheckedChange = if (enabled) onCheckedChange else null,
-                enabled = enabled,
-                colors = SwitchDefaults.colors(
-                    checkedThumbColor = MaterialTheme.colorScheme.extended.electricMint,
-                    checkedTrackColor = MaterialTheme.colorScheme.extended.electricMint.copy(alpha = 0.5f)
-                )
-            )
+        dismissContent = {
+            GlassCard(
+                modifier = modifier,
+                shape = ComponentShapes.Card.Small
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(Spacing.Component.paddingM),
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.m),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Product image
+                    Box(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(ComponentShapes.Product.Image)
+                            .shimmerGlass()
+                    ) {
+                        // Product image placeholder
+                    }
+
+                    // Product info
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(Spacing.xs)
+                    ) {
+                        Text(
+                            text = item.name,
+                            style = MaterialTheme.typography.titleSmall,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+
+                        Text(
+                            text = "₪${item.price}",
+                            style = CustomTextStyles.priceSmall,
+                            color = ChampionCartTheme.colors.primary
+                        )
+                    }
+
+                    // Quantity selector
+                    QuantityInput(
+                        quantity = item.quantity,
+                        onQuantityChange = onQuantityChange
+                    )
+                }
+            }
         }
     )
 }
 
 /**
- * Action list item with button
+ * Product Card Skeleton
  */
 @Composable
-fun ActionListItem(
-    title: String,
-    actionLabel: String,
-    onActionClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    subtitle: String? = null,
-    leadingContent: @Composable (() -> Unit)? = null,
-    actionEnabled: Boolean = true
+fun ProductCardSkeleton(
+    modifier: Modifier = Modifier
 ) {
-    ListItem(
-        title = title,
-        subtitle = subtitle,
-        modifier = modifier,
-        leadingContent = leadingContent,
-        trailingContent = {
-            TextButton(
-                onClick = onActionClick,
-                enabled = actionEnabled,
-                colors = ButtonDefaults.textButtonColors(
-                    contentColor = MaterialTheme.colorScheme.extended.electricMint
-                )
-            ) {
-                Text(actionLabel)
-            }
-        }
-    )
+    Card(
+        modifier = modifier
+            .width(Sizing.Card.productWidth)
+            .height(Sizing.Card.productHeight)
+            .shimmerGlass(
+                shape = ComponentShapes.Product.Card
+            ),
+        shape = ComponentShapes.Product.Card,
+        colors = CardDefaults.cardColors(
+            containerColor = Color.Transparent
+        )
+    ) {
+        // Skeleton content
+    }
 }
+
+/**
+ * Data classes for list items
+ */
+data class ProductItemData(
+    val id: String,
+    val name: String,
+    val category: String,
+    val bestPrice: String,
+    val bestStore: String,
+    val isFavorite: Boolean = false
+)
+
+data class StoreItemData(
+    val id: String,
+    val name: String,
+    val itemCount: Int,
+    val totalPrice: String
+)
+
+data class CartItemData(
+    val id: String,
+    val name: String,
+    val price: String,
+    val quantity: Int
+)
+

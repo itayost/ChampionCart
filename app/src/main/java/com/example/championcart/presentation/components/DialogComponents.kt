@@ -1,158 +1,183 @@
 package com.example.championcart.presentation.components
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.*
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AddShoppingCart
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.RangeSlider
+import androidx.compose.material3.SheetState
+import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.example.championcart.ui.theme.*
+import com.example.championcart.ui.theme.ChampionCartColors
+import com.example.championcart.ui.theme.ChampionCartTheme
+import com.example.championcart.ui.theme.ComponentShapes
+import com.example.championcart.ui.theme.Elevation
+import com.example.championcart.ui.theme.GlassIntensity
+import com.example.championcart.ui.theme.PriceLevel
+import com.example.championcart.ui.theme.Spacing
+import com.example.championcart.ui.theme.glass
 
 /**
- * Champion Cart Dialog Components
- * Consistent dialog implementations for the app
+ * Dialog, Sheet & Modal Components
+ * Glassmorphic dialogs and bottom sheets with Electric Harmony styling
  */
 
 /**
- * Alert dialog with consistent styling
- */
-@Composable
-fun ChampionCartAlertDialog(
-    title: String,
-    text: String? = null,
-    confirmButtonText: String,
-    dismissButtonText: String? = null,
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit,
-    confirmButtonColor: Color = MaterialTheme.colorScheme.primary,
-    icon: @Composable (() -> Unit)? = null
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(SpacingTokens.M)
-            ) {
-                icon?.invoke()
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.headlineSmall,
-                    textAlign = TextAlign.Center
-                )
-            }
-        },
-        text = text?.let {
-            {
-                Text(
-                    text = it,
-                    style = MaterialTheme.typography.bodyLarge,
-                    textAlign = TextAlign.Center
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = onConfirm,
-                colors = ButtonDefaults.textButtonColors(
-                    contentColor = confirmButtonColor
-                )
-            ) {
-                Text(
-                    text = confirmButtonText,
-                    fontWeight = FontWeight.Medium
-                )
-            }
-        },
-        dismissButton = dismissButtonText?.let {
-            {
-                TextButton(onClick = onDismiss) {
-                    Text(
-                        text = it,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-            }
-        },
-        shape = GlassmorphicShapes.Dialog,
-        containerColor = MaterialTheme.colorScheme.surface,
-        tonalElevation = 0.dp
-    )
-}
-
-/**
- * Selection dialog for choosing from a list
+ * Glass Alert Dialog
  */
 @Composable
-fun SelectionDialog(
-    title: String,
-    items: List<String>,
-    selectedItem: String? = null,
-    onItemSelected: (String) -> Unit,
-    onDismiss: () -> Unit,
-    itemContent: @Composable ((String) -> Unit)? = null
+fun GlassAlertDialog(
+    onDismissRequest: () -> Unit,
+    onConfirmation: () -> Unit,
+    dialogTitle: String,
+    dialogText: String,
+    confirmText: String = "אישור",
+    dismissText: String = "ביטול",
+    icon: ImageVector? = null,
+    iconTint: Color = ChampionCartTheme.colors.primary
 ) {
-    Dialog(onDismissRequest = onDismiss) {
+    Dialog(
+        onDismissRequest = onDismissRequest,
+        properties = DialogProperties(
+            dismissOnBackPress = true,
+            dismissOnClickOutside = true
+        )
+    ) {
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .wrapContentHeight(),
-            shape = GlassmorphicShapes.Dialog,
+                .wrapContentHeight()
+                .glass(
+                    intensity = GlassIntensity.Heavy,
+                    shape = ComponentShapes.Sheet.Dialog
+                ),
+            shape = ComponentShapes.Sheet.Dialog,
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface
+                containerColor = ChampionCartTheme.colors.surface.copy(alpha = 0.95f)
+            ),
+            elevation = CardDefaults.cardElevation(
+                defaultElevation = Elevation.Component.dialog
             )
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(SpacingTokens.L)
+                    .padding(Spacing.Component.paddingXL),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Title
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.headlineSmall,
-                    modifier = Modifier.padding(bottom = SpacingTokens.L)
-                )
-
-                // Items list
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(SpacingTokens.XXS),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    items(items) { item ->
-                        if (itemContent != null) {
-                            itemContent(item)
-                        } else {
-                            SelectionDialogItem(
-                                text = item,
-                                isSelected = item == selectedItem,
-                                onClick = {
-                                    onItemSelected(item)
-                                    onDismiss()
-                                }
-                            )
-                        }
+                // Icon
+                if (icon != null) {
+                    Box(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .glass(
+                                intensity = GlassIntensity.Light,
+                                shape = RoundedCornerShape(12.dp)
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = null,
+                            modifier = Modifier.size(24.dp),
+                            tint = iconTint
+                        )
                     }
+                    Spacer(modifier = Modifier.height(Spacing.l))
                 }
 
-                // Cancel button
-                Spacer(modifier = Modifier.height(SpacingTokens.L))
+                // Title
+                Text(
+                    text = dialogTitle,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    textAlign = TextAlign.Center
+                )
 
-                TextButton(
-                    onClick = onDismiss,
-                    modifier = Modifier.align(Alignment.End)
+                Spacer(modifier = Modifier.height(Spacing.m))
+
+                // Message
+                Text(
+                    text = dialogText,
+                    style = MaterialTheme.typography.bodyLarge,
+                    textAlign = TextAlign.Center,
+                    color = ChampionCartTheme.colors.onSurfaceVariant
+                )
+
+                Spacer(modifier = Modifier.height(Spacing.xl))
+
+                // Buttons
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.m)
                 ) {
-                    Text(
-                        text = "ביטול",
-                        fontWeight = FontWeight.Medium
+                    SecondaryGlassButton(
+                        onClick = onDismissRequest,
+                        text = dismissText,
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    GlassButton(
+                        onClick = {
+                            onConfirmation()
+                            onDismissRequest()
+                        },
+                        text = confirmText,
+                        modifier = Modifier.weight(1f)
                     )
                 }
             }
@@ -161,103 +186,319 @@ fun SelectionDialog(
 }
 
 /**
- * Selection dialog item
+ * Glass Bottom Sheet
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun GlassBottomSheet(
+    onDismissRequest: () -> Unit,
+    sheetState: SheetState = rememberModalBottomSheetState(),
+    content: @Composable ColumnScope.() -> Unit
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismissRequest,
+        sheetState = sheetState,
+        shape = ComponentShapes.Sheet.Bottom,
+        containerColor = Color.Transparent,
+        contentColor = ChampionCartTheme.colors.onSurface,
+        dragHandle = {
+            GlassBottomSheetHandle()
+        }
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .glass(
+                    intensity = GlassIntensity.Heavy,
+                    shape = ComponentShapes.Sheet.Bottom
+                )
+                .background(
+                    ChampionCartTheme.colors.surface.copy(alpha = 0.95f),
+                    shape = ComponentShapes.Sheet.Bottom
+                )
+                .padding(bottom = Spacing.Component.paddingXL)
+        ) {
+            content()
+        }
+    }
+}
+
+/**
+ * Bottom Sheet Handle
  */
 @Composable
-private fun SelectionDialogItem(
-    text: String,
-    isSelected: Boolean,
-    onClick: () -> Unit
-) {
-    Row(
+private fun GlassBottomSheetHandle() {
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick() }
-            .padding(vertical = SpacingTokens.M),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+            .padding(vertical = Spacing.m),
+        contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = text,
-            style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.weight(1f)
-        )
-
-        RadioButton(
-            selected = isSelected,
-            onClick = null,
-            colors = RadioButtonDefaults.colors(
-                selectedColor = MaterialTheme.colorScheme.extended.electricMint
-            )
+        Box(
+            modifier = Modifier
+                .width(48.dp)
+                .height(4.dp)
+                .clip(RoundedCornerShape(2.dp))
+                .background(ChampionCartTheme.colors.onSurfaceVariant.copy(alpha = 0.4f))
         )
     }
 }
 
 /**
- * Custom selection dialog with any content
+ * Store Selection Bottom Sheet
  */
 @Composable
-fun <T> CustomSelectionDialog(
-    title: String,
-    items: List<T>,
-    selectedItem: T? = null,
-    onItemSelected: (T) -> Unit,
-    onDismiss: () -> Unit,
-    itemKey: (T) -> Any,
-    itemContent: @Composable (T, Boolean, () -> Unit) -> Unit
+fun StoreSelectionSheet(
+    stores: List<StoreItemData>,
+    selectedStoreId: String?,
+    onStoreSelected: (StoreItemData) -> Unit,
+    onDismiss: () -> Unit
 ) {
-    Dialog(onDismissRequest = onDismiss) {
-        Card(
+    GlassBottomSheet(onDismissRequest = onDismiss) {
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .wrapContentHeight(),
-            shape = GlassmorphicShapes.Dialog,
+                .verticalScroll(rememberScrollState())
+        ) {
+            // Header
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = Spacing.Component.paddingL),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "בחר חנות",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.SemiBold
+                )
+
+                IconButton(onClick = onDismiss) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Close"
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(Spacing.m))
+
+            // Store list
+            stores.forEach { store ->
+                StoreSelectionItem(
+                    store = store,
+                    isSelected = store.id == selectedStoreId,
+                    onClick = {
+                        onStoreSelected(store)
+                        onDismiss()
+                    }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(Spacing.m))
+        }
+    }
+}
+
+/**
+ * Store Selection Item
+ */
+@Composable
+private fun StoreSelectionItem(
+    store: StoreItemData,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    val haptics = LocalHapticFeedback.current
+    val config = ChampionCartTheme.config
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
+            ) {
+                if (config.enableHaptics) {
+                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                }
+                onClick()
+            }
+            .padding(
+                horizontal = Spacing.Component.paddingL,
+                vertical = Spacing.Component.paddingM
+            ),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(Spacing.m),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Store icon placeholder
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(ComponentShapes.Store.Logo)
+                    .background(
+                        ChampionCartTheme.colors.surfaceVariant
+                    )
+            )
+
+            Text(
+                text = store.name,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal
+            )
+        }
+
+        if (isSelected) {
+            Icon(
+                imageVector = Icons.Default.CheckCircle,
+                contentDescription = null,
+                tint = ChampionCartColors.Brand.ElectricMint
+            )
+        }
+    }
+}
+
+/**
+ * Product Quick View Dialog
+ */
+@Composable
+fun ProductQuickViewDialog(
+    product: ProductItemData,
+    priceComparisons: List<PriceComparison>,
+    onDismiss: () -> Unit,
+    onAddToCart: () -> Unit,
+    onViewDetails: () -> Unit
+) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(
+            dismissOnBackPress = true,
+            dismissOnClickOutside = true,
+            usePlatformDefaultWidth = false
+        )
+    ) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth(0.95f)
+                .fillMaxHeight(0.8f)
+                .glass(
+                    intensity = GlassIntensity.Heavy,
+                    shape = ComponentShapes.Sheet.Dialog
+                ),
+            shape = ComponentShapes.Sheet.Dialog,
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface
+                containerColor = ChampionCartTheme.colors.surface.copy(alpha = 0.95f)
             )
         ) {
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(SpacingTokens.L)
+                modifier = Modifier.fillMaxSize()
             ) {
-                // Title
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.headlineSmall,
-                    modifier = Modifier.padding(bottom = SpacingTokens.L)
-                )
-
-                // Items list
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(SpacingTokens.XXS),
-                    modifier = Modifier.fillMaxWidth()
+                // Header
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp)
+                        .background(ChampionCartTheme.colors.surfaceVariant)
                 ) {
-                    items(
-                        items = items,
-                        key = itemKey
-                    ) { item ->
-                        itemContent(
-                            item,
-                            item == selectedItem,
-                            {
-                                onItemSelected(item)
-                                onDismiss()
-                            }
+                    // Product image placeholder
+
+                    // Close button
+                    IconButton(
+                        onClick = onDismiss,
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(Spacing.m)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Close",
+                            modifier = Modifier
+                                .glass(
+                                    intensity = GlassIntensity.Medium,
+                                    shape = ComponentShapes.Button.Square
+                                )
+                                .padding(Spacing.s)
                         )
                     }
                 }
 
-                // Cancel button
-                Spacer(modifier = Modifier.height(SpacingTokens.L))
-
-                TextButton(
-                    onClick = onDismiss,
-                    modifier = Modifier.align(Alignment.End)
+                // Content
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .verticalScroll(rememberScrollState())
+                        .padding(Spacing.Component.paddingL)
                 ) {
+                    // Product name
                     Text(
-                        text = "ביטול",
+                        text = product.name,
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.SemiBold
+                    )
+
+                    Spacer(modifier = Modifier.height(Spacing.s))
+
+                    // Category
+                    GlassFilterChip(
+                        selected = false,
+                        onClick = {},
+                        label = product.category,
+                        enabled = false
+                    )
+
+                    Spacer(modifier = Modifier.height(Spacing.l))
+
+                    // Price comparisons
+                    Text(
+                        text = "השוואת מחירים",
+                        style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Medium
+                    )
+
+                    Spacer(modifier = Modifier.height(Spacing.m))
+
+                    priceComparisons.forEach { comparison ->
+                        PriceComparisonRow(
+                            storeName = comparison.storeName,
+                            price = comparison.price,
+                            priceLevel = comparison.priceLevel,
+                            modifier = Modifier.padding(vertical = Spacing.xs)
+                        )
+                    }
+                }
+
+                // Actions
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .glass(
+                            intensity = GlassIntensity.Medium,
+                            shape = RoundedCornerShape(0.dp)
+                        )
+                        .padding(Spacing.Component.paddingL),
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.m)
+                ) {
+                    SecondaryGlassButton(
+                        onClick = onViewDetails,
+                        text = "פרטים נוספים",
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    GlassButton(
+                        onClick = onAddToCart,
+                        text = "הוסף לעגלה",
+                        icon = {
+                            Icon(
+                                imageVector = Icons.Default.AddShoppingCart,
+                                contentDescription = null
+                            )
+                        },
+                        modifier = Modifier.weight(1f)
                     )
                 }
             }
@@ -266,104 +507,227 @@ fun <T> CustomSelectionDialog(
 }
 
 /**
- * Info dialog with icon and message
+ * Filter Bottom Sheet
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun InfoDialog(
-    title: String,
-    message: String,
-    onDismiss: () -> Unit,
-    icon: @Composable (() -> Unit)? = null,
-    dismissButtonText: String = "הבנתי"
+fun FilterBottomSheet(
+    categories: List<String>,
+    stores: List<String>,
+    selectedCategories: Set<String>,
+    selectedStores: Set<String>,
+    priceRange: ClosedFloatingPointRange<Float>,
+    onCategoryToggle: (String) -> Unit,
+    onStoreToggle: (String) -> Unit,
+    onPriceRangeChange: (ClosedFloatingPointRange<Float>) -> Unit,
+    onApply: () -> Unit,
+    onReset: () -> Unit,
+    onDismiss: () -> Unit
 ) {
-    Dialog(onDismissRequest = onDismiss) {
-        Card(
+    GlassBottomSheet(onDismissRequest = onDismiss) {
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .wrapContentHeight(),
-            shape = GlassmorphicShapes.Dialog,
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = Spacing.Component.paddingL)
+        ) {
+            // Header
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "סינון",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.SemiBold
+                )
+
+                TextButton(onClick = onReset) {
+                    Text("איפוס")
+                }
+            }
+
+            Spacer(modifier = Modifier.height(Spacing.l))
+
+            // Categories
+            Text(
+                text = "קטגוריות",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Medium
+            )
+
+            Spacer(modifier = Modifier.height(Spacing.m))
+
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(Spacing.s),
+                verticalArrangement = Arrangement.spacedBy(Spacing.s)
+            ) {
+                categories.forEach { category ->
+                    GlassFilterChip(
+                        selected = category in selectedCategories,
+                        onClick = { onCategoryToggle(category) },
+                        label = category
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(Spacing.xl))
+
+            // Stores
+            Text(
+                text = "חנויות",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Medium
+            )
+
+            Spacer(modifier = Modifier.height(Spacing.m))
+
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(Spacing.s),
+                verticalArrangement = Arrangement.spacedBy(Spacing.s)
+            ) {
+                stores.forEach { store ->
+                    GlassFilterChip(
+                        selected = store in selectedStores,
+                        onClick = { onStoreToggle(store) },
+                        label = store
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(Spacing.xl))
+
+            // Price range
+            Text(
+                text = "טווח מחירים",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Medium
+            )
+
+            Spacer(modifier = Modifier.height(Spacing.m))
+
+            RangeSlider(
+                value = priceRange,
+                onValueChange = onPriceRangeChange,
+                valueRange = 0f..1000f,
+                steps = 19,
+                colors = SliderDefaults.colors(
+                    thumbColor = ChampionCartColors.Brand.ElectricMint,
+                    activeTrackColor = ChampionCartColors.Brand.ElectricMint,
+                    inactiveTrackColor = ChampionCartTheme.colors.surfaceVariant
+                )
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "₪${priceRange.start.toInt()}",
+                    style = MaterialTheme.typography.bodySmall
+                )
+                Text(
+                    text = "₪${priceRange.endInclusive.toInt()}",
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+
+            Spacer(modifier = Modifier.height(Spacing.xl))
+
+            // Apply button
+            GlassButton(
+                onClick = {
+                    onApply()
+                    onDismiss()
+                },
+                text = "החל סינון",
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(Spacing.m))
+        }
+    }
+}
+
+/**
+ * Success Animation Dialog
+ */
+@Composable
+fun SuccessDialog(
+    message: String,
+    onDismiss: () -> Unit
+) {
+    LaunchedEffect(Unit) {
+        kotlinx.coroutines.delay(2000)
+        onDismiss()
+    }
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(
+            dismissOnBackPress = false,
+            dismissOnClickOutside = false
+        )
+    ) {
+        val infiniteTransition = rememberInfiniteTransition(label = "success")
+        val scale by infiniteTransition.animateFloat(
+            initialValue = 0.9f,
+            targetValue = 1.1f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(600, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Reverse
+            ),
+            label = "successScale"
+        )
+
+        Card(
+            modifier = Modifier
+                .size(200.dp)
+                .graphicsLayer {
+                    scaleX = scale
+                    scaleY = scale
+                }
+                .glass(
+                    intensity = GlassIntensity.Heavy,
+                    shape = ComponentShapes.Card.Hero
+                ),
+            shape = ComponentShapes.Card.Hero,
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface
+                containerColor = ChampionCartColors.Semantic.Success.copy(alpha = 0.1f)
             )
         ) {
             Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(SpacingTokens.XL),
+                    .fillMaxSize()
+                    .padding(Spacing.Component.paddingXL),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(SpacingTokens.L)
+                verticalArrangement = Arrangement.Center
             ) {
-                // Icon
-                icon?.invoke()
-
-                // Title
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.headlineSmall,
-                    textAlign = TextAlign.Center
+                Icon(
+                    imageVector = Icons.Default.CheckCircle,
+                    contentDescription = null,
+                    modifier = Modifier.size(64.dp),
+                    tint = ChampionCartColors.Semantic.Success
                 )
 
-                // Message
+                Spacer(modifier = Modifier.height(Spacing.l))
+
                 Text(
                     text = message,
-                    style = MaterialTheme.typography.bodyLarge,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Medium,
                     textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                // Dismiss button
-                PrimaryButton(
-                    text = dismissButtonText,
-                    onClick = onDismiss,
-                    modifier = Modifier.fillMaxWidth()
+                    color = ChampionCartColors.Semantic.Success
                 )
             }
         }
     }
 }
 
-/**
- * Loading dialog overlay
- */
-@Composable
-fun LoadingDialogOverlay(
-    isLoading: Boolean,
-    message: String = "טוען...",
-    onDismissRequest: (() -> Unit)? = null
-) {
-    if (isLoading) {
-        Dialog(
-            onDismissRequest = onDismissRequest ?: {},
-            properties = DialogProperties(
-                dismissOnBackPress = onDismissRequest != null,
-                dismissOnClickOutside = false
-            )
-        ) {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .wrapContentHeight(),
-                shape = GlassmorphicShapes.Dialog,
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)
-                )
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(SpacingTokens.XL),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(SpacingTokens.L)
-                ) {
-                    LoadingIndicator()
-
-                    Text(
-                        text = message,
-                        style = MaterialTheme.typography.bodyLarge,
-                        textAlign = TextAlign.Center
-                    )
-                }
-            }
-        }
-    }
-}
+// Data class for price comparison
+data class PriceComparison(
+    val storeName: String,
+    val price: String,
+    val priceLevel: PriceLevel
+)

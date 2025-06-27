@@ -10,20 +10,11 @@ import androidx.compose.ui.unit.sp
 import com.example.championcart.R
 
 /**
- * Champion Cart - Typography System
- * Electric Harmony design with Hebrew-first considerations
- * Following Material Design 3 with optimized mobile readability
+ * Champion Cart Typography System
+ * Electric Harmony Design with Hebrew-first considerations
  */
 
-// Font Families - Primary Latin fonts
-val SpaceGroteskFontFamily = FontFamily(
-    Font(R.font.space_grotesk_light, FontWeight.Light),
-    Font(R.font.space_grotesk_regular, FontWeight.Normal),
-    Font(R.font.space_grotesk_medium, FontWeight.Medium),
-    Font(R.font.space_grotesk_semibold, FontWeight.SemiBold),
-    Font(R.font.space_grotesk_bold, FontWeight.Bold)
-)
-
+// Font Families
 val InterFontFamily = FontFamily(
     Font(R.font.inter_thin, FontWeight.Thin),
     Font(R.font.inter_extralight, FontWeight.ExtraLight),
@@ -36,6 +27,14 @@ val InterFontFamily = FontFamily(
     Font(R.font.inter_black, FontWeight.Black)
 )
 
+val SpaceGroteskFontFamily = FontFamily(
+    Font(R.font.space_grotesk_light, FontWeight.Light),
+    Font(R.font.space_grotesk_regular, FontWeight.Normal),
+    Font(R.font.space_grotesk_medium, FontWeight.Medium),
+    Font(R.font.space_grotesk_semibold, FontWeight.SemiBold),
+    Font(R.font.space_grotesk_bold, FontWeight.Bold)
+)
+
 val JetBrainsMonoFontFamily = FontFamily(
     Font(R.font.jetbrains_mono_thin, FontWeight.Thin),
     Font(R.font.jetbrains_mono_extralight, FontWeight.ExtraLight),
@@ -44,15 +43,11 @@ val JetBrainsMonoFontFamily = FontFamily(
     Font(R.font.jetbrains_mono_medium, FontWeight.Medium),
     Font(R.font.jetbrains_mono_semibold, FontWeight.SemiBold),
     Font(R.font.jetbrains_mono_bold, FontWeight.Bold),
-    Font(R.font.jetbrains_mono_extrabold, FontWeight.ExtraBold),
-    Font(R.font.jetbrains_mono_italic, FontWeight.Normal, FontStyle.Italic),
-    Font(R.font.jetbrains_mono_bold_italic, FontWeight.Bold, FontStyle.Italic)
+    Font(R.font.jetbrains_mono_extrabold, FontWeight.ExtraBold)
 )
 
-// Font Families - Hebrew fonts
-val HeeboFontFamily = FontFamily(
-    Font(R.font.heebo_thin, FontWeight.Thin),
-    Font(R.font.heebo_extralight, FontWeight.ExtraLight),
+// Hebrew Support - Fallback fonts
+val HebrewFontFamily = FontFamily(
     Font(R.font.heebo_light, FontWeight.Light),
     Font(R.font.heebo_regular, FontWeight.Normal),
     Font(R.font.heebo_medium, FontWeight.Medium),
@@ -62,255 +57,176 @@ val HeeboFontFamily = FontFamily(
     Font(R.font.heebo_black, FontWeight.Black)
 )
 
-val RubikFontFamily = FontFamily(
-    Font(R.font.rubik_light, FontWeight.Light),
-    Font(R.font.rubik_regular, FontWeight.Normal),
-    Font(R.font.rubik_medium, FontWeight.Medium),
-    Font(R.font.rubik_semibold, FontWeight.SemiBold),
-    Font(R.font.rubik_bold, FontWeight.Bold),
-    Font(R.font.rubik_extrabold, FontWeight.ExtraBold),
-    Font(R.font.rubik_black, FontWeight.Black)
+// Default font family with Hebrew fallback
+val defaultFontFamily = FontFamily(
+    InterFontFamily.fonts + HebrewFontFamily.fonts
 )
 
-// Material3 Typography - FIXED: Mobile-optimized sizes
-val Typography = Typography(
-    // Display - Space Grotesk for impact (reduced sizes for mobile)
+// Typography
+val ChampionCartTypography = Typography(
+    // Display styles - Used for hero sections
     displayLarge = TextStyle(
         fontFamily = SpaceGroteskFontFamily,
-        fontWeight = FontWeight(800),
-        fontSize = 45.sp,  // FIXED: Was 57sp
-        lineHeight = 52.sp,
-        letterSpacing = (-0.5).sp
+        fontWeight = FontWeight.Bold,
+        fontSize = 57.sp,
+        lineHeight = 64.sp,
+        letterSpacing = (-0.25).sp
     ),
     displayMedium = TextStyle(
         fontFamily = SpaceGroteskFontFamily,
-        fontWeight = FontWeight(700),
-        fontSize = 36.sp,  // FIXED: Was 45sp
-        lineHeight = 44.sp,
+        fontWeight = FontWeight.Bold,
+        fontSize = 45.sp,
+        lineHeight = 52.sp,
         letterSpacing = 0.sp
     ),
     displaySmall = TextStyle(
         fontFamily = SpaceGroteskFontFamily,
-        fontWeight = FontWeight(600),
-        fontSize = 28.sp,  // FIXED: Was 36sp
-        lineHeight = 36.sp,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 36.sp,
+        lineHeight = 44.sp,
         letterSpacing = 0.sp
     ),
 
-    // Headlines - Inter Variable with proper weights
+    // Headlines - Used for section headers
     headlineLarge = TextStyle(
-        fontFamily = InterFontFamily,
-        fontWeight = FontWeight(700),
+        fontFamily = defaultFontFamily,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 32.sp,
+        lineHeight = 40.sp,
+        letterSpacing = 0.sp
+    ),
+    headlineMedium = TextStyle(
+        fontFamily = defaultFontFamily,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 28.sp,
+        lineHeight = 36.sp,
+        letterSpacing = 0.sp
+    ),
+    headlineSmall = TextStyle(
+        fontFamily = defaultFontFamily,
+        fontWeight = FontWeight.Medium,
         fontSize = 24.sp,
         lineHeight = 32.sp,
         letterSpacing = 0.sp
     ),
-    headlineMedium = TextStyle(
-        fontFamily = InterFontFamily,
-        fontWeight = FontWeight(600),
-        fontSize = 20.sp,
-        lineHeight = 28.sp,
-        letterSpacing = 0.15.sp
-    ),
-    headlineSmall = TextStyle(
-        fontFamily = InterFontFamily,
-        fontWeight = FontWeight(600),
-        fontSize = 18.sp,
-        lineHeight = 24.sp,
-        letterSpacing = 0.sp
-    ),
 
-    // Titles - Inter Variable with medium weights
+    // Titles - Used for cards and components
     titleLarge = TextStyle(
-        fontFamily = InterFontFamily,
-        fontWeight = FontWeight(500),
+        fontFamily = defaultFontFamily,
+        fontWeight = FontWeight.Medium,
         fontSize = 22.sp,
         lineHeight = 28.sp,
         letterSpacing = 0.sp
     ),
     titleMedium = TextStyle(
-        fontFamily = InterFontFamily,
-        fontWeight = FontWeight(500),
+        fontFamily = defaultFontFamily,
+        fontWeight = FontWeight.Medium,
         fontSize = 16.sp,
         lineHeight = 24.sp,
         letterSpacing = 0.15.sp
     ),
     titleSmall = TextStyle(
-        fontFamily = InterFontFamily,
-        fontWeight = FontWeight(500),
+        fontFamily = defaultFontFamily,
+        fontWeight = FontWeight.Medium,
         fontSize = 14.sp,
         lineHeight = 20.sp,
         letterSpacing = 0.1.sp
     ),
 
-    // Body - Inter Variable with optimal readability
+    // Body text
     bodyLarge = TextStyle(
-        fontFamily = InterFontFamily,
-        fontWeight = FontWeight(400),
+        fontFamily = defaultFontFamily,
+        fontWeight = FontWeight.Normal,
         fontSize = 16.sp,
         lineHeight = 24.sp,
-        letterSpacing = 0.25.sp
+        letterSpacing = 0.5.sp
     ),
     bodyMedium = TextStyle(
-        fontFamily = InterFontFamily,
-        fontWeight = FontWeight(400),
+        fontFamily = defaultFontFamily,
+        fontWeight = FontWeight.Normal,
         fontSize = 14.sp,
         lineHeight = 20.sp,
-        letterSpacing = 0.15.sp
+        letterSpacing = 0.25.sp
     ),
     bodySmall = TextStyle(
-        fontFamily = InterFontFamily,
-        fontWeight = FontWeight(400),
+        fontFamily = defaultFontFamily,
+        fontWeight = FontWeight.Normal,
         fontSize = 12.sp,
         lineHeight = 16.sp,
-        letterSpacing = 0.1.sp
+        letterSpacing = 0.4.sp
     ),
 
-    // Labels - Inter Variable for UI elements
+    // Labels - Used for buttons and form fields
     labelLarge = TextStyle(
-        fontFamily = InterFontFamily,
-        fontWeight = FontWeight(500),
+        fontFamily = defaultFontFamily,
+        fontWeight = FontWeight.Medium,
         fontSize = 14.sp,
         lineHeight = 20.sp,
         letterSpacing = 0.1.sp
     ),
     labelMedium = TextStyle(
-        fontFamily = InterFontFamily,
-        fontWeight = FontWeight(500),
+        fontFamily = defaultFontFamily,
+        fontWeight = FontWeight.Medium,
         fontSize = 12.sp,
         lineHeight = 16.sp,
         letterSpacing = 0.5.sp
     ),
     labelSmall = TextStyle(
-        fontFamily = InterFontFamily,
-        fontWeight = FontWeight(500),
+        fontFamily = defaultFontFamily,
+        fontWeight = FontWeight.Medium,
         fontSize = 11.sp,
         lineHeight = 16.sp,
         letterSpacing = 0.5.sp
     )
 )
 
-// Custom Typography Extensions
-object ExtendedTypography {
-    // Price Typography - JetBrains Mono for tabular numbers
-    val priceDisplay = TextStyle(
+// Custom text styles for specific use cases
+object CustomTextStyles {
+    val price = TextStyle(
         fontFamily = JetBrainsMonoFontFamily,
-        fontWeight = FontWeight(700),
-        fontSize = 32.sp,
-        lineHeight = 36.sp,
-        letterSpacing = (-0.5).sp
-    )
-
-    val priceLarge = TextStyle(
-        fontFamily = JetBrainsMonoFontFamily,
-        fontWeight = FontWeight(600),
-        fontSize = 24.sp,
-        lineHeight = 28.sp,
-        letterSpacing = 0.sp
-    )
-
-    val priceMedium = TextStyle(
-        fontFamily = JetBrainsMonoFontFamily,
-        fontWeight = FontWeight(500),
-        fontSize = 18.sp,
+        fontWeight = FontWeight.Bold,
+        fontSize = 20.sp,
         lineHeight = 24.sp,
         letterSpacing = 0.sp
     )
 
     val priceSmall = TextStyle(
         fontFamily = JetBrainsMonoFontFamily,
-        fontWeight = FontWeight(500),
+        fontWeight = FontWeight.Medium,
         fontSize = 14.sp,
         lineHeight = 20.sp,
         letterSpacing = 0.sp
     )
 
-    // Hebrew Typography - Heebo for display, Rubik for body
-    val hebrewDisplayLarge = TextStyle(
-        fontFamily = HeeboFontFamily,
-        fontWeight = FontWeight(900),
-        fontSize = 48.sp,  // Slightly larger for Hebrew emphasis
-        lineHeight = 56.sp,
+    val priceLarge = TextStyle(
+        fontFamily = JetBrainsMonoFontFamily,
+        fontWeight = FontWeight.Bold,
+        fontSize = 28.sp,
+        lineHeight = 32.sp,
         letterSpacing = 0.sp
     )
 
-    val hebrewHeadlineLarge = TextStyle(
-        fontFamily = HeeboFontFamily,
-        fontWeight = FontWeight(700),
-        fontSize = 26.sp,  // 10% larger than Latin
-        lineHeight = 34.sp,
-        letterSpacing = 0.sp
-    )
-
-    val hebrewBodyLarge = TextStyle(
-        fontFamily = RubikFontFamily,
-        fontWeight = FontWeight(400),
-        fontSize = 17.sp,  // Slightly larger for readability
-        lineHeight = 26.sp,
+    val storeName = TextStyle(
+        fontFamily = defaultFontFamily,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 16.sp,
+        lineHeight = 20.sp,
         letterSpacing = 0.15.sp
     )
 
-    // Marketing/Promotional Typography
-    val promoDisplay = TextStyle(
-        fontFamily = SpaceGroteskFontFamily,
-        fontWeight = FontWeight(800),
-        fontSize = 36.sp,
-        lineHeight = 40.sp,
-        letterSpacing = (-1).sp
-    )
-
-    val dealBadge = TextStyle(
-        fontFamily = InterFontFamily,
-        fontWeight = FontWeight(700),
+    val category = TextStyle(
+        fontFamily = defaultFontFamily,
+        fontWeight = FontWeight.Medium,
         fontSize = 12.sp,
         lineHeight = 16.sp,
         letterSpacing = 0.5.sp
     )
 
-    // UI Component Typography
-    val buttonLarge = TextStyle(
-        fontFamily = InterFontFamily,
-        fontWeight = FontWeight(600),
-        fontSize = 16.sp,
-        lineHeight = 24.sp,
+    val badge = TextStyle(
+        fontFamily = defaultFontFamily,
+        fontWeight = FontWeight.Bold,
+        fontSize = 10.sp,
+        lineHeight = 12.sp,
         letterSpacing = 0.5.sp
     )
-
-    val chipText = TextStyle(
-        fontFamily = InterFontFamily,
-        fontWeight = FontWeight(500),
-        fontSize = 13.sp,
-        lineHeight = 18.sp,
-        letterSpacing = 0.25.sp
-    )
-
-    val navLabel = TextStyle(
-        fontFamily = InterFontFamily,
-        fontWeight = FontWeight(500),
-        fontSize = 12.sp,
-        lineHeight = 16.sp,
-        letterSpacing = 0.5.sp
-    )
-}
-
-// Typography Helper Functions
-fun getHebrewTypography(): Typography {
-    return Typography.copy(
-        displayLarge = ExtendedTypography.hebrewDisplayLarge,
-        headlineLarge = ExtendedTypography.hebrewHeadlineLarge,
-        bodyLarge = ExtendedTypography.hebrewBodyLarge
-    )
-}
-
-fun getPriceTypography(size: PriceSize): TextStyle {
-    return when (size) {
-        PriceSize.Display -> ExtendedTypography.priceDisplay
-        PriceSize.Large -> ExtendedTypography.priceLarge
-        PriceSize.Medium -> ExtendedTypography.priceMedium
-        PriceSize.Small -> ExtendedTypography.priceSmall
-    }
-}
-
-enum class PriceSize {
-    Display, Large, Medium, Small
 }
