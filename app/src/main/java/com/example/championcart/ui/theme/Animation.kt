@@ -261,16 +261,19 @@ object ChampionCartAnimations {
 /**
  * Accessibility-aware animation wrapper
  */
+/**
+ * Accessibility-aware animation wrapper for IntOffset values
+ */
 @Composable
-fun <T> animateWithAccessibility(
-    targetValue: T,
-    animationSpec: AnimationSpec<T>,
+fun animateIntOffsetWithAccessibility(
+    targetValue: IntOffset,
+    animationSpec: AnimationSpec<IntOffset> = ChampionCartAnimations.Springs.responsive(),
     label: String = "animation",
-    finishedListener: ((T) -> Unit)? = null
-): State<T> {
+    finishedListener: ((IntOffset) -> Unit)? = null
+): State<IntOffset> {
     val config = ChampionCartTheme.config
 
-    return animateValueAsState(
+    return animateIntOffsetAsState(
         targetValue = targetValue,
         animationSpec = if (config.reduceMotion) snap() else animationSpec,
         label = label,

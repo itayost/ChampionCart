@@ -55,6 +55,13 @@ object ComponentShapes {
             bottomEnd = 0.dp
         )
 
+        val BottomNavigation = RoundedCornerShape(
+            topStart = 24.dp,
+            topEnd = 24.dp,
+            bottomStart = 0.dp,
+            bottomEnd = 0.dp
+        )
+
         val TopBar = RoundedCornerShape(
             topStart = 0.dp,
             topEnd = 0.dp,

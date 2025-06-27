@@ -218,7 +218,7 @@ fun GlassBottomSheet(
                     ChampionCartTheme.colors.surface.copy(alpha = 0.95f),
                     shape = ComponentShapes.Sheet.Bottom
                 )
-                .padding(bottom = Spacing.Component.paddingXL)
+                .padding(bottom = Spacing.xl)
         ) {
             content()
         }
@@ -266,7 +266,7 @@ fun StoreSelectionSheet(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = Spacing.Component.paddingL),
+                    .padding(horizontal = Spacing.l),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -328,8 +328,8 @@ private fun StoreSelectionItem(
                 onClick()
             }
             .padding(
-                horizontal = Spacing.Component.paddingL,
-                vertical = Spacing.Component.paddingM
+                horizontal = Spacing.l,
+                vertical = Spacing.m
             ),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
@@ -531,7 +531,7 @@ fun FilterBottomSheet(
             modifier = Modifier
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = Spacing.Component.paddingL)
+                .padding(horizontal = Spacing.l)
         ) {
             // Header
             Row(

@@ -4,9 +4,12 @@ import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -15,6 +18,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -71,7 +75,7 @@ fun GlassLoadingCard(
         intensity = GlassIntensity.Heavy
     ) {
         Column(
-            modifier = Modifier.padding(Spacing.Component.paddingXL),
+            modifier = Modifier.padding(Spacing.xl),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(Spacing.l)
         ) {
@@ -183,7 +187,7 @@ fun SkeletonListItem(
         Row(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(Spacing.Component.paddingM),
+                .padding(Spacing.m),
             horizontalArrangement = Arrangement.spacedBy(Spacing.m)
         ) {
             // Image skeleton
@@ -205,7 +209,7 @@ fun SkeletonListItem(
                     modifier = Modifier
                         .fillMaxWidth(0.7f)
                         .height(16.dp)
-                        .clip(ComponentShapes.Special.Chip)
+                        .clip(ComponentShapes.Special.Indicator)
                         .background(
                             ChampionCartTheme.colors.onSurface.copy(alpha = 0.1f)
                         )
@@ -215,9 +219,19 @@ fun SkeletonListItem(
                     modifier = Modifier
                         .fillMaxWidth(0.5f)
                         .height(12.dp)
-                        .clip(ComponentShapes.Special.Chip)
+                        .clip(ComponentShapes.Special.Indicator)
                         .background(
                             ChampionCartTheme.colors.onSurface.copy(alpha = 0.08f)
+                        )
+                )
+
+                Box(
+                    modifier = Modifier
+                        .width(80.dp)
+                        .height(20.dp)
+                        .clip(ComponentShapes.Special.Indicator)
+                        .background(
+                            ChampionCartTheme.colors.onSurface.copy(alpha = 0.1f)
                         )
                 )
             }
@@ -232,27 +246,27 @@ fun SkeletonListItem(
 fun EmptyState(
     icon: ImageVector,
     title: String,
-    description: String,
+    description: String? = null,
     modifier: Modifier = Modifier,
-    action: (@Composable () -> Unit)? = null
+    action: @Composable (() -> Unit)? = null
 ) {
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(Spacing.Component.paddingXL),
+            .padding(Spacing.xxxl),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(Spacing.l)
+        verticalArrangement = Arrangement.Center
     ) {
         // Animated icon
         val infiniteTransition = rememberInfiniteTransition(label = "empty")
         val scale by infiniteTransition.animateFloat(
-            initialValue = 1f,
+            initialValue = 0.9f,
             targetValue = 1.1f,
             animationSpec = infiniteRepeatable(
                 animation = tween(2000, easing = FastOutSlowInEasing),
                 repeatMode = RepeatMode.Reverse
             ),
-            label = "iconScale"
+            label = "scale"
         )
 
         Box(
@@ -264,84 +278,48 @@ fun EmptyState(
                 }
                 .glass(
                     intensity = GlassIntensity.Light,
-                    shape = ComponentShapes.Card.Hero
+                    shape = RoundedCornerShape(50)
                 ),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                modifier = Modifier.size(64.dp),
+                modifier = Modifier.size(60.dp),
                 tint = ChampionCartColors.Brand.ElectricMint.copy(alpha = 0.6f)
             )
         }
 
-        // Title
+        Spacer(modifier = Modifier.height(Spacing.xl))
+
         Text(
             text = title,
             style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Medium,
+            fontWeight = FontWeight.SemiBold,
             textAlign = TextAlign.Center
         )
 
-        // Description
-        Text(
-            text = description,
-            style = MaterialTheme.typography.bodyLarge,
-            color = ChampionCartTheme.colors.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.widthIn(max = 300.dp)
-        )
-
-        // Action button
-        if (action != null) {
+        if (description != null) {
             Spacer(modifier = Modifier.height(Spacing.m))
+
+            Text(
+                text = description,
+                style = MaterialTheme.typography.bodyLarge,
+                color = ChampionCartTheme.colors.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+        }
+
+        if (action != null) {
+            Spacer(modifier = Modifier.height(Spacing.xxl))
             action()
         }
     }
 }
 
 /**
- * Common empty states
+ * Error State
  */
-@Composable
-fun EmptyCartState(
-    onStartShopping: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    EmptyState(
-        icon = Icons.Default.ShoppingCart,
-        title = "העגלה שלך ריקה",
-        description = "הוסף מוצרים כדי להתחיל לחסוך",
-        modifier = modifier,
-        action = {
-            GlassButton(
-                onClick = onStartShopping,
-                text = "התחל לקנות",
-                icon = {
-                    Icon(
-                        imageVector = Icons.Default.AddShoppingCart,
-                        contentDescription = null
-                    )
-                }
-            )
-        }
-    )
-}
-
-@Composable
-fun EmptySearchState(
-    searchQuery: String,
-    modifier: Modifier = Modifier
-) {
-    EmptyState(
-        icon = Icons.Default.SearchOff,
-        title = "לא נמצאו תוצאות",
-        description = "לא מצאנו מוצרים התואמים ל-\"$searchQuery\"",
-        modifier = modifier
-    )
-}
-
 @Composable
 fun ErrorState(
     message: String,
@@ -349,7 +327,7 @@ fun ErrorState(
     modifier: Modifier = Modifier
 ) {
     EmptyState(
-        icon = Icons.Default.ErrorOutline,
+        icon = Icons.Default.Warning,
         title = "אופס! משהו השתבש",
         description = message,
         modifier = modifier,
@@ -369,25 +347,55 @@ fun ErrorState(
 }
 
 /**
- * Pull to Refresh Indicator
+ * Pull to Refresh Container with Glass Effect
+ * Using Material 3's official PullToRefreshContainer
+ *
+ * @param isRefreshing Whether the refresh is in progress
+ * @param onRefresh Callback when user pulls to refresh
+ * @param modifier Optional modifier
+ * @param content The scrollable content to wrap
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun GlassPullRefreshIndicator(
-    refreshing: Boolean,
-    state: androidx.compose.material.pullrefresh.PullRefreshState,
-    modifier: Modifier = Modifier
+fun GlassPullToRefresh(
+    isRefreshing: Boolean,
+    onRefresh: () -> Unit,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit
 ) {
-    androidx.compose.material.pullrefresh.PullRefreshIndicator(
-        refreshing = refreshing,
-        state = state,
-        modifier = modifier
-            .glass(
-                intensity = GlassIntensity.Heavy,
-                shape = ComponentShapes.Special.FAB
-            ),
-        backgroundColor = ChampionCartTheme.colors.surface,
-        contentColor = ChampionCartColors.Brand.ElectricMint
-    )
+    val pullRefreshState = rememberPullToRefreshState()
+
+    if (pullRefreshState.isRefreshing) {
+        LaunchedEffect(true) {
+            onRefresh()
+        }
+    }
+
+    LaunchedEffect(isRefreshing) {
+        if (isRefreshing) {
+            pullRefreshState.startRefresh()
+        } else {
+            pullRefreshState.endRefresh()
+        }
+    }
+
+    Box(
+        modifier = modifier.nestedScroll(pullRefreshState.nestedScrollConnection)
+    ) {
+        content()
+
+        PullToRefreshContainer(
+            state = pullRefreshState,
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .glass(
+                    intensity = GlassIntensity.Heavy,
+                    shape = RoundedCornerShape(50)
+                ),
+            containerColor = ChampionCartTheme.colors.surface,
+            contentColor = ChampionCartColors.Brand.ElectricMint
+        )
+    }
 }
 
 /**
@@ -409,7 +417,32 @@ fun GlassLinearProgress(
             )
     ) {
         LinearProgressIndicator(
-            progress = progress,
+            progress = { progress },
+            modifier = Modifier.fillMaxSize(),
+            color = ChampionCartColors.Brand.ElectricMint,
+            trackColor = Color.Transparent
+        )
+    }
+}
+
+/**
+ * Indeterminate Linear Progress with Glass
+ */
+@Composable
+fun GlassLinearProgressIndeterminate(
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(4.dp)
+            .clip(ComponentShapes.Special.Indicator)
+            .glass(
+                intensity = GlassIntensity.Light,
+                shape = ComponentShapes.Special.Indicator
+            )
+    ) {
+        LinearProgressIndicator(
             modifier = Modifier.fillMaxSize(),
             color = ChampionCartColors.Brand.ElectricMint,
             trackColor = Color.Transparent

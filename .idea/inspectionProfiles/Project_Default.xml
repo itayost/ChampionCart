@@ -97,7 +97,9 @@
     <inspection_tool class="AndroidLintComposableNaming" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="AndroidLintComposableNavGraphInComposeScope" enabled="false" level="ERROR" enabled_by_default="false" />
     <inspection_tool class="AndroidLintCompositionLocalNaming" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="AndroidLintConfigurationScreenWidthHeight" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="AndroidLintConflictingOnColor" enabled="false" level="ERROR" enabled_by_default="false" />
+    <inspection_tool class="AndroidLintConstantContentStateKeyInItemsCall" enabled="false" level="ERROR" enabled_by_default="false" />
     <inspection_tool class="AndroidLintConstantLocale" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="AndroidLintContentDescription" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="AndroidLintContextCastToActivity" enabled="false" level="ERROR" enabled_by_default="false" />
@@ -267,6 +269,7 @@
     <inspection_tool class="AndroidLintLibraryCustomView" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="AndroidLintLifecycleAnnotationProcessorWithJava8" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="AndroidLintLifecycleCurrentStateInComposition" enabled="false" level="ERROR" enabled_by_default="false" />
+    <inspection_tool class="AndroidLintLocalContextConfigurationRead" enabled="false" level="ERROR" enabled_by_default="false" />
     <inspection_tool class="AndroidLintLocalSuppress" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="AndroidLintLocaleFolder" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="AndroidLintLockedOrientationActivity" enabled="true" level="WARNING" enabled_by_default="true" />
@@ -291,6 +294,7 @@
     <inspection_tool class="AndroidLintMissingId" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="AndroidLintMissingInflatedId" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="AndroidLintMissingIntentFilterForMediaSearch" enabled="true" level="ERROR" enabled_by_default="true" />
+    <inspection_tool class="AndroidLintMissingKeepAnnotation" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="AndroidLintMissingLeanbackLauncher" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="AndroidLintMissingLeanbackSupport" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="AndroidLintMissingMediaBrowserServiceIntentFilter" enabled="true" level="ERROR" enabled_by_default="true" />
@@ -299,6 +303,7 @@
     <inspection_tool class="AndroidLintMissingPrefix" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="AndroidLintMissingQuantity" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="AndroidLintMissingResourcesProperties" enabled="true" level="WARNING" enabled_by_default="true" />
+    <inspection_tool class="AndroidLintMissingSerializableAnnotation" enabled="false" level="ERROR" enabled_by_default="false" />
     <inspection_tool class="AndroidLintMissingSuperCall" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="AndroidLintMissingTranslation" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="AndroidLintMissingTvBanner" enabled="true" level="ERROR" enabled_by_default="true" />
@@ -523,6 +528,8 @@
     <inspection_tool class="AndroidLintUnusedMaterialScaffoldPaddingParameter" enabled="false" level="ERROR" enabled_by_default="false" />
     <inspection_tool class="AndroidLintUnusedQuantity" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="AndroidLintUnusedResources" enabled="true" level="WARNING" enabled_by_default="true" />
+    <inspection_tool class="AndroidLintUnusedSharedTransitionModifierParameter" enabled="false" level="ERROR" enabled_by_default="false" />
+    <inspection_tool class="AndroidLintUnusedTargetStateInContentKeyLambda" enabled="false" level="ERROR" enabled_by_default="false" />
     <inspection_tool class="AndroidLintUnusedTransitionTargetStateParameter" enabled="false" level="ERROR" enabled_by_default="false" />
     <inspection_tool class="AndroidLintUnusedTranslation" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="AndroidLintUsableSpace" enabled="true" level="WARNING" enabled_by_default="true" />
@@ -595,9 +602,11 @@
     <inspection_tool class="AndroidLintWrongConstant" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="AndroidLintWrongFolder" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="AndroidLintWrongGradleMethod" enabled="true" level="ERROR" enabled_by_default="true" />
+    <inspection_tool class="AndroidLintWrongNavigateRouteType" enabled="false" level="ERROR" enabled_by_default="false" />
     <inspection_tool class="AndroidLintWrongRegion" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="AndroidLintWrongRequiresOptIn" enabled="false" level="ERROR" enabled_by_default="false" />
     <inspection_tool class="AndroidLintWrongSdkInt" enabled="true" level="ERROR" enabled_by_default="true" />
+    <inspection_tool class="AndroidLintWrongStartDestinationType" enabled="false" level="ERROR" enabled_by_default="false" />
     <inspection_tool class="AndroidLintWrongThread" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="AndroidLintWrongThreadInterprocedural" enabled="false" level="ERROR" enabled_by_default="false" />
     <inspection_tool class="AndroidLintWrongViewCast" enabled="true" level="ERROR" enabled_by_default="true" />
@@ -741,7 +750,9 @@
     <inspection_tool class="CanBeParameter" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="CanBePrimaryConstructorProperty" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="CanBeVal" enabled="true" level="WARNING" enabled_by_default="true" />
+    <inspection_tool class="CanConvertToMultiDollarString" enabled="false" level="WEAK WARNING" enabled_by_default="false" />
     <inspection_tool class="CanSealedSubClassBeObject" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="CanUnescapeDollarLiteral" enabled="false" level="WEAK WARNING" enabled_by_default="false" />
     <inspection_tool class="CancellationCheckInLoops" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="CapturingCleaner" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="CascadeIf" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
@@ -1611,6 +1622,7 @@
     <inspection_tool class="Junit4Converter" enabled="true" level="INFORMATION" enabled_by_default="true" />
     <inspection_tool class="Junit4RunWithInspection" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="K1TypeParameterFindViewById" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="K2TypeParameterFindViewById" enabled="false" level="WEAK WARNING" enabled_by_default="false" />
     <inspection_tool class="KDocMissingDocumentation" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="KDocUnresolvedReference" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="KeySetIterationMayUseEntrySet" enabled="false" level="WARNING" enabled_by_default="false" />
@@ -1626,8 +1638,10 @@
     <inspection_tool class="KotlinJniMissingFunction" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="KotlinJvmAnnotationInJava" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="KotlinLoggerInitializedWithForeignClass" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="KotlinNoActualForExpect" enabled="false" level="ERROR" enabled_by_default="false" />
     <inspection_tool class="KotlinObjectExtensionRegistration" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="KotlinObjectRegisteredAsExtension" enabled="true" level="ERROR" enabled_by_default="true" />
+    <inspection_tool class="KotlinOptionsToCompilerOptionsInGradleScript" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="KotlinRedundantDiagnosticSuppress" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="KotlinRedundantOverride" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
     <inspection_tool class="KotlinSealedInheritorsInJava" enabled="true" level="ERROR" enabled_by_default="true" />
@@ -2753,6 +2767,7 @@
     <inspection_tool class="UnusedSymbol" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="UnusedUnaryOperator" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="UnusedValue" enabled="true" level="WARNING" enabled_by_default="true" />
+    <inspection_tool class="UnusedVariable" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="UnusedVersionCatalogEntry" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="UpperCaseFieldNameNotConstant" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="UrlHashCode" enabled="true" level="WARNING" enabled_by_default="true" />

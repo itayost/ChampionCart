@@ -7,7 +7,6 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
-import androidx.compose.material3.MaterialTheme.typography
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -18,6 +17,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.championcart.ui.theme.*
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 
@@ -36,7 +36,6 @@ fun GlassButton(
     enabled: Boolean = true,
     text: String,
     icon: @Composable (() -> Unit)? = null,
-    isLoading: Boolean = false,
     shape: Shape = ComponentShapes.Button.Medium,
     size: ButtonSize = ButtonSize.Medium
 ) {
@@ -45,10 +44,9 @@ fun GlassButton(
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
 
-    // Animated scale for press effect
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed && !config.reduceMotion) 0.96f else 1f,
-        animationSpec = ChampionCartAnimations.Springs.ButtonPress,
+    val animatedScale by animateFloatWithAccessibility(
+        targetValue = if (isPressed) 0.98f else 1f,
+        animationSpec = ChampionCartAnimations.Springs.responsive(),
         label = "buttonScale"
     )
 
@@ -63,50 +61,43 @@ fun GlassButton(
             .heightIn(min = size.height)
             .widthIn(min = size.minWidth)
             .graphicsLayer {
-                scaleX = scale
-                scaleY = scale
+                scaleX = animatedScale
+                scaleY = animatedScale
             }
             .glass(
                 intensity = if (isPressed) GlassIntensity.Heavy else GlassIntensity.Medium,
                 shape = shape
             ),
-        enabled = enabled && !isLoading,
+        enabled = enabled,
         shape = shape,
         colors = ButtonDefaults.buttonColors(
-            containerColor = ChampionCartColors.Brand.ElectricMint.copy(alpha = 0.9f),
+            containerColor = ChampionCartColors.Brand.ElectricMint,
             contentColor = Color.White,
-            disabledContainerColor = ChampionCartColors.Brand.ElectricMint.copy(alpha = 0.3f),
-            disabledContentColor = Color.White.copy(alpha = 0.5f)
+            disabledContainerColor = ChampionCartColors.Brand.ElectricMint.copy(alpha = 0.38f),
+            disabledContentColor = Color.White.copy(alpha = 0.38f)
         ),
         elevation = ButtonDefaults.buttonElevation(
             defaultElevation = Elevation.Component.button,
             pressedElevation = Elevation.Component.buttonPressed,
-            hoveredElevation = Elevation.Component.buttonHover
+            hoveredElevation = Elevation.Component.buttonHover,
+            disabledElevation = 0.dp
         ),
         interactionSource = interactionSource
     ) {
-        if (isLoading) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(size.iconSize),
-                color = Color.White,
-                strokeWidth = 2.dp
-            )
-        } else {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(Spacing.s),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                if (icon != null) {
-                    Box(modifier = Modifier.size(size.iconSize)) {
-                        icon()
-                    }
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(Spacing.s),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (icon != null) {
+                Box(modifier = Modifier.size(size.iconSize)) {
+                    icon()
                 }
-                Text(
-                    text = text,
-                    style = size.textStyle,
-                    fontWeight = FontWeight.Medium
-                )
             }
+            Text(
+                text = text,
+                style = size.getTextStyle(),
+                fontWeight = FontWeight.Medium
+            )
         }
     }
 }
@@ -117,9 +108,9 @@ fun GlassButton(
 @Composable
 fun SecondaryGlassButton(
     onClick: () -> Unit,
-    text: String,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    text: String,
     icon: @Composable (() -> Unit)? = null,
     shape: Shape = ComponentShapes.Button.Medium,
     size: ButtonSize = ButtonSize.Medium
@@ -167,7 +158,7 @@ fun SecondaryGlassButton(
             }
             Text(
                 text = text,
-                style = size.textStyle,
+                style = size.getTextStyle(),
                 fontWeight = FontWeight.Medium
             )
         }
@@ -320,27 +311,31 @@ fun GlassIconButton(
 enum class ButtonSize(
     val height: Dp,
     val minWidth: Dp,
-    val iconSize: Dp,
-    val textStyle: androidx.compose.ui.text.TextStyle
+    val iconSize: Dp
 ) {
     Small(
         height = Sizing.Button.heightS,
         minWidth = Sizing.Button.minWidthS,
-        iconSize = Sizing.Icon.s,
-        textStyle = typography.labelMedium
+        iconSize = Sizing.Icon.s
     ),
     Medium(
         height = Sizing.Button.heightL,
         minWidth = Sizing.Button.minWidthM,
-        iconSize = Sizing.Icon.m,
-        textStyle = typography.labelLarge
+        iconSize = Sizing.Icon.m
     ),
     Large(
         height = Sizing.Button.heightXL,
         minWidth = Sizing.Button.minWidthL,
-        iconSize = Sizing.Icon.l,
-        textStyle = typography.titleMedium
+        iconSize = Sizing.Icon.l
     )
+}
+
+// Extension function to get text style within composable context
+@Composable
+fun ButtonSize.getTextStyle() = when (this) {
+    ButtonSize.Small -> MaterialTheme.typography.labelMedium
+    ButtonSize.Medium -> MaterialTheme.typography.labelLarge
+    ButtonSize.Large -> MaterialTheme.typography.titleMedium
 }
 
 /**
