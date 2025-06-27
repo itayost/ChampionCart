@@ -173,7 +173,6 @@ fun PriceComparisonRow(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .storeGlass(storeName)
                 .padding(Spacing.Component.paddingM),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
@@ -267,7 +266,6 @@ fun TotalPriceDisplay(
 
                 Row(
                     modifier = Modifier
-                        .successGlass()
                         .clip(ComponentShapes.Special.Chip)
                         .padding(
                             horizontal = Spacing.m,

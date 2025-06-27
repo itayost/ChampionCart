@@ -3,13 +3,17 @@ package com.example.championcart.presentation.components
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
@@ -23,7 +27,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 
 /**
  * Custom Button Components
- * Electric Harmony styled buttons with glassmorphic effects
+ * Theme-aware Electric Harmony styled buttons
  */
 
 /**
@@ -49,7 +53,7 @@ fun animateFloatWithAccessibility(
 }
 
 /**
- * Primary Glass Button
+ * Primary Glass Button - Theme-aware gradient
  */
 @Composable
 fun GlassButton(
@@ -65,12 +69,25 @@ fun GlassButton(
     val config = ChampionCartTheme.config
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
+    val darkTheme = isSystemInDarkTheme()
 
     val animatedScale by animateFloatWithAccessibility(
-        targetValue = if (isPressed) 0.98f else 1f,
+        targetValue = if (isPressed) 0.95f else 1f,
         animationSpec = ChampionCartAnimations.Springs.responsive(),
         label = "buttonScale"
     )
+
+    val gradientColors = if (darkTheme) {
+        listOf(
+            ChampionCartColors.Brand.ElectricMint,
+            ChampionCartColors.Brand.ElectricMint.copy(alpha = 0.85f)
+        )
+    } else {
+        listOf(
+            ChampionCartColors.Brand.ElectricMint,
+            ChampionCartColors.Brand.ElectricMintDark
+        )
+    }
 
     Button(
         onClick = {
@@ -85,30 +102,27 @@ fun GlassButton(
             .graphicsLayer {
                 scaleX = animatedScale
                 scaleY = animatedScale
-            }
-            .glass(
-                intensity = if (isPressed) GlassIntensity.Heavy else GlassIntensity.Medium,
-                shape = shape
-            ),
+            },
         enabled = enabled,
         shape = shape,
         colors = ButtonDefaults.buttonColors(
             containerColor = ChampionCartColors.Brand.ElectricMint,
             contentColor = Color.White,
             disabledContainerColor = ChampionCartColors.Brand.ElectricMint.copy(alpha = 0.38f),
-            disabledContentColor = Color.White.copy(alpha = 0.38f)
+            disabledContentColor = Color.White.copy(alpha = 0.6f)
         ),
         elevation = ButtonDefaults.buttonElevation(
-            defaultElevation = Elevation.Component.button,
-            pressedElevation = Elevation.Component.buttonPressed,
-            hoveredElevation = Elevation.Component.buttonHover,
+            defaultElevation = if (darkTheme) 8.dp else 2.dp,
+            pressedElevation = if (darkTheme) 12.dp else 4.dp,
+            hoveredElevation = if (darkTheme) 10.dp else 3.dp,
             disabledElevation = 0.dp
         ),
         interactionSource = interactionSource
     ) {
         Row(
             horizontalArrangement = Arrangement.spacedBy(Spacing.s),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(horizontal = Spacing.s)
         ) {
             if (icon != null) {
                 Box(modifier = Modifier.size(size.iconSize)) {
@@ -118,14 +132,14 @@ fun GlassButton(
             Text(
                 text = text,
                 style = size.getTextStyle(),
-                fontWeight = FontWeight.Medium
+                fontWeight = FontWeight.SemiBold
             )
         }
     }
 }
 
 /**
- * Secondary Glass Button
+ * Secondary Glass Button - Theme-aware glass effect
  */
 @Composable
 fun SecondaryGlassButton(
@@ -139,29 +153,45 @@ fun SecondaryGlassButton(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
+    val haptics = LocalHapticFeedback.current
+    val config = ChampionCartTheme.config
+    val darkTheme = isSystemInDarkTheme()
+
+    val animatedScale by animateFloatWithAccessibility(
+        targetValue = if (isPressed) 0.98f else 1f,
+        animationSpec = ChampionCartAnimations.Springs.responsive(),
+        label = "buttonScale"
+    )
 
     OutlinedButton(
-        onClick = onClick,
+        onClick = {
+            if (config.enableHaptics) {
+                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+            }
+            onClick()
+        },
         modifier = modifier
             .heightIn(min = size.height)
             .widthIn(min = size.minWidth)
-            .glass(
+            .graphicsLayer {
+                scaleX = animatedScale
+                scaleY = animatedScale
+            }
+            .buttonGlass(
                 intensity = if (isPressed) GlassIntensity.Medium else GlassIntensity.Light,
-                shape = shape
+                shape = shape,
+                darkTheme = darkTheme
             ),
         enabled = enabled,
         shape = shape,
         colors = ButtonDefaults.outlinedButtonColors(
-            contentColor = ChampionCartTheme.colors.primary,
-            disabledContentColor = ChampionCartTheme.colors.onSurface.copy(alpha = 0.38f)
+            containerColor = Color.Transparent,
+            contentColor = MaterialTheme.colorScheme.primary,
+            disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
         ),
         border = BorderStroke(
-            width = 1.dp,
-            color = if (enabled) {
-                ChampionCartTheme.colors.primary.copy(alpha = 0.5f)
-            } else {
-                ChampionCartTheme.colors.onSurface.copy(alpha = 0.12f)
-            }
+            width = if (darkTheme) 0.dp else 1.dp,
+            color = if (darkTheme) Color.Transparent else MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
         ),
         elevation = ButtonDefaults.buttonElevation(
             defaultElevation = 0.dp,
@@ -171,7 +201,8 @@ fun SecondaryGlassButton(
     ) {
         Row(
             horizontalArrangement = Arrangement.spacedBy(Spacing.s),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(horizontal = Spacing.s)
         ) {
             if (icon != null) {
                 Box(modifier = Modifier.size(size.iconSize)) {
@@ -198,14 +229,31 @@ fun GlassTextButton(
     enabled: Boolean = true,
     icon: @Composable (() -> Unit)? = null
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val darkTheme = isSystemInDarkTheme()
+
     TextButton(
         onClick = onClick,
-        modifier = modifier,
+        modifier = modifier
+            .then(
+                if (isPressed) {
+                    Modifier.glass(
+                        intensity = GlassIntensity.Light,
+                        shape = ComponentShapes.Button.Square,
+                        style = GlassStyle.Subtle,
+                        darkTheme = darkTheme
+                    )
+                } else {
+                    Modifier
+                }
+            ),
         enabled = enabled,
         colors = ButtonDefaults.textButtonColors(
-            contentColor = ChampionCartTheme.colors.primary,
-            disabledContentColor = ChampionCartTheme.colors.onSurface.copy(alpha = 0.38f)
-        )
+            contentColor = MaterialTheme.colorScheme.primary,
+            disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+        ),
+        interactionSource = interactionSource
     ) {
         Row(
             horizontalArrangement = Arrangement.spacedBy(Spacing.s),
@@ -225,7 +273,7 @@ fun GlassTextButton(
 }
 
 /**
- * Floating Action Button with Glass
+ * Floating Action Button with Glass - Enhanced with theme-aware glow
  */
 @Composable
 fun GlassFAB(
@@ -238,72 +286,104 @@ fun GlassFAB(
 ) {
     val haptics = LocalHapticFeedback.current
     val config = ChampionCartTheme.config
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val darkTheme = isSystemInDarkTheme()
 
-    if (extended && text != null) {
-        ExtendedFloatingActionButton(
-            onClick = {
-                if (config.enableHaptics) {
-                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+    // Animated glow effect for dark theme only
+    val infiniteTransition = rememberInfiniteTransition(label = "fabGlow")
+    val glowAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.3f,
+        targetValue = 0.6f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "glowAlpha"
+    )
+
+    Box(
+        modifier = modifier
+    ) {
+        // Glow effect behind FAB (dark theme only)
+        if (!config.reduceMotion && darkTheme) {
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .offset(y = 4.dp)
+                    .clip(ComponentShapes.Special.FAB)
+                    .background(
+                        color = ChampionCartColors.Brand.ElectricMint.copy(alpha = glowAlpha * 0.3f)
+                    )
+            )
+        }
+
+        val fabElevation = FloatingActionButtonDefaults.elevation(
+            defaultElevation = if (darkTheme) 12.dp else 6.dp,
+            pressedElevation = if (darkTheme) 16.dp else 8.dp,
+            hoveredElevation = if (darkTheme) 14.dp else 7.dp
+        )
+
+        if (extended && text != null) {
+            ExtendedFloatingActionButton(
+                onClick = {
+                    if (config.enableHaptics) {
+                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                    }
+                    onClick()
+                },
+                modifier = Modifier
+                    .graphicsLayer {
+                        scaleX = if (isPressed) 0.95f else 1f
+                        scaleY = if (isPressed) 0.95f else 1f
+                    },
+                shape = ComponentShapes.Special.FAB,
+                containerColor = ChampionCartColors.Brand.ElectricMint,
+                contentColor = Color.White,
+                elevation = fabElevation,
+                interactionSource = interactionSource,
+                icon = {
+                    Box(modifier = Modifier.size(size.iconSize)) {
+                        icon()
+                    }
+                },
+                text = {
+                    Text(
+                        text = text,
+                        fontWeight = FontWeight.SemiBold
+                    )
                 }
-                onClick()
-            },
-            modifier = modifier
-                .animatedGlass(
-                    intensity = GlassIntensity.Heavy,
-                    shape = ComponentShapes.Special.FAB
-                ),
-            shape = ComponentShapes.Special.FAB,
-            containerColor = ChampionCartColors.Brand.ElectricMint,
-            contentColor = Color.White,
-            elevation = FloatingActionButtonDefaults.elevation(
-                defaultElevation = Elevation.Component.fab,
-                pressedElevation = Elevation.Component.fabPressed,
-                hoveredElevation = Elevation.Component.fabHover
-            ),
-            icon = {
+            )
+        } else {
+            FloatingActionButton(
+                onClick = {
+                    if (config.enableHaptics) {
+                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                    }
+                    onClick()
+                },
+                modifier = Modifier
+                    .size(size.size)
+                    .graphicsLayer {
+                        scaleX = if (isPressed) 0.95f else 1f
+                        scaleY = if (isPressed) 0.95f else 1f
+                    },
+                shape = ComponentShapes.Special.FAB,
+                containerColor = ChampionCartColors.Brand.ElectricMint,
+                contentColor = Color.White,
+                elevation = fabElevation,
+                interactionSource = interactionSource
+            ) {
                 Box(modifier = Modifier.size(size.iconSize)) {
                     icon()
                 }
-            },
-            text = {
-                Text(
-                    text = text,
-                    fontWeight = FontWeight.Medium
-                )
-            }
-        )
-    } else {
-        FloatingActionButton(
-            onClick = {
-                if (config.enableHaptics) {
-                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                }
-                onClick()
-            },
-            modifier = modifier
-                .size(size.size)
-                .animatedGlass(
-                    intensity = GlassIntensity.Heavy,
-                    shape = ComponentShapes.Special.FAB
-                ),
-            shape = ComponentShapes.Special.FAB,
-            containerColor = ChampionCartColors.Brand.ElectricMint,
-            contentColor = Color.White,
-            elevation = FloatingActionButtonDefaults.elevation(
-                defaultElevation = Elevation.Component.fab,
-                pressedElevation = Elevation.Component.fabPressed,
-                hoveredElevation = Elevation.Component.fabHover
-            )
-        ) {
-            Box(modifier = Modifier.size(size.iconSize)) {
-                icon()
             }
         }
     }
 }
 
 /**
- * Icon Button with Glass Background
+ * Icon Button with Glass Background - Theme-aware
  */
 @Composable
 fun GlassIconButton(
@@ -311,19 +391,93 @@ fun GlassIconButton(
     icon: @Composable () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    colors: IconButtonColors = IconButtonDefaults.iconButtonColors()
+    colors: IconButtonColors = IconButtonDefaults.iconButtonColors(),
+    isActive: Boolean = false
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val darkTheme = isSystemInDarkTheme()
+
     IconButton(
         onClick = onClick,
         modifier = modifier
             .glass(
-                intensity = GlassIntensity.Light,
-                shape = ComponentShapes.Button.Square
+                intensity = when {
+                    isPressed -> GlassIntensity.Medium
+                    isActive -> GlassIntensity.Light
+                    else -> GlassIntensity.Light
+                },
+                shape = ComponentShapes.Button.Square,
+                style = if (darkTheme) GlassStyle.Subtle else GlassStyle.Default,
+                darkTheme = darkTheme
             ),
         enabled = enabled,
-        colors = colors
+        colors = colors,
+        interactionSource = interactionSource
     ) {
         icon()
+    }
+}
+
+/**
+ * Chip-style button with theme-aware glass effect
+ */
+@Composable
+fun GlassChipButton(
+    onClick: () -> Unit,
+    text: String,
+    modifier: Modifier = Modifier,
+    selected: Boolean = false,
+    icon: @Composable (() -> Unit)? = null
+) {
+    val darkTheme = isSystemInDarkTheme()
+
+    val backgroundColor = when {
+        selected && darkTheme -> ChampionCartColors.Brand.ElectricMint.copy(alpha = 0.15f)
+        selected && !darkTheme -> ChampionCartColors.Brand.ElectricMint.copy(alpha = 0.08f)
+        !selected && darkTheme -> Color.White.copy(alpha = 0.1f)
+        else -> Color.Black.copy(alpha = 0.05f)
+    }
+
+    val contentColor = when {
+        selected -> ChampionCartColors.Brand.ElectricMint
+        else -> MaterialTheme.colorScheme.onSurface
+    }
+
+    Surface(
+        onClick = onClick,
+        modifier = modifier
+            .height(32.dp)
+            .glass(
+                intensity = GlassIntensity.Light,
+                shape = ComponentShapes.Button.Small,
+                style = when {
+                    selected && !darkTheme -> GlassStyle.Bordered
+                    selected && darkTheme -> GlassStyle.Default
+                    else -> GlassStyle.Subtle
+                },
+                darkTheme = darkTheme
+            ),
+        shape = ComponentShapes.Button.Small,
+        color = backgroundColor,
+        contentColor = contentColor
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (icon != null) {
+                Box(modifier = Modifier.size(16.dp)) {
+                    icon()
+                }
+            }
+            Text(
+                text = text,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
+            )
+        }
     }
 }
 
@@ -336,19 +490,19 @@ enum class ButtonSize(
     val iconSize: Dp
 ) {
     Small(
-        height = Sizing.Button.heightS,
-        minWidth = Sizing.Button.minWidthS,
-        iconSize = Sizing.Icon.s
+        height = 32.dp,
+        minWidth = 64.dp,
+        iconSize = 16.dp
     ),
     Medium(
-        height = Sizing.Button.heightL,
-        minWidth = Sizing.Button.minWidthM,
-        iconSize = Sizing.Icon.m
+        height = 40.dp,
+        minWidth = 96.dp,
+        iconSize = 18.dp
     ),
     Large(
-        height = Sizing.Button.heightXL,
-        minWidth = Sizing.Button.minWidthL,
-        iconSize = Sizing.Icon.l
+        height = 48.dp,
+        minWidth = 128.dp,
+        iconSize = 20.dp
     )
 }
 
@@ -368,15 +522,15 @@ enum class FABSize(
     val iconSize: Dp
 ) {
     Small(
-        size = Sizing.FAB.small,
-        iconSize = Sizing.Icon.s
+        size = 40.dp,
+        iconSize = 18.dp
     ),
     Medium(
-        size = Sizing.FAB.medium,
-        iconSize = Sizing.Icon.m
+        size = 56.dp,
+        iconSize = 24.dp
     ),
     Large(
-        size = Sizing.FAB.large,
-        iconSize = Sizing.Icon.l
+        size = 72.dp,
+        iconSize = 28.dp
     )
 }

@@ -179,8 +179,7 @@ fun SkeletonListItem(
 
     Card(
         modifier = modifier
-            .height(80.dp)
-            .shimmerGlass(shape = ComponentShapes.Card.Small),
+            .height(80.dp),
         shape = ComponentShapes.Card.Small,
         colors = CardDefaults.cardColors(
             containerColor = Color.Transparent

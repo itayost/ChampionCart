@@ -1,24 +1,30 @@
 package com.example.championcart.presentation.components
 
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.*
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.championcart.ui.theme.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.outlined.FavoriteBorder
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 
 /**
- * Glassmorphic Card Component
- * Core card component with Electric Harmony glass effects
+ * Enhanced Glassmorphic Card Component
+ * Theme-aware glass effect for better visibility
  */
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -29,20 +35,15 @@ fun GlassCard(
     enabled: Boolean = true,
     shape: Shape = ComponentShapes.Card.Medium,
     intensity: GlassIntensity = GlassIntensity.Medium,
-    elevation: CardElevation = CardDefaults.cardElevation(
-        defaultElevation = Elevation.Component.card,
-        pressedElevation = Elevation.Component.cardPressed,
-        hoveredElevation = Elevation.Component.cardHover
-    ),
-    colors: CardColors = CardDefaults.cardColors(
-        containerColor = Color.Transparent,
-        contentColor = ChampionCartTheme.colors.onSurface
-    ),
+    elevated: Boolean = false, // For important cards
     content: @Composable ColumnScope.() -> Unit
 ) {
-    val glassModifier = modifier.glass(
+    val darkTheme = isSystemInDarkTheme()
+
+    val glassModifier = modifier.cardGlass(
         intensity = intensity,
-        shape = shape
+        shape = shape,
+        darkTheme = darkTheme
     )
 
     if (onClick != null) {
@@ -51,23 +52,30 @@ fun GlassCard(
             modifier = glassModifier,
             enabled = enabled,
             shape = shape,
-            colors = colors,
-            elevation = elevation,
+            colors = CardDefaults.cardColors(
+                containerColor = Color.Transparent,
+                contentColor = ChampionCartTheme.colors.onSurface
+            ),
+            elevation = CardDefaults.cardElevation(
+                defaultElevation = 0.dp,
+                pressedElevation = 0.dp
+            ),
             content = content
         )
     } else {
-        Card(
+        Surface(
             modifier = glassModifier,
             shape = shape,
-            colors = colors,
-            elevation = elevation,
-            content = content
-        )
+            color = Color.Transparent,
+            contentColor = ChampionCartTheme.colors.onSurface
+        ) {
+            Column(content = content)
+        }
     }
 }
 
 /**
- * Hero Glass Card for featured content
+ * Enhanced Hero Glass Card with gradient overlay
  */
 @Composable
 fun HeroGlassCard(
@@ -75,30 +83,40 @@ fun HeroGlassCard(
     shape: Shape = ComponentShapes.Card.Hero,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    Card(
+    Box(
         modifier = modifier
             .fillMaxWidth()
-            .heightIn(min = Sizing.Card.heroMinHeight)
-            .gradientGlass(
-                colors = ChampionCartColors.Gradient.electricHarmony.map {
-                    it.copy(alpha = 0.1f)
-                },
-                intensity = GlassIntensity.Heavy,
-                shape = shape
-            ),
-        shape = shape,
-        colors = CardDefaults.cardColors(
-            containerColor = Color.Transparent
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = Elevation.Component.card
-        ),
-        content = content
-    )
+            .heightIn(min = 200.dp)
+    ) {
+        // Background gradient for depth
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .clip(shape)
+                .background(
+                    brush = Brush.linearGradient(
+                        colors = listOf(
+                            ChampionCartColors.Brand.ElectricMint.copy(alpha = 0.05f),
+                            ChampionCartColors.Brand.CosmicPurple.copy(alpha = 0.05f)
+                        ),
+                        start = androidx.compose.ui.geometry.Offset(0f, 0f),
+                        end = androidx.compose.ui.geometry.Offset(1000f, 1000f)
+                    )
+                )
+        )
+
+        // Main glass card
+        GlassCard(
+            modifier = Modifier.fillMaxSize(),
+            shape = shape,
+            intensity = GlassIntensity.Heavy,
+            content = content
+        )
+    }
 }
 
 /**
- * Product Glass Card
+ * Product Glass Card with enhanced visibility
  */
 @Composable
 fun ProductGlassCard(
@@ -115,140 +133,113 @@ fun ProductGlassCard(
     GlassCard(
         onClick = onClick,
         modifier = modifier
-            .width(Sizing.Card.productWidth)
-            .height(Sizing.Card.productHeight),
-        shape = ComponentShapes.Product.Card
+            .width(180.dp)
+            .height(260.dp),
+        shape = ComponentShapes.Product.Card,
+        intensity = GlassIntensity.Medium
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(Spacing.Component.paddingM)
+                .padding(12.dp)
         ) {
-            // Product Image
+            // Product Image with overlay
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
+                    .clip(ComponentShapes.Product.Image)
+                    .background(Color.White.copy(alpha = 0.05f))
             ) {
                 productImage()
 
-                // Favorite button
+                // Favorite button with glass background
                 IconButton(
                     onClick = onFavoriteClick,
-                    modifier = Modifier.align(Alignment.TopEnd)
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(4.dp)
+                        .size(36.dp)
+                        .clip(androidx.compose.foundation.shape.CircleShape)
+                        .background(
+                            if (isFavorite) {
+                                ChampionCartColors.Brand.NeonCoral.copy(alpha = 0.2f)
+                            } else {
+                                Color.White.copy(alpha = 0.1f)
+                            }
+                        )
                 ) {
                     Icon(
                         imageVector = if (isFavorite) {
-                            Icons.Filled.Favorite
+                            androidx.compose.material.icons.Icons.Filled.Favorite
                         } else {
-                            Icons.Outlined.FavoriteBorder
+                            androidx.compose.material.icons.Icons.Outlined.FavoriteBorder
                         },
-                        contentDescription = null,
+                        contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites",
                         tint = if (isFavorite) {
                             ChampionCartColors.Brand.NeonCoral
                         } else {
-                            ChampionCartTheme.colors.onSurface
+                            ChampionCartTheme.colors.onSurface.copy(alpha = 0.6f)
                         }
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(Spacing.s))
+            Spacer(modifier = Modifier.height(8.dp))
 
-            // Product Name
+            // Product name
             Text(
                 text = productName,
-                style = MaterialTheme.typography.titleSmall,
-                maxLines = 2
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = 2,
+                color = ChampionCartTheme.colors.onSurface
             )
 
-            Spacer(modifier = Modifier.height(Spacing.xs))
+            Spacer(modifier = Modifier.height(4.dp))
 
-            // Store Name
-            Text(
-                text = storeName,
-                style = CustomTextStyles.storeName,
-                color = ChampionCartTheme.colors.onSurfaceVariant
-            )
-
-            Spacer(modifier = Modifier.height(Spacing.s))
-
-            // Price
-            PriceTag(
-                price = price,
-                priceLevel = priceLevel,
-                modifier = Modifier.fillMaxWidth()
-            )
-        }
-    }
-}
-
-/**
- * Store Glass Card
- */
-@Composable
-fun StoreGlassCard(
-    storeName: String,
-    storeIcon: @Composable () -> Unit,
-    itemCount: Int,
-    totalPrice: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    GlassCard(
-        onClick = onClick,
-        modifier = modifier
-            .storeGlass(storeName)
-            .fillMaxWidth(),
-        shape = ComponentShapes.Store.Card
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(Spacing.Component.paddingM),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(Spacing.m),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Store Icon
-                Box(
-                    modifier = Modifier.size(Sizing.Icon.xl)
-                ) {
-                    storeIcon()
-                }
-
-                // Store Info
-                Column {
-                    Text(
-                        text = storeName,
-                        style = CustomTextStyles.storeName
-                    )
-                    Text(
-                        text = "$itemCount פריטים",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = ChampionCartTheme.colors.onSurfaceVariant
-                    )
-                }
+            // Price with glow effect
+            val priceColor = when (priceLevel) {
+                PriceLevel.Best -> ChampionCartColors.Price.Best
+                PriceLevel.Mid -> ChampionCartColors.Price.Mid
+                PriceLevel.High -> ChampionCartColors.Price.High
             }
 
-            // Total Price
+            Box(
+                modifier = Modifier
+                    .clip(ComponentShapes.Product.Badge)
+                    .background(priceColor.copy(alpha = 0.1f))
+                    .border(
+                        width = 1.dp,
+                        color = priceColor.copy(alpha = 0.3f),
+                        shape = ComponentShapes.Product.Badge
+                    )
+                    .padding(horizontal = 8.dp, vertical = 4.dp)
+            ) {
+                Text(
+                    text = price,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = priceColor,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                )
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            // Store name
             Text(
-                text = totalPrice,
-                style = CustomTextStyles.price,
-                color = ChampionCartTheme.colors.primary
+                text = storeName,
+                style = MaterialTheme.typography.bodySmall,
+                color = ChampionCartTheme.colors.onSurfaceVariant.copy(alpha = 0.8f)
             )
         }
     }
 }
 
 /**
- * Summary Glass Card
+ * Stats Glass Card with enhanced contrast
  */
 @Composable
-fun SummaryGlassCard(
+fun StatsGlassCard(
     title: String,
     value: String,
     subtitle: String? = null,
@@ -263,7 +254,7 @@ fun SummaryGlassCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(Spacing.Component.paddingL),
+                .padding(16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -272,27 +263,162 @@ fun SummaryGlassCard(
             ) {
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.titleMedium
+                    style = MaterialTheme.typography.titleMedium,
+                    color = ChampionCartTheme.colors.onSurface
                 )
                 if (subtitle != null) {
+                    Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = subtitle,
                         style = MaterialTheme.typography.bodySmall,
-                        color = ChampionCartTheme.colors.onSurfaceVariant
+                        color = ChampionCartTheme.colors.onSurfaceVariant.copy(alpha = 0.8f)
                     )
                 }
             }
 
             Row(
-                horizontalArrangement = Arrangement.spacedBy(Spacing.s),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 if (icon != null) {
-                    icon()
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(androidx.compose.foundation.shape.CircleShape)
+                            .background(ChampionCartColors.Brand.ElectricMint.copy(alpha = 0.1f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        icon()
+                    }
                 }
                 Text(
                     text = value,
                     style = MaterialTheme.typography.headlineMedium,
+                    color = ChampionCartTheme.colors.primary,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Store Glass Card with branded styling
+ */
+@Composable
+fun StoreGlassCard(
+    storeName: String,
+    storeIcon: @Composable () -> Unit,
+    itemCount: Int,
+    totalPrice: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val storeColor = when (storeName.lowercase()) {
+        "shufersal", "שופרסל" -> ChampionCartColors.Store.Shufersal
+        "rami levi", "רמי לוי" -> ChampionCartColors.Store.RamiLevi
+        "victory", "ויקטורי" -> ChampionCartColors.Store.Victory
+        "mega", "מגה" -> ChampionCartColors.Store.Mega
+        "osher ad", "אושר עד" -> ChampionCartColors.Store.OsherAd
+        "coop", "קופ" -> ChampionCartColors.Store.Coop
+        else -> ChampionCartColors.Brand.ElectricMint
+    }
+
+    Card(
+        onClick = onClick,
+        modifier = modifier
+            .fillMaxWidth()
+            .shadow(
+                elevation = 6.dp,
+                shape = ComponentShapes.Store.Card,
+                ambientColor = storeColor.copy(alpha = 0.1f),
+                spotColor = storeColor.copy(alpha = 0.15f)
+            )
+            .clip(ComponentShapes.Store.Card)
+            .background(
+                brush = Brush.verticalGradient(
+                    colors = listOf(
+                        storeColor.copy(alpha = 0.1f),
+                        storeColor.copy(alpha = 0.08f),
+                        storeColor.copy(alpha = 0.05f)
+                    )
+                )
+            )
+            .border(
+                width = 1.5.dp,
+                brush = Brush.linearGradient(
+                    colors = listOf(
+                        storeColor.copy(alpha = 0.4f),
+                        storeColor.copy(alpha = 0.2f)
+                    )
+                ),
+                shape = ComponentShapes.Store.Card
+            ),
+        colors = CardDefaults.cardColors(
+            containerColor = Color.Transparent
+        ),
+        shape = ComponentShapes.Store.Card,
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Left side - Store info
+            Row(
+                modifier = Modifier.weight(1f),
+                horizontalArrangement = Arrangement.Start,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Store icon/logo
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(ComponentShapes.Store.Logo)
+                        .background(Color.White.copy(alpha = 0.1f))
+                        .border(
+                            width = 1.dp,
+                            color = storeColor.copy(alpha = 0.3f),
+                            shape = ComponentShapes.Store.Logo
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    storeIcon()
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Column {
+                    Text(
+                        text = storeName,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = ChampionCartTheme.colors.onSurface
+                    )
+                    Text(
+                        text = "$itemCount items",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = ChampionCartTheme.colors.onSurfaceVariant.copy(alpha = 0.8f)
+                    )
+                }
+            }
+
+            // Right side - Total price
+            Column(
+                horizontalAlignment = Alignment.End
+            ) {
+                Text(
+                    text = "Total",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = ChampionCartTheme.colors.onSurfaceVariant.copy(alpha = 0.7f)
+                )
+                Text(
+                    text = totalPrice,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
                     color = ChampionCartTheme.colors.primary
                 )
             }
