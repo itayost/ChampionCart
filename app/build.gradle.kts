@@ -33,20 +33,32 @@ android {
             )
         }
     }
+
+    // Updated to JDK 17 for better compatibility
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
+
     kotlinOptions {
-        jvmTarget = "11"
+        jvmTarget = "17"
     }
+
     buildFeatures {
         compose = true
         buildConfig = true
     }
+
+    composeOptions {
+        // Ensure Compose compiler extension version matches Kotlin
+        kotlinCompilerExtensionVersion = "1.5.10"
+    }
+
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
+            // Additional excludes to prevent conflicts
+            excludes += "/META-INF/gradle/incremental.annotation.processors"
         }
     }
 }
@@ -64,8 +76,8 @@ dependencies {
 
     // Navigation & Lifecycle
     implementation("androidx.navigation:navigation-compose:2.7.7")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
-    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.7.0")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.0")  // Updated version
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.0")   // Updated version
     implementation("androidx.compose.material:material-icons-extended:1.5.4")
 
     // Testing
@@ -84,12 +96,12 @@ dependencies {
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
 
     // Dependency Injection - Hilt
-    implementation("com.google.dagger:hilt-android:2.48.1")
-    ksp("com.google.dagger:hilt-compiler:2.48.1")
-    implementation("androidx.hilt:hilt-navigation-compose:1.1.0")
+    implementation("com.google.dagger:hilt-android:2.51")      // Updated to latest stable
+    ksp("com.google.dagger:hilt-compiler:2.51")               // Updated to latest stable
+    implementation("androidx.hilt:hilt-navigation-compose:1.2.0")  // Updated version
 
     // Coroutines
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.0")  // Updated version
 
     // Image Loading
     implementation("io.coil-kt:coil-compose:2.5.0")
@@ -111,7 +123,7 @@ dependencies {
     implementation("androidx.core:core-splashscreen:1.0.1")
 
     // Advanced Material3 components
-    implementation("androidx.compose.material3:material3-window-size-class:1.1.2")
+    implementation("androidx.compose.material3:material3-window-size-class:1.2.0")  // Updated version
 
     // FUTURE ADDITIONS (uncomment when needed):
 
