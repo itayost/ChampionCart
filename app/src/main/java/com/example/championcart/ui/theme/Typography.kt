@@ -59,7 +59,24 @@ val HebrewFontFamily = FontFamily(
 
 // Default font family with Hebrew fallback
 val defaultFontFamily = FontFamily(
-    InterFontFamily.fonts + HebrewFontFamily.fonts
+    // Inter fonts
+    Font(R.font.inter_thin, FontWeight.Thin),
+    Font(R.font.inter_extralight, FontWeight.ExtraLight),
+    Font(R.font.inter_light, FontWeight.Light),
+    Font(R.font.inter_regular, FontWeight.Normal),
+    Font(R.font.inter_medium, FontWeight.Medium),
+    Font(R.font.inter_semibold, FontWeight.SemiBold),
+    Font(R.font.inter_bold, FontWeight.Bold),
+    Font(R.font.inter_extrabold, FontWeight.ExtraBold),
+    Font(R.font.inter_black, FontWeight.Black),
+    // Hebrew fonts as fallback
+    Font(R.font.heebo_light, FontWeight.Light),
+    Font(R.font.heebo_regular, FontWeight.Normal),
+    Font(R.font.heebo_medium, FontWeight.Medium),
+    Font(R.font.heebo_semibold, FontWeight.SemiBold),
+    Font(R.font.heebo_bold, FontWeight.Bold),
+    Font(R.font.heebo_extrabold, FontWeight.ExtraBold),
+    Font(R.font.heebo_black, FontWeight.Black)
 )
 
 // Typography

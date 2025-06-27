@@ -41,14 +41,9 @@ fun ChampionCartApp() {
     // Accessibility settings
     val reduceMotion = remember { context.isReduceMotionEnabled() }
 
-    // Responsive configuration
-    val responsiveConfig = remember { ResponsiveConfig(context) }
-
     // Provide local compositions
     CompositionLocalProvider(
         LocalTimeOfDay provides currentTimeOfDay,
-        LocalReduceMotion provides reduceMotion,
-        LocalResponsiveConfig provides responsiveConfig
     ) {
         ChampionCartScaffold(navController = navController)
     }

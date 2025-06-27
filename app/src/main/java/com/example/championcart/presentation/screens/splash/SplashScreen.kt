@@ -19,7 +19,6 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.championcart.R
 import com.example.championcart.presentation.components.FloatingOrb
-import com.example.championcart.presentation.components.ShimmerBox
 import com.example.championcart.ui.theme.*
 import kotlinx.coroutines.delay
 
@@ -125,7 +124,7 @@ fun SplashScreen(
                     }
                     .glass(
                         intensity = GlassIntensity.Heavy,
-                        shape = ComponentShapes.roundedFull
+                        shape = ComponentShapes.Product.Badge
                     ),
                 contentAlignment = Alignment.Center
             ) {
