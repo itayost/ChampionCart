@@ -1,209 +1,296 @@
 package com.example.championcart.presentation.navigation
 
-import androidx.compose.animation.*
-import androidx.compose.animation.core.*
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
-import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.example.championcart.data.local.preferences.TokenManager
-import com.example.championcart.presentation.screens.auth.LoginRegisterScreen
-import com.example.championcart.presentation.screens.cart.CartScreen
+import androidx.navigation.navArgument
+import androidx.navigation.NavType
+import com.example.championcart.presentation.screens.splash.SplashScreen
+import com.example.championcart.presentation.screens.auth.LoginScreen
+import com.example.championcart.presentation.screens.auth.RegisterScreen
 import com.example.championcart.presentation.screens.home.HomeScreen
-import com.example.championcart.presentation.screens.home.HomeScreen
-import com.example.championcart.presentation.screens.profile.ProfileScreen
 import com.example.championcart.presentation.screens.search.SearchScreen
 import com.example.championcart.presentation.screens.product.ProductDetailScreen
-import com.example.championcart.presentation.screens.splash.ModernSplashScreen
+import com.example.championcart.presentation.screens.category.CategoryProductsScreen
+import com.example.championcart.presentation.screens.cart.CartScreen
+import com.example.championcart.presentation.screens.profile.ProfileScreen
+import com.example.championcart.presentation.screens.settings.SettingsScreen
+import com.example.championcart.presentation.screens.settings.CitySelectionScreen
+import com.example.championcart.presentation.screens.cart.SavedCartsScreen
+import com.example.championcart.presentation.screens.store.StoreComparisonScreen
+import com.example.championcart.presentation.screens.store.StoreDetailScreen
+import com.example.championcart.presentation.screens.info.AboutScreen
+import com.example.championcart.presentation.screens.info.HelpScreen
+import com.example.championcart.presentation.screens.info.PrivacyPolicyScreen
+import com.example.championcart.presentation.screens.info.TermsOfServiceScreen
 
-/**
- * Main navigation host for the Champion Cart app
- */
 @Composable
 fun ChampionCartNavHost(
     navController: NavHostController,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    startDestination: String = Screen.Splash.route
 ) {
-    val context = LocalContext.current
-    val tokenManager = TokenManager(context)
-
-    // Check if user is logged in
-    val startDestination = if (tokenManager.getToken() != null) {
-        Screen.Home.route
-    } else {
-        Screen.Splash.route
-    }
-
     NavHost(
         navController = navController,
         startDestination = startDestination,
-        modifier = modifier,
-        enterTransition = { slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Left) },
-        exitTransition = { slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Left) },
-        popEnterTransition = { slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Right) },
-        popExitTransition = { slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Right) }
+        modifier = modifier
     ) {
         // Splash Screen
-        composable(
-            route = Screen.Splash.route,
-            enterTransition = { fadeIn(animationSpec = tween(300)) },
-            exitTransition = { fadeOut(animationSpec = tween(300)) }
-        ) {
-            ModernSplashScreen(
-                onSplashComplete = {
-                    // Check if user is logged in
-                    if (tokenManager.getToken() != null) {
-                        navController.navigate(Screen.Home.route) {
-                            popUpTo(Screen.Splash.route) { inclusive = true }
-                        }
-                    } else {
-                        navController.navigate(Screen.Auth.route) {
-                            popUpTo(Screen.Splash.route) { inclusive = true }
-                        }
+        composable(route = Screen.Splash.route) {
+            SplashScreen(
+                onNavigateToLogin = {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(Screen.Splash.route) { inclusive = true }
+                    }
+                },
+                onNavigateToHome = {
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.Splash.route) { inclusive = true }
                     }
                 }
             )
         }
 
-        // Auth Screen (Login/Register)
-        composable(
-            route = Screen.Auth.route,
-            enterTransition = {
-                fadeIn(animationSpec = tween(500)) +
-                        slideInVertically(
-                            initialOffsetY = { it / 20 },
-                            animationSpec = tween(500)
-                        )
-            },
-            exitTransition = {
-                fadeOut(animationSpec = tween(300))
-            }
-        ) {
-            LoginRegisterScreen(
+        // Authentication
+        composable(route = Screen.Login.route) {
+            LoginScreen(
+                onNavigateToRegister = {
+                    navController.navigate(Screen.Register.route)
+                },
                 onNavigateToHome = {
                     navController.navigate(Screen.Home.route) {
-                        popUpTo(Screen.Auth.route) { inclusive = true }
+                        popUpTo(Screen.Login.route) { inclusive = true }
                     }
                 },
                 onSkipLogin = {
                     navController.navigate(Screen.Home.route) {
-                        popUpTo(Screen.Auth.route) { inclusive = true }
+                        popUpTo(Screen.Login.route) { inclusive = true }
                     }
                 }
             )
         }
 
-        // Home Screen
-        composable(
-            route = Screen.Home.route,
-            enterTransition = {
-                when (initialState.destination.route) {
-                    Screen.Auth.route -> fadeIn(animationSpec = tween(600)) +
-                            expandIn(
-                                expandFrom = Alignment.Center,
-                                animationSpec = tween(600, easing = FastOutSlowInEasing)
-                            )
-                    else -> defaultEnterTransition()
+        composable(route = Screen.Register.route) {
+            RegisterScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onNavigateToHome = {
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(0) { inclusive = true }
+                    }
                 }
-            }
-        ) {
-            HomeScreen(navController)
-        }
-
-        // Search Screen
-        composable(
-            route = Screen.Search.route,
-            enterTransition = {
-                slideIntoContainer(
-                    AnimatedContentTransitionScope.SlideDirection.Up,
-                    animationSpec = tween(400, easing = FastOutSlowInEasing)
-                ) + fadeIn(animationSpec = tween(400))
-            },
-            exitTransition = {
-                slideOutOfContainer(
-                    AnimatedContentTransitionScope.SlideDirection.Down,
-                    animationSpec = tween(400, easing = FastOutSlowInEasing)
-                ) + fadeOut(animationSpec = tween(400))
-            }
-        ) {
-            SearchScreen(navController = navController)
-        }
-
-        // Cart Screen
-        composable(
-            route = Screen.Cart.route,
-            enterTransition = { defaultEnterTransition() },
-            exitTransition = { defaultExitTransition() }
-        ) {
-            CartScreen(
-                    navController = navController
             )
         }
 
-        // Profile Screen
-        composable(
-            route = Screen.Profile.route,
-            enterTransition = {
-                slideIntoContainer(
-                    AnimatedContentTransitionScope.SlideDirection.Left,
-                    animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioMediumBouncy,
-                        stiffness = Spring.StiffnessMedium
-                    )
-                )
-            }
-        ) {
-            ProfileScreen(navController)
+        // Main screens (bottom nav)
+        composable(route = Screen.Home.route) {
+            HomeScreen(
+                onNavigateToSearch = { query ->
+                    navController.navigate(Screen.Search.createRoute(query))
+                },
+                onNavigateToCategory = { categoryId, categoryName ->
+                    navController.navigate(Screen.CategoryProducts.createRoute(categoryId, categoryName))
+                },
+                onNavigateToProduct = { productId ->
+                    navController.navigate(Screen.ProductDetail.createRoute(productId))
+                },
+                onNavigateToCitySelection = {
+                    navController.navigate(Screen.CitySelection.route)
+                }
+            )
         }
 
-        // Product Detail Screen
+        composable(
+            route = Screen.Search.route,
+            arguments = listOf(navArgument("query") {
+                type = NavType.StringType
+                nullable = true
+                defaultValue = null
+            })
+        ) { backStackEntry ->
+            val query = backStackEntry.arguments?.getString("query")
+            SearchScreen(
+                initialQuery = query,
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onNavigateToProduct = { productId ->
+                    navController.navigate(Screen.ProductDetail.createRoute(productId))
+                }
+            )
+        }
+
+        composable(route = Screen.Cart.route) {
+            CartScreen(
+                onNavigateToProduct = { productId ->
+                    navController.navigate(Screen.ProductDetail.createRoute(productId))
+                },
+                onNavigateToStoreComparison = {
+                    navController.navigate(Screen.StoreComparison.route)
+                },
+                onNavigateToLogin = {
+                    navController.navigate(Screen.Login.route)
+                }
+            )
+        }
+
+        composable(route = Screen.Profile.route) {
+            ProfileScreen(
+                onNavigateToSettings = {
+                    navController.navigate(Screen.Settings.route)
+                },
+                onNavigateToSavedCarts = {
+                    navController.navigate(Screen.SavedCarts.route)
+                },
+                onNavigateToLogin = {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(Screen.Home.route) { inclusive = false }
+                    }
+                }
+            )
+        }
+
+        // Product related
         composable(
             route = Screen.ProductDetail.route,
-            arguments = Screen.ProductDetail.arguments,
-            enterTransition = {
-                scaleIn(
-                    initialScale = 0.9f,
-                    animationSpec = tween(300)
-                ) + fadeIn(animationSpec = tween(300))
-            },
-            exitTransition = {
-                scaleOut(
-                    targetScale = 0.9f,
-                    animationSpec = tween(300)
-                ) + fadeOut(animationSpec = tween(300))
-            }
+            arguments = listOf(navArgument("productId") {
+                type = NavType.StringType
+            })
         ) { backStackEntry ->
             val productId = backStackEntry.arguments?.getString("productId") ?: ""
             ProductDetailScreen(
                 productId = productId,
-                onNavigateBack = { navController.navigateUp() },
-                onAddToCart = {
-                    // Show success animation then navigate
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        composable(
+            route = Screen.CategoryProducts.route,
+            arguments = listOf(
+                navArgument("categoryId") { type = NavType.StringType },
+                navArgument("categoryName") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val categoryId = backStackEntry.arguments?.getString("categoryId") ?: ""
+            val categoryName = backStackEntry.arguments?.getString("categoryName") ?: ""
+            CategoryProductsScreen(
+                categoryId = categoryId,
+                categoryName = categoryName,
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onNavigateToProduct = { productId ->
+                    navController.navigate(Screen.ProductDetail.createRoute(productId))
+                }
+            )
+        }
+
+        // Settings & preferences
+        composable(route = Screen.Settings.route) {
+            SettingsScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onNavigateToCitySelection = {
+                    navController.navigate(Screen.CitySelection.route)
+                },
+                onNavigateToAbout = {
+                    navController.navigate(Screen.About.route)
+                },
+                onNavigateToHelp = {
+                    navController.navigate(Screen.Help.route)
+                },
+                onNavigateToPrivacyPolicy = {
+                    navController.navigate(Screen.PrivacyPolicy.route)
+                },
+                onNavigateToTermsOfService = {
+                    navController.navigate(Screen.TermsOfService.route)
+                }
+            )
+        }
+
+        composable(route = Screen.CitySelection.route) {
+            CitySelectionScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        composable(route = Screen.SavedCarts.route) {
+            SavedCartsScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onNavigateToCart = {
                     navController.navigate(Screen.Cart.route)
                 }
             )
         }
+
+        // Store related
+        composable(route = Screen.StoreComparison.route) {
+            StoreComparisonScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onNavigateToStore = { storeId ->
+                    navController.navigate(Screen.StoreDetail.createRoute(storeId))
+                }
+            )
+        }
+
+        composable(
+            route = Screen.StoreDetail.route,
+            arguments = listOf(navArgument("storeId") {
+                type = NavType.StringType
+            })
+        ) { backStackEntry ->
+            val storeId = backStackEntry.arguments?.getString("storeId") ?: ""
+            StoreDetailScreen(
+                storeId = storeId,
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        // Info screens
+        composable(route = Screen.About.route) {
+            AboutScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        composable(route = Screen.Help.route) {
+            HelpScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        composable(route = Screen.PrivacyPolicy.route) {
+            PrivacyPolicyScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        composable(route = Screen.TermsOfService.route) {
+            TermsOfServiceScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
     }
-}
-
-// Default enter transition
-@OptIn(ExperimentalAnimationApi::class)
-private fun AnimatedContentTransitionScope<NavBackStackEntry>.defaultEnterTransition(): EnterTransition {
-    return slideIntoContainer(
-        AnimatedContentTransitionScope.SlideDirection.Left,
-        animationSpec = tween(300, easing = FastOutSlowInEasing)
-    ) + fadeIn(animationSpec = tween(300))
-}
-
-// Default exit transition
-@OptIn(ExperimentalAnimationApi::class)
-private fun AnimatedContentTransitionScope<NavBackStackEntry>.defaultExitTransition(): ExitTransition {
-    return slideOutOfContainer(
-        AnimatedContentTransitionScope.SlideDirection.Left,
-        animationSpec = tween(300, easing = FastOutSlowInEasing)
-    ) + fadeOut(animationSpec = tween(300))
 }

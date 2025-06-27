@@ -1,238 +1,158 @@
 package com.example.championcart.presentation.screens.home
 
-import androidx.compose.animation.*
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavController
-import com.example.championcart.domain.models.GroupedProduct
 import com.example.championcart.presentation.components.*
-import com.example.championcart.presentation.navigation.Screen
 import com.example.championcart.ui.theme.*
-import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
-    navController: NavController,
-    viewModel: HomeViewModel = hiltViewModel()
+    onNavigateToSearch: (String?) -> Unit,
+    onNavigateToCategory: (String, String) -> Unit,
+    onNavigateToProduct: (String) -> Unit,
+    onNavigateToCitySelection: () -> Unit
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val haptics = LocalHapticFeedback.current
-    val scope = rememberCoroutineScope()
-
-    ChampionCartScreen(
-        topBar = {
-            HomeTopBar(
-                selectedCity = uiState.selectedCity.toString(),
-                onCityClick = { viewModel.showCitySelector() },
-                onSearchClick = {
-                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                    navController.navigate(Screen.Search.route)
-                }
-            )
-        }
-    ) { paddingValues ->
-        LazyColumn(
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(Spacing.m)
+    ) {
+        // Header
+        Row(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues),
-            contentPadding = PaddingValues(bottom = SpacingTokens.XL),
-            verticalArrangement = Arrangement.spacedBy(SpacingTokens.L)
+                .fillMaxWidth()
+                .padding(bottom = Spacing.m),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            // Welcome section
-            item {
-                WelcomeCard(
-                    userName = uiState.userName,
-                    isGuest = uiState.isGuest,
-                    onLoginClick = {
-                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                        navController.navigate(Screen.Auth.route)
-                    }
-                )
-            }
+            Text(
+                text = "שלום, משתמש!",
+                style = CustomTextStyles.headlineMedium
+            )
 
-            // Featured deals
-            if (uiState.featuredDeals.isNotEmpty()) {
-                item {
-                    FeaturedDealsSection(
-                        deals = uiState.featuredDeals,
-                        onProductClick = { product ->
-                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                            navController.navigate(
-                                Screen.ProductDetail.createRoute(product.itemCode)
-                            )
-                        },
-                        onAddToCart = { product ->
-                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                            viewModel.addToCart(product)
-                        }
+            GlassButton(
+                onClick = onNavigateToCitySelection,
+                text = "תל אביב",
+                icon = {
+                    Icon(
+                        Icons.Default.LocationOn,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp)
                     )
-                }
-            }
-
-            // Popular products
-            item {
-                SectionHeader(
-                    title = "פופולרי עכשיו",
-                    subtitle = "המוצרים הכי נרכשים",
-                    modifier = Modifier.padding(horizontal = SpacingTokens.L)
-                )
-            }
-
-            items(uiState.popularProducts) { product ->
-                ProductCard(
-                    product = product,
-                    onAddToCart = { storePrice ->
-                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                        viewModel.addToCart(product)
-                    },
-                    onFavoriteToggle = {
-                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                        // TODO: Implement favorites
-                    },
-                    onProductClick = {
-                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                        navController.navigate(
-                            Screen.ProductDetail.createRoute(product.itemCode)
-                        )
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = SpacingTokens.L)
-                )
-            }
-
-            // Empty state
-            if (!uiState.isLoading &&
-                uiState.featuredDeals.isEmpty() &&
-                uiState.popularProducts.isEmpty()) {
-                item {
-                    EmptyState(
-                        type = EmptyStateType.NO_RESULTS,
-                        title = "אין מוצרים",
-                        subtitle = "לא נמצאו מוצרים באזור שנבחר",
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(SpacingTokens.XL)
-                    )
-                }
-            }
-
-            // Loading state
-            if (uiState.isLoading && uiState.popularProducts.isEmpty()) {
-                items(5) {
-                    LoadingProductCard(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = SpacingTokens.L)
-                    )
-                }
-            }
-        }
-
-        // Dialogs
-        if (uiState.showCitySelector) {
-            SelectionDialog(
-                title = "בחר עיר",
-                items = uiState.availableCities,
-                selectedItem = uiState.selectedCity,
-                onItemSelected = { city ->
-                    viewModel.updateCity(city)
                 },
-                onDismiss = { viewModel.hideCitySelector() }
+                style = GlassButtonStyle.Secondary,
+                size = GlassButtonSize.Small
             )
         }
 
-        // Error handling
-        uiState.error?.let { error ->
-            val snackbarHostState = remember { SnackbarHostState() }
-            LaunchedEffect(error) {
-                snackbarHostState.showSnackbar(
-                    message = error,
-                    actionLabel = "נסה שוב",
-                    duration = SnackbarDuration.Long
-                )
-                viewModel.clearError()
-            }
-
-            SnackbarHost(hostState = snackbarHostState)
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun HomeTopBar(
-    selectedCity: String,
-    onCityClick: () -> Unit,
-    onSearchClick: () -> Unit
-) {
-    ChampionCartTopBar(
-        title = selectedCity,
-        showBackButton = false,
-        onBackClick = {},
-        actions = {
-            IconButton(onClick = onSearchClick) {
+        // Search bar
+        GlassCard(
+            onClick = { onNavigateToSearch(null) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = Spacing.m)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(Spacing.m),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Icon(
                     Icons.Default.Search,
-                    contentDescription = "חיפוש",
-                    tint = MaterialTheme.colorScheme.onSurface
+                    contentDescription = null,
+                    tint = ChampionCartTheme.colors.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.width(Spacing.s))
+                Text(
+                    text = "חפש מוצרים...",
+                    style = CustomTextStyles.bodyMedium,
+                    color = ChampionCartTheme.colors.onSurfaceVariant
                 )
             }
         }
-    )
-}
 
-@Composable
-private fun WelcomeCard(
-    userName: String,
-    isGuest: Boolean,
-    onLoginClick: () -> Unit
-) {
-    GlassCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = SpacingTokens.L)
-    ) {
-        Column(
-            modifier = Modifier.padding(SpacingTokens.XL),
-            verticalArrangement = Arrangement.spacedBy(SpacingTokens.M)
+        // Quick Stats
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = Spacing.m),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.s)
         ) {
-            Text(
-                text = if (isGuest) "שלום אורח" else "שלום $userName",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold
+            QuickStatCard(
+                title = "חיסכון החודש",
+                value = "₪245",
+                icon = Icons.Default.TrendingUp,
+                modifier = Modifier.weight(1f)
             )
-
-            Text(
-                text = "מה תרצה לקנות היום?",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+            QuickStatCard(
+                title = "מוצרים בעגלה",
+                value = "12",
+                icon = Icons.Default.ShoppingCart,
+                modifier = Modifier.weight(1f)
             )
+        }
 
-            if (isGuest) {
-                PrimaryButton(
-                    text = "התחבר כדי לשמור עגלות",
-                    onClick = onLoginClick,
-                    modifier = Modifier.fillMaxWidth(),
-                    leadingIcon = Icons.Default.Login
+        // Categories
+        Text(
+            text = "קטגוריות",
+            style = CustomTextStyles.headlineSmall,
+            modifier = Modifier.padding(bottom = Spacing.s)
+        )
+
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(3),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.s),
+            verticalArrangement = Arrangement.spacedBy(Spacing.s)
+        ) {
+            item {
+                CategoryCard(
+                    name = "פירות וירקות",
+                    icon = Icons.Default.LocalFlorist,
+                    onClick = { onNavigateToCategory("1", "פירות וירקות") }
+                )
+            }
+            item {
+                CategoryCard(
+                    name = "מוצרי חלב",
+                    icon = Icons.Default.Kitchen,
+                    onClick = { onNavigateToCategory("2", "מוצרי חלב") }
+                )
+            }
+            item {
+                CategoryCard(
+                    name = "בשר ודגים",
+                    icon = Icons.Default.Restaurant,
+                    onClick = { onNavigateToCategory("3", "בשר ודגים") }
+                )
+            }
+            item {
+                CategoryCard(
+                    name = "מאפים",
+                    icon = Icons.Default.Cake,
+                    onClick = { onNavigateToCategory("4", "מאפים") }
+                )
+            }
+            item {
+                CategoryCard(
+                    name = "משקאות",
+                    icon = Icons.Default.LocalDrink,
+                    onClick = { onNavigateToCategory("5", "משקאות") }
+                )
+            }
+            item {
+                CategoryCard(
+                    name = "ניקיון",
+                    icon = Icons.Default.CleaningServices,
+                    onClick = { onNavigateToCategory("6", "ניקיון") }
                 )
             }
         }
@@ -240,31 +160,7 @@ private fun WelcomeCard(
 }
 
 @Composable
-private fun QuickStatsSection(stats: QuickStats) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = SpacingTokens.L),
-        horizontalArrangement = Arrangement.spacedBy(SpacingTokens.M)
-    ) {
-        QuickStatCard(
-            title = "נחסך החודש",
-            value = "₪${stats.savedThisMonth}",
-            icon = Icons.Default.Savings,
-            modifier = Modifier.weight(1f)
-        )
-
-        QuickStatCard(
-            title = "עגלות שמורות",
-            value = stats.savedCarts.toString(),
-            icon = Icons.Default.ShoppingCart,
-            modifier = Modifier.weight(1f)
-        )
-    }
-}
-
-@Composable
-private fun QuickStatCard(
+fun QuickStatCard(
     title: String,
     value: String,
     icon: ImageVector,
@@ -272,41 +168,31 @@ private fun QuickStatCard(
 ) {
     GlassCard(
         modifier = modifier,
-        onClick = null // Make it non-clickable
+        intensity = GlassIntensity.Light
     ) {
         Row(
-            modifier = Modifier.padding(SpacingTokens.M),
-            horizontalArrangement = Arrangement.spacedBy(SpacingTokens.S),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(Spacing.m),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(
-                        MaterialTheme.colorScheme.extended.electricMint.copy(alpha = 0.1f)
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.extended.electricMint,
-                    modifier = Modifier.size(SizingTokens.IconS)
-                )
-            }
-
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = ChampionCartColors.Brand.ElectricMint,
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(modifier = Modifier.width(Spacing.s))
             Column {
                 Text(
                     text = value,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.extended.electricMint
+                    style = CustomTextStyles.headlineSmall,
+                    color = ChampionCartTheme.colors.primary
                 )
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    style = CustomTextStyles.labelSmall,
+                    color = ChampionCartTheme.colors.onSurfaceVariant
                 )
             }
         }
@@ -314,64 +200,35 @@ private fun QuickStatCard(
 }
 
 @Composable
-private fun FeaturedDealsSection(
-    deals: List<GroupedProduct>,
-    onProductClick: (GroupedProduct) -> Unit,
-    onAddToCart: (GroupedProduct) -> Unit
-) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(SpacingTokens.M)
-    ) {
-        SectionHeader(
-            title = "מבצעי היום",
-            subtitle = "החיסכון הכי גדול",
-            modifier = Modifier.padding(horizontal = SpacingTokens.L),
-            action = {
-                TextButton(
-                    onClick = { /* Navigate to all deals */ },
-                    colors = ButtonDefaults.textButtonColors(
-                        contentColor = MaterialTheme.colorScheme.extended.electricMint
-                    )
-                ) {
-                    Text("ראה הכל")
-                }
-            }
-        )
-
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(SpacingTokens.M),
-            contentPadding = PaddingValues(horizontal = SpacingTokens.L)
-        ) {
-            items(deals) { product ->
-                CompactProductCard(
-                    product = product,
-                    onProductClick = { onProductClick(product) },
-                    onAddToCart = { storePrice -> onAddToCart(product) },
-                    modifier = Modifier.width(200.dp)
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun LoadingProductCard(
-    modifier: Modifier = Modifier
+fun CategoryCard(
+    name: String,
+    icon: ImageVector,
+    onClick: () -> Unit
 ) {
     GlassCard(
-        modifier = modifier.height(120.dp)
+        onClick = onClick,
+        modifier = Modifier.aspectRatio(1f),
+        intensity = GlassIntensity.Light
     ) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(Spacing.s),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            LoadingIndicator()
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = ChampionCartColors.Brand.ElectricMint,
+                modifier = Modifier.size(32.dp)
+            )
+            Spacer(modifier = Modifier.height(Spacing.xs))
+            Text(
+                text = name,
+                style = CustomTextStyles.labelMedium,
+                color = ChampionCartTheme.colors.onSurface
+            )
         }
     }
 }
-
-// Data class for quick stats
-data class QuickStats(
-    val savedThisMonth: Double,
-    val savedCarts: Int
-)

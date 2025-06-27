@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalMaterial3Api::class)
+
 package com.example.championcart.presentation.components
 
 import androidx.compose.animation.core.FastOutSlowInEasing

@@ -1,10 +1,15 @@
 package com.example.championcart.di
 
 import com.example.championcart.data.repository.AuthRepositoryImpl
+import com.example.championcart.data.repository.CartRepositoryImpl
+import com.example.championcart.data.repository.CityRepositoryImpl
 import com.example.championcart.data.repository.PriceRepositoryImpl
+import com.example.championcart.data.repository.UserRepositoryImpl
 import com.example.championcart.domain.repository.AuthRepository
 import com.example.championcart.domain.repository.CartRepository
+import com.example.championcart.domain.repository.CityRepository
 import com.example.championcart.domain.repository.PriceRepository
+import com.example.championcart.domain.repository.UserRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -27,11 +32,21 @@ abstract class RepositoryModule {
         priceRepositoryImpl: PriceRepositoryImpl
     ): PriceRepository
 
-    // If PriceRepositoryImpl also implements CartRepository
-    // Otherwise, you need to create CartRepositoryImpl
     @Binds
     @Singleton
     abstract fun bindCartRepository(
-        priceRepositoryImpl: PriceRepositoryImpl
+        cartRepositoryImpl: CartRepositoryImpl
     ): CartRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindCityRepository(
+        cityRepositoryImpl: CityRepositoryImpl
+    ): CityRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindUserRepository(
+        userRepositoryImpl: UserRepositoryImpl
+    ): UserRepository
 }
