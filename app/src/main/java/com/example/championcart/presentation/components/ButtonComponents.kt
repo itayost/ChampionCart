@@ -27,6 +27,28 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
  */
 
 /**
+ * Accessibility-aware float animation
+ */
+@Composable
+fun animateFloatWithAccessibility(
+    targetValue: Float,
+    animationSpec: AnimationSpec<Float> = spring(
+        dampingRatio = Spring.DampingRatioMediumBouncy,
+        stiffness = Spring.StiffnessLow
+    ),
+    label: String = "FloatAnimation",
+    finishedListener: ((Float) -> Unit)? = null
+): State<Float> {
+    val reduceMotion = LocalReduceMotion.current
+    return animateFloatAsState(
+        targetValue = targetValue,
+        animationSpec = if (reduceMotion) snap() else animationSpec,
+        label = label,
+        finishedListener = finishedListener
+    )
+}
+
+/**
  * Primary Glass Button
  */
 @Composable

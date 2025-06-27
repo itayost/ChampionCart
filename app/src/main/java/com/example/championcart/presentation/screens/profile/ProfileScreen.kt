@@ -3,8 +3,11 @@ package com.example.championcart.presentation.screens.profile
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import com.example.championcart.presentation.components.*
 import com.example.championcart.ui.theme.*
 
@@ -39,10 +42,9 @@ fun ProfileScreen(
 
             Spacer(modifier = Modifier.height(Spacing.m))
 
-            GlassButton(
+            SecondaryGlassButton(
                 onClick = onNavigateToLogin,
                 text = "התנתק",
-                style = GlassButtonStyle.Secondary,
                 modifier = Modifier.fillMaxWidth()
             )
         }
@@ -76,7 +78,7 @@ fun ProfileMenuItem(
                 )
                 Text(
                     text = title,
-                    style = CustomTextStyles.bodyLarge
+                    style = ChampionCartTypography.bodyLarge
                 )
             }
             Icon(

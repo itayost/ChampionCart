@@ -3,8 +3,10 @@ package com.example.championcart.presentation.screens.cart
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import com.example.championcart.presentation.components.*
 import com.example.championcart.ui.theme.*
 
@@ -38,10 +40,9 @@ fun CartScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            GlassButton(
+            SecondaryGlassButton(
                 onClick = { onNavigateToProduct("sample-product") },
                 text = "הוסף מוצרים",
-                style = GlassButtonStyle.Secondary,
                 modifier = Modifier.fillMaxWidth()
             )
         }

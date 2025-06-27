@@ -121,7 +121,7 @@ private fun getCurrentTimeOfDay(): TimeOfDay {
         in 6..11 -> TimeOfDay.MORNING
         in 12..17 -> TimeOfDay.AFTERNOON
         in 18..23 -> TimeOfDay.EVENING
-        else -> TimeOfDay.NIGHT
+        else -> TimeOfDay.AFTERNOON
     }
 }
 

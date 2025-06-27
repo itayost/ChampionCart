@@ -9,6 +9,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.example.championcart.presentation.components.*
 import com.example.championcart.ui.theme.*
@@ -35,10 +36,10 @@ fun HomeScreen(
         ) {
             Text(
                 text = "שלום, משתמש!",
-                style = CustomTextStyles.headlineMedium
+                style = CustomTextStyles.price
             )
 
-            GlassButton(
+            SecondaryGlassButton(
                 onClick = onNavigateToCitySelection,
                 text = "תל אביב",
                 icon = {
@@ -48,8 +49,7 @@ fun HomeScreen(
                         modifier = Modifier.size(16.dp)
                     )
                 },
-                style = GlassButtonStyle.Secondary,
-                size = GlassButtonSize.Small
+                size = ButtonSize.Small
             )
         }
 
@@ -74,7 +74,7 @@ fun HomeScreen(
                 Spacer(modifier = Modifier.width(Spacing.s))
                 Text(
                     text = "חפש מוצרים...",
-                    style = CustomTextStyles.bodyMedium,
+                    style = CustomTextStyles.priceSmall,
                     color = ChampionCartTheme.colors.onSurfaceVariant
                 )
             }
@@ -104,7 +104,7 @@ fun HomeScreen(
         // Categories
         Text(
             text = "קטגוריות",
-            style = CustomTextStyles.headlineSmall,
+            style = CustomTextStyles.badge,
             modifier = Modifier.padding(bottom = Spacing.s)
         )
 
@@ -186,12 +186,12 @@ fun QuickStatCard(
             Column {
                 Text(
                     text = value,
-                    style = CustomTextStyles.headlineSmall,
+                    style = CustomTextStyles.price,
                     color = ChampionCartTheme.colors.primary
                 )
                 Text(
                     text = title,
-                    style = CustomTextStyles.labelSmall,
+                    style = CustomTextStyles.badge,
                     color = ChampionCartTheme.colors.onSurfaceVariant
                 )
             }
@@ -226,7 +226,7 @@ fun CategoryCard(
             Spacer(modifier = Modifier.height(Spacing.xs))
             Text(
                 text = name,
-                style = CustomTextStyles.labelMedium,
+                style = CustomTextStyles.category,
                 color = ChampionCartTheme.colors.onSurface
             )
         }

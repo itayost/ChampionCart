@@ -8,8 +8,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import androidx.compose.material3.pulltorefresh.PullToRefreshState
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -347,8 +349,8 @@ fun ErrorState(
 }
 
 /**
- * Pull to Refresh Container with Glass Effect
- * Using Material 3's official PullToRefreshContainer
+ * Pull to Refresh Box with Glass Effect
+ * Using Material 3's official PullToRefreshBox
  *
  * @param isRefreshing Whether the refresh is in progress
  * @param onRefresh Callback when user pulls to refresh
@@ -365,36 +367,32 @@ fun GlassPullToRefresh(
 ) {
     val pullRefreshState = rememberPullToRefreshState()
 
-    if (pullRefreshState.isRefreshing) {
-        LaunchedEffect(true) {
-            onRefresh()
+    PullToRefreshBox(
+        isRefreshing = isRefreshing,
+        onRefresh = onRefresh,
+        state = pullRefreshState,
+        modifier = modifier,
+        indicator = {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = 16.dp)
+                    .glass(
+                        intensity = GlassIntensity.Heavy,
+                        shape = RoundedCornerShape(50)
+                    )
+            ) {
+                // The default indicator will be shown inside the glass box
+                PullToRefreshDefaults.Indicator(
+                    state = pullRefreshState,
+                    isRefreshing = isRefreshing,
+                    containerColor = ChampionCartTheme.colors.surface,
+                    color = ChampionCartColors.Brand.ElectricMint
+                )
+            }
         }
-    }
-
-    LaunchedEffect(isRefreshing) {
-        if (isRefreshing) {
-            pullRefreshState.startRefresh()
-        } else {
-            pullRefreshState.endRefresh()
-        }
-    }
-
-    Box(
-        modifier = modifier.nestedScroll(pullRefreshState.nestedScrollConnection)
     ) {
         content()
-
-        PullToRefreshContainer(
-            state = pullRefreshState,
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .glass(
-                    intensity = GlassIntensity.Heavy,
-                    shape = RoundedCornerShape(50)
-                ),
-            containerColor = ChampionCartTheme.colors.surface,
-            contentColor = ChampionCartColors.Brand.ElectricMint
-        )
     }
 }
 

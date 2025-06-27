@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.championcart.R
 import com.example.championcart.presentation.components.FloatingOrb
+import com.example.championcart.presentation.components.GlassLoadingCard
 import com.example.championcart.ui.theme.*
 import kotlinx.coroutines.delay
 
@@ -141,7 +142,7 @@ fun SplashScreen(
             // App name
             Text(
                 text = "ChampionCart",
-                style = CustomTextStyles.displayLarge.copy(
+                style = ChampionCartTypography.displayLarge.copy(
                     fontSize = 36.sp,
                     fontWeight = FontWeight.Bold
                 ),
@@ -153,7 +154,7 @@ fun SplashScreen(
             // Tagline
             Text(
                 text = "חסכון חכם בכל קנייה",
-                style = CustomTextStyles.bodyLarge,
+                style = ChampionCartTypography.bodyLarge,
                 color = ChampionCartTheme.colors.onBackground.copy(alpha = 0.7f)
             )
 
@@ -161,10 +162,8 @@ fun SplashScreen(
 
             // Loading indicator
             if (state is SplashState.Loading) {
-                ShimmerBox(
-                    width = 200.dp,
-                    height = 4.dp,
-                    shape = ComponentShapes.roundedFull
+                GlassLoadingCard(
+                    message = "טוען את ChampionCart..."
                 )
             }
         }
@@ -172,7 +171,7 @@ fun SplashScreen(
         // Version info at bottom
         Text(
             text = "v1.0.0",
-            style = CustomTextStyles.labelSmall,
+            style = ChampionCartTypography.labelSmall,
             color = ChampionCartTheme.colors.onBackground.copy(alpha = 0.5f),
             modifier = Modifier
                 .align(Alignment.BottomCenter)

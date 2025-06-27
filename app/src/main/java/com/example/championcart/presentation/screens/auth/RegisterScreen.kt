@@ -7,6 +7,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import com.example.championcart.presentation.components.GlassButton
 import com.example.championcart.presentation.components.PlaceholderContent
+import com.example.championcart.presentation.components.SecondaryGlassButton
 import com.example.championcart.ui.theme.*
 
 @Composable
@@ -31,10 +32,9 @@ fun RegisterScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            GlassButton(
+            SecondaryGlassButton(
                 onClick = onNavigateBack,
                 text = "חזור להתחברות",
-                style = GlassButtonStyle.Secondary,
                 modifier = Modifier.fillMaxWidth()
             )
         }

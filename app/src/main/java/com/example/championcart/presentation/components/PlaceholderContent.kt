@@ -80,7 +80,7 @@ fun PlaceholderContent(
                         }
                         .glass(
                             intensity = GlassIntensity.Medium,
-                            shape = ComponentShapes.roundedFull
+                            shape = ComponentShapes.Special.Chip
                         ),
                     contentAlignment = Alignment.Center
                 ) {
@@ -98,7 +98,7 @@ fun PlaceholderContent(
             // Title
             Text(
                 text = title,
-                style = CustomTextStyles.headlineLarge,
+                style = CustomTextStyles.storeName,
                 color = ChampionCartTheme.colors.onBackground,
                 textAlign = TextAlign.Center
             )
@@ -108,7 +108,7 @@ fun PlaceholderContent(
                 Spacer(modifier = Modifier.height(Spacing.s))
                 Text(
                     text = subtitle,
-                    style = CustomTextStyles.bodyLarge,
+                    style = CustomTextStyles.price,
                     color = ChampionCartTheme.colors.onBackground.copy(alpha = 0.7f),
                     textAlign = TextAlign.Center
                 )

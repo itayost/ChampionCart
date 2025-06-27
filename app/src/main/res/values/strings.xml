@@ -1,3 +1,143 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Champion Cart</string>
+    <!-- App Name -->
+    <string name="app_name">ChampionCart</string>
+
+    <!-- Navigation Labels -->
+    <string name="nav_home">בית</string>
+    <string name="nav_search">חיפוש</string>
+    <string name="nav_cart">עגלה</string>
+    <string name="nav_profile">פרופיל</string>
+
+    <!-- Screen Titles -->
+    <string name="title_home">ChampionCart</string>
+    <string name="title_search">חיפוש מוצרים</string>
+    <string name="title_cart">העגלה שלי</string>
+    <string name="title_profile">הפרופיל שלי</string>
+    <string name="title_login">כניסה</string>
+    <string name="title_register">הרשמה</string>
+    <string name="title_settings">הגדרות</string>
+    <string name="title_saved_carts">עגלות שמורות</string>
+    <string name="title_city_selection">בחירת עיר</string>
+    <string name="title_store_comparison">השוואת חנויות</string>
+
+    <!-- Common Actions -->
+    <string name="action_save">שמור</string>
+    <string name="action_cancel">ביטול</string>
+    <string name="action_delete">מחק</string>
+    <string name="action_edit">ערוך</string>
+    <string name="action_share">שתף</string>
+    <string name="action_search">חפש</string>
+    <string name="action_filter">סנן</string>
+    <string name="action_sort">מיין</string>
+    <string name="action_add_to_cart">הוסף לעגלה</string>
+    <string name="action_remove_from_cart">הסר מהעגלה</string>
+    <string name="action_compare_prices">השווה מחירים</string>
+    <string name="action_find_cheapest">מצא את המחיר הזול ביותר</string>
+
+    <!-- Auth Strings -->
+    <string name="login_email_hint">אימייל</string>
+    <string name="login_password_hint">סיסמה</string>
+    <string name="login_button">כניסה</string>
+    <string name="register_button">הרשמה</string>
+    <string name="login_forgot_password">שכחת סיסמה?</string>
+    <string name="login_no_account">אין לך חשבון?</string>
+    <string name="login_have_account">יש לך חשבון?</string>
+    <string name="login_guest_mode">המשך כאורח</string>
+
+    <!-- Home Screen -->
+    <string name="home_greeting_morning">בוקר טוב</string>
+    <string name="home_greeting_afternoon">צהריים טובים</string>
+    <string name="home_greeting_evening">ערב טוב</string>
+    <string name="home_greeting_night">לילה טוב</string>
+    <string name="home_select_city">בחר עיר</string>
+    <string name="home_featured_deals">מבצעים מומלצים</string>
+    <string name="home_quick_stats">סטטיסטיקות מהירות</string>
+    <string name="home_popular_categories">קטגוריות פופולריות</string>
+    <string name="home_recent_searches">חיפושים אחרונים</string>
+
+    <!-- Search -->
+    <string name="search_hint">חפש מוצרים…</string>
+    <string name="search_no_results">לא נמצאו תוצאות</string>
+    <string name="search_results_count">נמצאו %d תוצאות</string>
+    <string name="search_filter_by_store">סנן לפי חנות</string>
+    <string name="search_filter_by_price">סנן לפי מחיר</string>
+    <string name="search_sort_by">מיין לפי</string>
+    <string name="search_sort_price_low_high">מחיר: נמוך לגבוה</string>
+    <string name="search_sort_price_high_low">מחיר: גבוה לנמוך</string>
+    <string name="search_sort_name">שם</string>
+
+    <!-- Cart -->
+    <string name="cart_empty">העגלה ריקה</string>
+    <string name="cart_empty_message">התחל להוסיף מוצרים כדי למצוא את המחירים הטובים ביותר!</string>
+    <string name="cart_total">סה״כ</string>
+    <string name="cart_items_count">%d פריטים</string>
+    <string name="cart_find_cheapest_store">מצא את החנות הזולה ביותר</string>
+    <string name="cart_save">שמור עגלה</string>
+    <string name="cart_clear">נקה עגלה</string>
+
+    <!-- Profile -->
+    <string name="profile_guest_user">משתמש אורח</string>
+    <string name="profile_login_prompt">התחבר כדי לשמור עגלות ולעקוב אחר החיסכון שלך</string>
+    <string name="profile_saved_carts">עגלות שמורות</string>
+    <string name="profile_savings_summary">סיכום חיסכון</string>
+    <string name="profile_settings">הגדרות</string>
+    <string name="profile_about">אודות</string>
+    <string name="profile_help">עזרה</string>
+    <string name="profile_logout">התנתק</string>
+
+    <!-- Settings -->
+    <string name="settings_notifications">התראות</string>
+    <string name="settings_price_alerts">התראות מחיר</string>
+    <string name="settings_language">שפה</string>
+    <string name="settings_theme">ערכת נושא</string>
+    <string name="settings_theme_light">בהיר</string>
+    <string name="settings_theme_dark">כהה</string>
+    <string name="settings_theme_system">לפי המערכת</string>
+    <string name="settings_privacy">פרטיות</string>
+    <string name="settings_terms">תנאי שימוש</string>
+
+    <!-- Stores -->
+    <string name="store_shufersal">שופרסל</string>
+    <string name="store_rami_levy">רמי לוי</string>
+    <string name="store_victory">ויקטורי</string>
+    <string name="store_mega">מגה</string>
+    <string name="store_osher_ad">אושר עד</string>
+    <string name="store_coop">קואופ</string>
+
+    <!-- Categories -->
+    <string name="category_dairy">מוצרי חלב</string>
+    <string name="category_meat">בשר ועוף</string>
+    <string name="category_produce">פירות וירקות</string>
+    <string name="category_bakery">מאפיה</string>
+    <string name="category_frozen">מוצרים קפואים</string>
+    <string name="category_household">מוצרי ניקיון</string>
+    <string name="category_beverages">משקאות</string>
+    <string name="category_snacks">חטיפים</string>
+
+    <!-- Error Messages -->
+    <string name="error_network">בעיית תקשורת. אנא בדוק את החיבור לאינטרנט.</string>
+    <string name="error_server">שגיאת שרת. אנא נסה שוב מאוחר יותר.</string>
+    <string name="error_unknown">שגיאה לא ידועה</string>
+    <string name="error_invalid_email">כתובת אימייל לא תקינה</string>
+    <string name="error_invalid_password">הסיסמה חייבת להכיל לפחות 6 תווים</string>
+    <string name="error_login_failed">הכניסה נכשלה. אנא בדוק את הפרטים.</string>
+
+    <!-- Success Messages -->
+    <string name="success_cart_saved">העגלה נשמרה בהצלחה!</string>
+    <string name="success_item_added">המוצר נוסף לעגלה</string>
+    <string name="success_item_removed">המוצר הוסר מהעגלה</string>
+    <string name="success_login">ברוך הבא!</string>
+    <string name="success_register">ההרשמה הושלמה בהצלחה!</string>
+
+    <!-- Misc -->
+    <string name="currency_symbol">₪</string>
+    <string name="loading">טוען…</string>
+    <string name="retry">נסה שוב</string>
+    <string name="see_all">ראה הכל</string>
+    <string name="close">סגור</string>
+    <string name="confirm">אישור</string>
+    <string name="skip">דלג</string>
+    <string name="next">הבא</string>
+    <string name="back">חזור</string>
 </resources>

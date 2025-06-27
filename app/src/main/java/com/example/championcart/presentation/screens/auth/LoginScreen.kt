@@ -11,6 +11,7 @@ import androidx.compose.ui.text.style.TextAlign
 import com.example.championcart.presentation.components.GlassButton
 import com.example.championcart.presentation.components.GlassCard
 import com.example.championcart.presentation.components.PlaceholderContent
+import com.example.championcart.presentation.components.SecondaryGlassButton
 import com.example.championcart.ui.theme.*
 
 @Composable
@@ -34,10 +35,9 @@ fun LoginScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            GlassButton(
+            SecondaryGlassButton(
                 onClick = onNavigateToRegister,
                 text = "צור חשבון חדש",
-                style = GlassButtonStyle.Secondary,
                 modifier = Modifier.fillMaxWidth()
             )
 

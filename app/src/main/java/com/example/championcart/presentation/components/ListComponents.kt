@@ -2,7 +2,6 @@ package com.example.championcart.presentation.components
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -20,6 +19,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.championcart.ui.theme.*
 
@@ -29,9 +29,30 @@ import com.example.championcart.ui.theme.*
  */
 
 /**
+ * Animate DP with accessibility consideration
+ */
+@Composable
+fun animateDpAsState(
+    targetValue: Dp,
+    animationSpec: AnimationSpec<Dp> = spring(
+        dampingRatio = Spring.DampingRatioMediumBouncy,
+        stiffness = Spring.StiffnessLow
+    ),
+    label: String = "DpAnimation",
+    finishedListener: ((Dp) -> Unit)? = null
+): State<Dp> {
+    val reduceMotion = LocalReduceMotion.current
+    return animateDpAsState(
+        targetValue = targetValue,
+        animationSpec = if (reduceMotion) snap() else animationSpec,
+        label = label,
+        finishedListener = finishedListener
+    )
+}
+
+/**
  * Product List Item
  */
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ProductListItem(
     product: ProductItemData,
@@ -53,7 +74,6 @@ fun ProductListItem(
             onClick = onClick,
             modifier = Modifier
                 .fillMaxWidth()
-                .animateItemPlacement()
                 .glass(
                     intensity = GlassIntensity.Light,
                     shape = ComponentShapes.Card.Small
@@ -147,7 +167,6 @@ fun ProductListItem(
 /**
  * Product Grid
  */
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ProductGrid(
     products: List<ProductItemData>,
@@ -165,9 +184,7 @@ fun ProductGrid(
     ) {
         if (isLoading) {
             items(6) { index ->
-                ProductCardSkeleton(
-                    modifier = Modifier.animateItemPlacement()
-                )
+                ProductCardSkeleton()
             }
         } else {
             itemsIndexed(
@@ -183,7 +200,6 @@ fun ProductGrid(
                     onClick = { onProductClick(product) },
                     isFavorite = product.isFavorite,
                     modifier = Modifier
-                        .animateItemPlacement()
                         .graphicsLayer {
                             // Stagger animation
                             alpha = 1f
@@ -197,7 +213,6 @@ fun ProductGrid(
 /**
  * Store List
  */
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun StoreList(
     stores: List<StoreItemData>,
@@ -221,7 +236,6 @@ fun StoreList(
                 index = index,
                 modifier = Modifier
                     .padding(horizontal = Spacing.m)
-                    .animateItemPlacement()
             )
         }
     }
@@ -230,7 +244,6 @@ fun StoreList(
 /**
  * Store List Item
  */
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun StoreListItem(
     store: StoreItemData,
@@ -239,7 +252,7 @@ fun StoreListItem(
     modifier: Modifier = Modifier,
     index: Int = 0
 ) {
-    val animatedElevation by animateDpWithAccessibility(
+    val animatedElevation by animateDpAsState(
         targetValue = if (isSelected) {
             Elevation.Component.cardHover
         } else {
@@ -280,7 +293,6 @@ fun StoreListItem(
 /**
  * Cart Item List
  */
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun CartItemList(
     items: List<CartItemData>,
@@ -306,7 +318,6 @@ fun CartItemList(
                 index = index,
                 modifier = Modifier
                     .padding(horizontal = Spacing.m)
-                    .animateItemPlacement()
             )
         }
 
@@ -314,8 +325,8 @@ fun CartItemList(
         item {
             Spacer(modifier = Modifier.height(Spacing.m))
             TotalPriceDisplay(
-                totalPrice = items.sumOf {
-                    it.price.toDoubleOrNull() ?: 0.0 * it.quantity
+                totalPrice = items.sumOf { item ->
+                    (item.price.toDoubleOrNull() ?: 0.0) * item.quantity
                 }.toString(),
                 itemCount = items.sumOf { it.quantity },
                 modifier = Modifier.padding(horizontal = Spacing.m)

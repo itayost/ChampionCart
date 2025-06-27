@@ -9,9 +9,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavController
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.championcart.presentation.navigation.ChampionCartBottomBar
@@ -73,7 +75,7 @@ private fun ChampionCartScaffold(
         }
     ) { paddingValues ->
         ChampionCartNavHost(
-            navController = navController,
+            navController = navController as NavHostController,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)

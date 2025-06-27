@@ -60,11 +60,10 @@ fun SearchSuggestionChip(
     text: String,
     onClick: () -> Unit
 ) {
-    GlassButton(
+    SecondaryGlassButton(
         onClick = onClick,
         text = text,
-        style = GlassButtonStyle.Secondary,
-        size = GlassButtonSize.Small,
+        size = ButtonSize.Small,
         modifier = Modifier.fillMaxWidth()
     )
 }
