@@ -2,44 +2,45 @@ package com.example.championcart.presentation.components
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.BlurredEdgeTreatment
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.RoundRect
+import androidx.compose.ui.geometry.toRect
+import androidx.compose.ui.graphics.*
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.championcart.ui.theme.*
+import dev.chrisbanes.haze.hazeChild
 
 /**
- * Navigation Components
- * Theme-aware bottom bar, top bar, and navigation elements with Electric Harmony styling
- */
-
-/**
- * Theme-Aware Glass Bottom Navigation Bar
+ * Modern Glassmorphic Bottom Navigation Bar
+ * Enhanced with animated glow effects inspired by Sina Samaki's implementation
+ * Uses the existing BottomNavItem data class structure
  */
 @Composable
-fun GlassBottomNavigationBar(
+fun ModernGlassBottomNavigationBar(
     navController: NavController,
     items: List<BottomNavItem>,
     modifier: Modifier = Modifier
@@ -47,67 +48,159 @@ fun GlassBottomNavigationBar(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
     val darkTheme = isSystemInDarkTheme()
+    val haptics = LocalHapticFeedback.current
+    val config = ChampionCartTheme.config
+    val hazeState = LocalHazeState.current
 
-    Surface(
+    // Find selected index
+    val selectedIndex = items.indexOfFirst { it.route == currentDestination?.route }
+        .coerceAtLeast(0)
+
+    // Animated values for the glow effect
+    val animatedSelectedIndex by animateFloatAsState(
+        targetValue = selectedIndex.toFloat(),
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioLowBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "selectedTab"
+    )
+
+    // Color animation based on selected route
+    val animatedColor by animateColorAsState(
+        targetValue = when (currentDestination?.route) {
+            "home" -> ChampionCartColors.Brand.ElectricMint
+            "search" -> ChampionCartColors.Brand.CosmicPurple
+            "cart" -> ChampionCartColors.Brand.NeonCoral
+            "profile" -> ChampionCartColors.Store.Victory
+            else -> ChampionCartColors.Brand.ElectricMint
+        },
+        animationSpec = spring(stiffness = Spring.StiffnessLow),
+        label = "tabColor"
+    )
+
+    Box(
         modifier = modifier
             .fillMaxWidth()
-            .then(
-                if (darkTheme) {
-                    Modifier.shadow(
-                        elevation = 8.dp,
-                        shape = ComponentShapes.Navigation.BottomNavigation,
-                        ambientColor = Color.Black.copy(alpha = 0.2f),
-                        spotColor = Color.Black.copy(alpha = 0.3f)
-                    )
-                } else {
-                    Modifier.shadow(
-                        elevation = 4.dp,
-                        shape = ComponentShapes.Navigation.BottomNavigation
+            .height(Sizing.Navigation.bottomBarHeight)
+            .padding(horizontal = SpacingTokens.L, vertical = SpacingTokens.S)
+    ) {
+        // Animated glow layer behind the navigation bar
+        if (!config.reduceMotion && config.enableMicroAnimations) {
+            Canvas(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(CircleShape)
+                    .blur(40.dp, edgeTreatment = BlurredEdgeTreatment.Unbounded)
+            ) {
+                if (items.isNotEmpty()) {
+                    val tabWidth = size.width / items.size
+                    drawCircle(
+                        color = animatedColor.copy(alpha = 0.5f),
+                        radius = size.height / 2.5f,
+                        center = Offset(
+                            (tabWidth * animatedSelectedIndex) + tabWidth / 2,
+                            size.height / 2
+                        )
                     )
                 }
-            ),
-        shape = ComponentShapes.Navigation.BottomNavigation,
-        color = if (darkTheme) {
-            MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)
-        } else {
-            MaterialTheme.colorScheme.surface
-        }
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .then(
-                    if (darkTheme) {
-                        Modifier.glass(
-                            intensity = GlassIntensity.Heavy,
-                            style = GlassStyle.Subtle,
-                            shape = ComponentShapes.Navigation.BottomNavigation,
-                            darkTheme = darkTheme
-                        )
-                    } else {
-                        Modifier.background(
-                            brush = Brush.verticalGradient(
-                                colors = listOf(
-                                    Color.White.copy(alpha = 0.98f),
-                                    Color.White.copy(alpha = 0.95f)
-                                )
+            }
+
+            // Bottom gleam effect
+            Canvas(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(CircleShape)
+            ) {
+                if (items.isNotEmpty()) {
+                    val path = Path().apply {
+                        addRoundRect(
+                            RoundRect(
+                                rect = size.toRect(),
+                                cornerRadius = CornerRadius(size.height)
                             )
                         )
                     }
+                    val pathMeasure = PathMeasure()
+                    pathMeasure.setPath(path, false)
+                    val pathLength = pathMeasure.length
+
+                    val tabWidth = size.width / items.size
+
+                    drawPath(
+                        path = path,
+                        brush = Brush.horizontalGradient(
+                            colors = listOf(
+                                animatedColor.copy(alpha = 0f),
+                                animatedColor.copy(alpha = 0.6f),
+                                animatedColor.copy(alpha = 0.6f),
+                                animatedColor.copy(alpha = 0f)
+                            ),
+                            startX = tabWidth * animatedSelectedIndex,
+                            endX = tabWidth * (animatedSelectedIndex + 1)
+                        ),
+                        style = Stroke(
+                            width = 2.dp.toPx(),
+                            pathEffect = PathEffect.dashPathEffect(
+                                intervals = floatArrayOf(pathLength / 2, pathLength)
+                            )
+                        )
+                    )
+                }
+            }
+        }
+
+        // Main navigation bar container
+        Surface(
+            modifier = Modifier
+                .fillMaxSize()
+                .then(
+                    if (hazeState != null && config.enableBlurEffects) {
+                        Modifier.hazeChild(
+                            state = hazeState,
+                            shape = CircleShape
+                        )
+                    } else {
+                        Modifier.modernGlass(
+                            intensity = GlassIntensity.Heavy,
+                            shape = CircleShape,
+                            hazeState = hazeState
+                        )
+                    }
                 )
+                .border(
+                    width = Dp.Hairline,
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            Color.White.copy(alpha = if (darkTheme) 0.2f else 0.8f),
+                            Color.White.copy(alpha = if (darkTheme) 0.05f else 0.2f)
+                        )
+                    ),
+                    shape = CircleShape
+                ),
+            shape = CircleShape,
+            color = if (darkTheme) {
+                MaterialTheme.colorScheme.surface.copy(alpha = 0.7f)
+            } else {
+                MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
+            },
+            shadowElevation = 0.dp
         ) {
             NavigationBar(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxSize(),
                 containerColor = Color.Transparent,
                 contentColor = MaterialTheme.colorScheme.onSurface,
                 tonalElevation = 0.dp
             ) {
-                items.forEach { item ->
+                items.forEachIndexed { index, item ->
                     val selected = currentDestination?.route == item.route
 
-                    GlassNavigationBarItem(
+                    ModernNavigationBarItem(
                         selected = selected,
                         onClick = {
+                            if (config.enableHaptics) {
+                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                            }
                             if (!selected) {
                                 navController.navigate(item.route) {
                                     popUpTo(navController.graph.startDestinationId) {
@@ -119,23 +212,31 @@ fun GlassBottomNavigationBar(
                             }
                         },
                         icon = {
-                            GlassNavIcon(
+                            ModernNavIcon(
                                 icon = item.icon,
                                 selected = selected,
-                                badge = item.badge,
-                                darkTheme = darkTheme
+                                badge = item.badge as Int?,
+                                index = index,
+                                animatedSelectedIndex = animatedSelectedIndex,
+                                animatedColor = animatedColor
                             )
                         },
                         label = {
-                            Text(
-                                text = item.label,
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = if (selected) FontWeight.Medium else FontWeight.Normal,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        },
-                        darkTheme = darkTheme
+                            AnimatedVisibility(
+                                visible = selected,
+                                enter = fadeIn() + scaleIn(),
+                                exit = fadeOut() + scaleOut()
+                            ) {
+                                Text(
+                                    text = item.label,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Medium,
+                                    color = animatedColor,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
                     )
                 }
             }
@@ -144,33 +245,33 @@ fun GlassBottomNavigationBar(
 }
 
 /**
- * Theme-Aware Glass Navigation Bar Item
+ * Modern Navigation Bar Item with enhanced animations
  */
 @Composable
-private fun RowScope.GlassNavigationBarItem(
+private fun RowScope.ModernNavigationBarItem(
     selected: Boolean,
     onClick: () -> Unit,
     icon: @Composable () -> Unit,
-    label: @Composable () -> Unit,
-    darkTheme: Boolean
+    label: @Composable () -> Unit
 ) {
-    val haptics = LocalHapticFeedback.current
     val config = ChampionCartTheme.config
 
     val animatedScale by animateFloatAsState(
-        targetValue = if (selected) 1.1f else 1f,
-        animationSpec = ChampionCartAnimations.Springs.responsive(),
+        targetValue = if (selected) 1f else 0.9f,
+        animationSpec = if (!config.reduceMotion) {
+            spring(
+                dampingRatio = Spring.DampingRatioMediumBouncy,
+                stiffness = Spring.StiffnessMedium
+            )
+        } else {
+            snap()
+        },
         label = "navItemScale"
     )
 
     NavigationBarItem(
         selected = selected,
-        onClick = {
-            if (config.enableHaptics) {
-                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-            }
-            onClick()
-        },
+        onClick = onClick,
         icon = {
             Box(
                 modifier = Modifier.graphicsLayer {
@@ -183,72 +284,114 @@ private fun RowScope.GlassNavigationBarItem(
         },
         label = label,
         colors = NavigationBarItemDefaults.colors(
-            selectedIconColor = ChampionCartColors.Brand.ElectricMint,
-            selectedTextColor = ChampionCartColors.Brand.ElectricMint,
-            indicatorColor = if (darkTheme) {
-                ChampionCartColors.Brand.ElectricMint.copy(alpha = 0.15f)
-            } else {
-                ChampionCartColors.Brand.ElectricMint.copy(alpha = 0.08f)
-            },
-            unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-            unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+            selectedIconColor = MaterialTheme.colorScheme.onSurface,
+            selectedTextColor = MaterialTheme.colorScheme.onSurface,
+            indicatorColor = Color.Transparent,
+            unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+            unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
         )
     )
 }
 
 /**
- * Theme-Aware Navigation Icon with Badge
+ * Modern Navigation Icon with proximity-based animations
  */
 @Composable
-private fun GlassNavIcon(
-    icon: ImageVector,
+private fun ModernNavIcon(
+    icon: Int,
     selected: Boolean,
-    badge: Int? = null,
-    darkTheme: Boolean
+    badge: Int?,
+    index: Int,
+    animatedSelectedIndex: Float,
+    animatedColor: Color
 ) {
-    BadgedBox(
-        badge = {
-            if (badge != null && badge > 0) {
-                GlassBadge(count = badge, darkTheme = darkTheme)
-            }
+    val config = ChampionCartTheme.config
+
+    // Calculate proximity to selected index for wave effect
+    val distance = kotlin.math.abs(index - animatedSelectedIndex)
+    val proximityScale = if (!config.reduceMotion && config.enableMicroAnimations) {
+        1f + (0.1f * (1f - (distance / 2f).coerceIn(0f, 1f)))
+    } else {
+        1f
+    }
+
+    val iconColor by animateColorAsState(
+        targetValue = if (selected) animatedColor else MaterialTheme.colorScheme.onSurfaceVariant,
+        animationSpec = tween(200),
+        label = "iconColor"
+    )
+
+    Box(
+        modifier = Modifier.graphicsLayer {
+            scaleX = proximityScale
+            scaleY = proximityScale
         }
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            modifier = Modifier.size(Sizing.Icon.m)
-        )
+        BadgedBox(
+            badge = {
+                if (badge != null && badge > 0) {
+                    ModernGlassBadge(
+                        count = badge,
+                        color = if (selected) animatedColor else ChampionCartColors.Brand.NeonCoral
+                    )
+                }
+            }
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(24.dp),
+                tint = iconColor
+            )
+        }
     }
 }
 
 /**
- * Theme-Aware Glass Badge
+ * Modern Glass Badge with animation
  */
 @Composable
-fun GlassBadge(
+fun ModernGlassBadge(
     count: Int,
-    modifier: Modifier = Modifier,
-    darkTheme: Boolean = isSystemInDarkTheme()
+    color: Color = ChampionCartColors.Brand.NeonCoral,
+    modifier: Modifier = Modifier
 ) {
     val displayCount = if (count > 99) "99+" else count.toString()
+    val config = ChampionCartTheme.config
+
+    val animatedScale by animateFloatAsState(
+        targetValue = 1f,
+        animationSpec = if (!config.reduceMotion) {
+            spring(
+                dampingRatio = Spring.DampingRatioMediumBouncy,
+                stiffness = Spring.StiffnessLow
+            )
+        } else {
+            snap()
+        },
+        label = "badgeScale"
+    )
 
     Box(
         modifier = modifier
             .size(if (displayCount.length > 2) 24.dp else 20.dp)
+            .graphicsLayer {
+                scaleX = animatedScale
+                scaleY = animatedScale
+            }
+            .clip(CircleShape)
             .background(
-                color = ChampionCartColors.Brand.NeonCoral,
-                shape = ComponentShapes.Special.Badge
-            )
-            .then(
-                if (darkTheme) {
-                    Modifier
-                } else {
-                    Modifier.border(
-                        width = 0.5.dp,
-                        color = ChampionCartColors.Brand.NeonCoral.copy(alpha = 0.3f),
-                        shape = ComponentShapes.Special.Badge
+                brush = Brush.radialGradient(
+                    colors = listOf(
+                        color,
+                        color.copy(alpha = 0.8f)
                     )
-                }
+                )
+            )
+            .border(
+                width = 0.5.dp,
+                color = Color.White.copy(alpha = 0.3f),
+                shape = CircleShape
             ),
         contentAlignment = Alignment.Center
     ) {
@@ -256,356 +399,8 @@ fun GlassBadge(
             text = displayCount,
             style = MaterialTheme.typography.labelSmall,
             color = Color.White,
-            fontSize = if (displayCount.length > 2) 10.sp else 11.sp
+            fontSize = if (displayCount.length > 2) 10.sp else 11.sp,
+            fontWeight = FontWeight.Bold
         )
     }
 }
-
-/**
- * Theme-Aware Glass Top App Bar
- */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun GlassTopAppBar(
-    title: String,
-    modifier: Modifier = Modifier,
-    navigationIcon: @Composable (() -> Unit)? = null,
-    actions: @Composable RowScope.() -> Unit = {},
-    scrollBehavior: TopAppBarScrollBehavior? = null
-) {
-    val darkTheme = isSystemInDarkTheme()
-
-    Surface(
-        modifier = modifier
-            .fillMaxWidth()
-            .then(
-                if (darkTheme) {
-                    Modifier
-                } else {
-                    Modifier.shadow(
-                        elevation = 2.dp,
-                        shape = RoundedCornerShape(0.dp)
-                    )
-                }
-            ),
-        color = if (darkTheme) {
-            MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)
-        } else {
-            MaterialTheme.colorScheme.background
-        }
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .then(
-                    if (darkTheme) {
-                        Modifier.glass(
-                            intensity = GlassIntensity.Medium,
-                            style = GlassStyle.Subtle,
-                            shape = RoundedCornerShape(0.dp),
-                            darkTheme = darkTheme
-                        )
-                    } else {
-                        Modifier
-                    }
-                )
-        ) {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                },
-                navigationIcon = navigationIcon ?: {},
-                actions = actions,
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent,
-                    scrolledContainerColor = Color.Transparent
-                ),
-                scrollBehavior = scrollBehavior
-            )
-        }
-    }
-}
-
-/**
- * Top Search Bar (already theme-aware)
- */
-@Composable
-fun TopSearchBar(
-    query: String,
-    onQueryChange: (String) -> Unit,
-    onBackClick: () -> Unit,
-    onSearchClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val darkTheme = isSystemInDarkTheme()
-
-    GlassSearchTopBar(
-        searchQuery = query,
-        onSearchQueryChange = onQueryChange,
-        onBackClick = onBackClick,
-        modifier = modifier,
-        darkTheme = darkTheme
-    )
-}
-
-/**
- * Theme-Aware Search Top App Bar
- */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun GlassSearchTopBar(
-    searchQuery: String,
-    onSearchQueryChange: (String) -> Unit,
-    onBackClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    placeholder: String = "חיפוש מוצרים...",
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    actions: @Composable RowScope.() -> Unit = {}
-) {
-    Surface(
-        modifier = modifier
-            .fillMaxWidth()
-            .then(
-                if (darkTheme) {
-                    Modifier
-                } else {
-                    Modifier.shadow(
-                        elevation = 2.dp,
-                        shape = RoundedCornerShape(0.dp)
-                    )
-                }
-            ),
-        color = if (darkTheme) {
-            MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)
-        } else {
-            MaterialTheme.colorScheme.background
-        }
-    ) {
-        TopAppBar(
-            title = {
-                GlassSearchField(
-                    value = searchQuery,
-                    onValueChange = onSearchQueryChange,
-                    placeholder = placeholder,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            },
-            navigationIcon = {
-                IconButton(onClick = onBackClick) {
-                    Icon(
-                        imageVector = Icons.Default.ArrowBack,
-                        contentDescription = "Back"
-                    )
-                }
-            },
-            actions = actions,
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = Color.Transparent
-            )
-        )
-    }
-}
-
-/**
- * Theme-Aware Tab Row
- */
-@Composable
-fun GlassTabRow(
-    selectedTabIndex: Int,
-    tabs: List<TabItem>,
-    modifier: Modifier = Modifier
-) {
-    val haptics = LocalHapticFeedback.current
-    val config = ChampionCartTheme.config
-    val darkTheme = isSystemInDarkTheme()
-
-    Surface(
-        modifier = modifier.fillMaxWidth(),
-        color = if (darkTheme) {
-            MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)
-        } else {
-            MaterialTheme.colorScheme.surface
-        }
-    ) {
-        ScrollableTabRow(
-            selectedTabIndex = selectedTabIndex,
-            modifier = Modifier
-                .fillMaxWidth()
-                .then(
-                    if (darkTheme) {
-                        Modifier.glass(
-                            intensity = GlassIntensity.Light,
-                            style = GlassStyle.Subtle,
-                            shape = RoundedCornerShape(0.dp),
-                            darkTheme = darkTheme
-                        )
-                    } else {
-                        Modifier.background(
-                            Color.White.copy(alpha = 0.98f)
-                        )
-                    }
-                ),
-            containerColor = Color.Transparent,
-            contentColor = MaterialTheme.colorScheme.onSurface,
-            edgePadding = Spacing.m,
-            indicator = { tabPositions ->
-                TabRowDefaults.Indicator(
-                    modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
-                    color = ChampionCartColors.Brand.ElectricMint,
-                    height = 3.dp
-                )
-            },
-            divider = {
-                if (!darkTheme) {
-                    HorizontalDivider(
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                    )
-                }
-            }
-        ) {
-            tabs.forEachIndexed { index, tab ->
-                Tab(
-                    selected = selectedTabIndex == index,
-                    onClick = {
-                        if (config.enableHaptics) {
-                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                        }
-                        tab.onClick()
-                    },
-                    text = {
-                        Text(
-                            text = tab.title,
-                            fontWeight = if (selectedTabIndex == index) {
-                                FontWeight.Medium
-                            } else {
-                                FontWeight.Normal
-                            }
-                        )
-                    },
-                    icon = tab.icon?.let {
-                        {
-                            Icon(
-                                imageVector = it,
-                                contentDescription = null,
-                                modifier = Modifier.size(Sizing.Icon.s)
-                            )
-                        }
-                    },
-                    selectedContentColor = ChampionCartColors.Brand.ElectricMint,
-                    unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-    }
-}
-
-/**
- * Theme-Aware Navigation Rail for tablets
- */
-@Composable
-fun GlassNavigationRail(
-    selectedItem: String,
-    items: List<NavigationRailItem>,
-    modifier: Modifier = Modifier,
-    header: @Composable (ColumnScope.() -> Unit)? = null
-) {
-    val darkTheme = isSystemInDarkTheme()
-
-    Surface(
-        modifier = modifier,
-        color = if (darkTheme) {
-            MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)
-        } else {
-            MaterialTheme.colorScheme.surface
-        }
-    ) {
-        NavigationRail(
-            modifier = Modifier
-                .then(
-                    if (darkTheme) {
-                        Modifier.glass(
-                            intensity = GlassIntensity.Medium,
-                            style = GlassStyle.Subtle,
-                            shape = RoundedCornerShape(0.dp),
-                            darkTheme = darkTheme
-                        )
-                    } else {
-                        Modifier.background(
-                            Color.White.copy(alpha = 0.98f)
-                        )
-                    }
-                ),
-            containerColor = Color.Transparent,
-            contentColor = MaterialTheme.colorScheme.onSurface,
-            header = header
-        ) {
-            items.forEach { item ->
-                val selected = selectedItem == item.route
-
-                NavigationRailItem(
-                    selected = selected,
-                    onClick = item.onClick,
-                    icon = {
-                        BadgedBox(
-                            badge = {
-                                if (item.badge != null && item.badge > 0) {
-                                    GlassBadge(count = item.badge, darkTheme = darkTheme)
-                                }
-                            }
-                        ) {
-                            Icon(
-                                imageVector = item.icon,
-                                contentDescription = null
-                            )
-                        }
-                    },
-                    label = {
-                        Text(
-                            text = item.label,
-                            style = MaterialTheme.typography.labelMedium
-                        )
-                    },
-                    colors = NavigationRailItemDefaults.colors(
-                        selectedIconColor = ChampionCartColors.Brand.ElectricMint,
-                        selectedTextColor = ChampionCartColors.Brand.ElectricMint,
-                        indicatorColor = if (darkTheme) {
-                            ChampionCartColors.Brand.ElectricMint.copy(alpha = 0.15f)
-                        } else {
-                            ChampionCartColors.Brand.ElectricMint.copy(alpha = 0.08f)
-                        },
-                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                )
-            }
-        }
-    }
-}
-
-/**
- * Data classes for navigation items
- */
-data class BottomNavItem(
-    val route: String,
-    val label: String,
-    val icon: ImageVector,
-    val badge: Int? = null
-)
-
-data class TabItem(
-    val title: String,
-    val icon: ImageVector? = null,
-    val onClick: () -> Unit
-)
-
-data class NavigationRailItem(
-    val route: String,
-    val label: String,
-    val icon: ImageVector,
-    val badge: Int? = null,
-    val onClick: () -> Unit
-)

@@ -24,7 +24,13 @@ data class ExtendedColors(
     val midPriceGlow: Color = ChampionCartColors.Price.MidGlow,
     val highPriceGlow: Color = ChampionCartColors.Price.HighGlow,
     val glassSurface: Color = ChampionCartColors.Glass.Medium,
-    val glassOverlay: Color = ChampionCartColors.Glass.Light
+    val glassOverlay: Color = ChampionCartColors.Glass.Light,
+    // New extended colors
+    val shimmer: Color = ChampionCartColors.Overlay.shimmerMedium,
+    val glow: Color = ChampionCartColors.Overlay.glowMedium,
+    val electricBlue: Color = ChampionCartColors.Accent.ElectricBlue,
+    val cyberYellow: Color = ChampionCartColors.Accent.CyberYellow,
+    val holographicPink: Color = ChampionCartColors.Accent.HolographicPink
 )
 
 val LocalExtendedColors = staticCompositionLocalOf { ExtendedColors() }
@@ -37,47 +43,22 @@ object ExtendedTheme {
 }
 
 /**
- * Responsive Configuration
+ * Calculate responsive configuration (moved to Theme.kt)
+ * This function remains for backward compatibility
  */
-data class ResponsiveConfig(
-    val screenWidthDp: Dp,
-    val screenHeightDp: Dp,
-    val isCompact: Boolean,
-    val isMedium: Boolean,
-    val isExpanded: Boolean
-)
-
-val LocalResponsiveConfig = staticCompositionLocalOf {
-    ResponsiveConfig(
-        screenWidthDp = 360.dp,
-        screenHeightDp = 640.dp,
-        isCompact = true,
-        isMedium = false,
-        isExpanded = false
-    )
-}
-
 @Composable
 fun calculateResponsiveConfig(): ResponsiveConfig {
     val configuration = LocalConfiguration.current
-    val density = LocalDensity.current
 
-    val screenWidthDp = configuration.screenWidthDp.dp
-    val screenHeightDp = configuration.screenHeightDp.dp
+    val screenWidthDp = configuration.screenWidthDp
 
     return ResponsiveConfig(
-        screenWidthDp = screenWidthDp,
-        screenHeightDp = screenHeightDp,
-        isCompact = screenWidthDp < 600.dp,
-        isMedium = screenWidthDp >= 600.dp && screenWidthDp < 840.dp,
-        isExpanded = screenWidthDp >= 840.dp
+        isCompact = screenWidthDp < 600,
+        isMedium = screenWidthDp in 600..839,
+        isExpanded = screenWidthDp >= 840,
+        screenWidthDp = screenWidthDp
     )
 }
-
-/**
- * Reduce Motion Local
- */
-val LocalReduceMotion = staticCompositionLocalOf { false }
 
 /**
  * Time of Day Helper
@@ -128,6 +109,21 @@ object SizingTokens {
 }
 
 /**
+ * Animation Tokens
+ * Quick access to animation specs
+ */
+object AnimationTokens {
+    val Quick = ChampionCartAnimations.Durations.Quick          // 200ms
+    val Standard = ChampionCartAnimations.Durations.Standard    // 300ms
+    val Medium = ChampionCartAnimations.Durations.Medium        // 400ms
+
+    val SpringGentle = ChampionCartAnimations.Springs.gentle<Float>()
+    val SpringSmooth = ChampionCartAnimations.Springs.smooth<Float>()
+    val SpringResponsive = ChampionCartAnimations.Springs.responsive<Float>()
+    val SpringBouncy = ChampionCartAnimations.Springs.bouncy<Float>()
+}
+
+/**
  * Theme Extension Functions
  */
 
@@ -168,6 +164,15 @@ fun getPriceLevelColor(priceLevel: PriceLevel): Color {
     }
 }
 
+// Get price level glow color
+fun getPriceLevelGlowColor(priceLevel: PriceLevel): Color {
+    return when (priceLevel) {
+        PriceLevel.Best -> ChampionCartColors.Price.BestGlow
+        PriceLevel.Mid -> ChampionCartColors.Price.MidGlow
+        PriceLevel.High -> ChampionCartColors.Price.HighGlow
+    }
+}
+
 // Calculate price level based on price range
 fun calculatePriceLevel(price: Float, minPrice: Float, maxPrice: Float): PriceLevel {
     val range = maxPrice - minPrice
@@ -181,11 +186,24 @@ fun calculatePriceLevel(price: Float, minPrice: Float, maxPrice: Float): PriceLe
 }
 
 /**
+ * Get animated color for time of day
+ */
+fun getTimeBasedColor(timeOfDay: TimeOfDay, isDark: Boolean): Color {
+    return when (timeOfDay) {
+        TimeOfDay.MORNING -> if (isDark) ChampionCartColors.Brand.ElectricMint else ChampionCartColors.Morning.primary
+        TimeOfDay.AFTERNOON -> ChampionCartColors.Brand.ElectricMint
+        TimeOfDay.EVENING -> if (isDark) ChampionCartColors.Brand.CosmicPurpleLight else ChampionCartColors.Evening.primary
+        TimeOfDay.NIGHT -> ChampionCartColors.Brand.ElectricMintLight
+    }
+}
+
+/**
  * Navigation Data Classes
  */
 data class BottomNavItem(
     val route: String,
     val label: String,
     val icon: Int,  // Drawable resource ID
-    val badge: String? = null
+    val badge: String? = null,
+    val color: Color = ChampionCartColors.Brand.ElectricMint // Associated color
 )

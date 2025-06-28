@@ -125,6 +125,16 @@ dependencies {
     // Advanced Material3 components
     implementation(libs.androidx.material3.window.size.class1)  // Updated version
 
+    // ===== NEW MODERN UI DEPENDENCIES =====
+
+    // Modern Glassmorphism with Haze - Using correct version
+    implementation(libs.haze.v060)
+    // Enhanced animation support
+    implementation(libs.androidx.animation.graphics.v154)
+
+    // Shimmer effects for loading states
+    implementation(libs.compose.shimmer)
+
     // FUTURE ADDITIONS (uncomment when needed):
 
     // Room Database (when implementing local caching)

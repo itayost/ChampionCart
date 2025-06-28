@@ -89,20 +89,33 @@ object ChampionCartColors {
         val Organic = Color(0xFF9CCC65)
     }
 
-    // Time-Based Themes
+    // Time-Based Themes - Enhanced
     object Morning {
         val primary = Color(0xFFFFAB91)    // Peach
         val secondary = Color(0xFFFFD54F)  // Warm Yellow
         val tertiary = Color(0xFFFF8A65)   // Light Orange
+        val surface = Color(0xFFFFF9F5)    // Warm white
+        val background = Color(0xFFFFFBF8) // Soft cream
     }
 
     object Evening {
         val primary = Brand.CosmicPurple
         val secondary = Color(0xFF673AB7)  // Deep Purple
         val tertiary = Color(0xFF3F51B5)   // Indigo
+        val surface = Color(0xFF1A1626)    // Deep purple surface
+        val background = Color(0xFF121218) // Dark purple background
     }
 
-    // Gradient Components
+    // Modern Accent Colors
+    object Accent {
+        val ElectricBlue = Color(0xFF00B4D8)
+        val CyberYellow = Color(0xFFFFEB0B)
+        val HolographicPink = Color(0xFFFF006E)
+        val LaserGreen = Color(0xFF00FF88)
+        val PlasmaOrange = Color(0xFFFF9500)
+    }
+
+    // Gradient Components - Enhanced
     object Gradient {
         val electricHarmony = listOf(
             Brand.ElectricMint,
@@ -119,6 +132,42 @@ object ChampionCartColors {
             Semantic.Success.copy(alpha = 0.1f),
             Semantic.Success.copy(alpha = 0.05f)
         )
+
+        // New gradients for modern effects
+        val shimmer = listOf(
+            Color.White.copy(alpha = 0f),
+            Color.White.copy(alpha = 0.3f),
+            Color.White.copy(alpha = 0f)
+        )
+
+        val glow = listOf(
+            Brand.ElectricMint.copy(alpha = 0.3f),
+            Brand.ElectricMint.copy(alpha = 0.1f),
+            Color.Transparent
+        )
+
+        val cyberpunk = listOf(
+            Accent.CyberYellow,
+            Accent.HolographicPink,
+            Accent.ElectricBlue
+        )
+
+        val neon = listOf(
+            Brand.ElectricMint,
+            Accent.LaserGreen,
+            Accent.CyberYellow
+        )
+    }
+
+    // Overlay Effects
+    object Overlay {
+        val shimmerLight = Color(0x1AFFFFFF)
+        val shimmerMedium = Color(0x33FFFFFF)
+        val shimmerHeavy = Color(0x4DFFFFFF)
+
+        val glowLight = Brand.ElectricMint.copy(alpha = 0.1f)
+        val glowMedium = Brand.ElectricMint.copy(alpha = 0.2f)
+        val glowHeavy = Brand.ElectricMint.copy(alpha = 0.3f)
     }
 }
 

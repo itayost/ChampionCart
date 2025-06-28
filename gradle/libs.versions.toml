@@ -2,10 +2,14 @@
 accompanistSystemuicontroller = "0.32.0"
 agp = "8.10.1"
 animationGraphics = "1.8.3"
+animationGraphicsVersion = "1.5.4"
 coilCompose = "2.5.0"
+composeShimmer = "1.2.0"
 converterGson = "2.9.0"
 coreSplashscreen = "1.0.1"
 gson = "2.11.0"
+haze = "0.5.1"
+hazeVersion = "0.6.0"
 hiltCompiler = "2.51"
 hiltNavigationCompose = "1.2.0"
 kotlin = "2.0.21"
@@ -30,6 +34,7 @@ uiGraphics = "1.8.3"
 [libraries]
 accompanist-systemuicontroller = { module = "com.google.accompanist:accompanist-systemuicontroller", version.ref = "accompanistSystemuicontroller" }
 androidx-animation-graphics = { module = "androidx.compose.animation:animation-graphics", version.ref = "animationGraphics" }
+androidx-animation-graphics-v154 = { module = "androidx.compose.animation:animation-graphics", version.ref = "animationGraphicsVersion" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-core-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "coreSplashscreen" }
 androidx-hilt-navigation-compose = { module = "androidx.hilt:hilt-navigation-compose", version.ref = "hiltNavigationCompose" }
@@ -39,8 +44,11 @@ androidx-material-icons-extended = { module = "androidx.compose.material:materia
 androidx-material3-window-size-class1 = { module = "androidx.compose.material3:material3-window-size-class", version.ref = "material3WindowSizeClass" }
 androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigationCompose" }
 coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coilCompose" }
+compose-shimmer = { module = "com.valentinilk.shimmer:compose-shimmer", version.ref = "composeShimmer" }
 converter-gson = { module = "com.squareup.retrofit2:converter-gson", version.ref = "converterGson" }
 gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
+haze = { module = "dev.chrisbanes.haze:haze", version.ref = "haze" }
+haze-v060 = { module = "dev.chrisbanes.haze:haze", version.ref = "hazeVersion" }
 hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hiltCompiler" }
 hilt-compiler = { module = "com.google.dagger:hilt-compiler", version.ref = "hiltCompiler" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }

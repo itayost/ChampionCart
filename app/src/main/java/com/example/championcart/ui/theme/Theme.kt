@@ -12,6 +12,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
+import dev.chrisbanes.haze.HazeState
 import java.util.*
 
 /**
@@ -20,6 +21,7 @@ import java.util.*
  *
  * A modern, glassmorphic theme with time-based variations,
  * accessibility features, and Hebrew-first design considerations.
+ * Enhanced with Haze blur effects and modern animations.
  */
 
 // Theme Configuration
@@ -30,7 +32,9 @@ data class ChampionCartConfig(
     val reduceMotion: Boolean = false,
     val enableHaptics: Boolean = true,
     val enableGlassEffects: Boolean = true,
-    val performanceMode: Boolean = false
+    val performanceMode: Boolean = false,
+    val enableBlurEffects: Boolean = true, // New: for Haze effects
+    val enableMicroAnimations: Boolean = true // New: for subtle animations
 )
 
 // Composition Locals
@@ -38,6 +42,8 @@ val LocalChampionCartConfig = staticCompositionLocalOf { ChampionCartConfig() }
 val LocalTimeOfDay = staticCompositionLocalOf { TimeOfDay.AFTERNOON }
 val LocalSpacing = staticCompositionLocalOf { Spacing }
 val LocalElevation = staticCompositionLocalOf { Elevation }
+val LocalReduceMotion = staticCompositionLocalOf { false } // New: for accessibility
+val LocalResponsiveConfig = staticCompositionLocalOf { ResponsiveConfig() } // New: for responsive design
 
 // Time of Day
 enum class TimeOfDay {
@@ -46,6 +52,14 @@ enum class TimeOfDay {
     EVENING,    // 6pm-12am
     NIGHT       // 12am-6am
 }
+
+// Responsive Configuration
+data class ResponsiveConfig(
+    val isCompact: Boolean = true,
+    val isMedium: Boolean = false,
+    val isExpanded: Boolean = false,
+    val screenWidthDp: Int = 360
+)
 
 /**
  * Main Theme Composable
@@ -59,6 +73,21 @@ fun ChampionCartTheme(
     content: @Composable () -> Unit
 ) {
     val timeOfDay = remember { getCurrentTimeOfDay() }
+
+    // Create a global HazeState for consistent blur effects
+    val hazeState = remember { HazeState() }
+
+    // Calculate responsive configuration
+    val context = LocalContext.current
+    val screenWidthDp = context.resources.configuration.screenWidthDp
+    val responsiveConfig = remember(screenWidthDp) {
+        ResponsiveConfig(
+            isCompact = screenWidthDp < 600,
+            isMedium = screenWidthDp in 600..839,
+            isExpanded = screenWidthDp >= 840,
+            screenWidthDp = screenWidthDp
+        )
+    }
 
     // Determine if we should use dark theme
     val shouldUseDarkTheme = config.useDarkTheme ||
@@ -80,7 +109,7 @@ fun ChampionCartTheme(
     }
 
     // Animate color transitions
-    val animatedColorScheme = if (!config.reduceMotion) {
+    val animatedColorScheme = if (!config.reduceMotion && config.enableMicroAnimations) {
         animateColorScheme(colorScheme)
     } else {
         colorScheme
@@ -94,14 +123,30 @@ fun ChampionCartTheme(
             window.statusBarColor = animatedColorScheme.surface.toArgb()
             val insetsController = WindowCompat.getInsetsController(window, view)
             insetsController.isAppearanceLightStatusBars = !shouldUseDarkTheme
+
+            // Enable edge-to-edge display for modern look
+            WindowCompat.setDecorFitsSystemWindows(window, false)
         }
     }
 
-    // Provide theme values
+    // Provide theme values with enhanced locals
     CompositionLocalProvider(
         LocalChampionCartConfig provides config,
         LocalTimeOfDay provides timeOfDay,
-        LocalContentColor provides animatedColorScheme.onBackground
+        LocalContentColor provides animatedColorScheme.onBackground,
+        LocalHazeState provides if (config.enableBlurEffects) hazeState else null,
+        LocalReduceMotion provides config.reduceMotion,
+        LocalResponsiveConfig provides responsiveConfig,
+        LocalExtendedColors provides ExtendedColors(
+            bestPrice = ChampionCartColors.Price.Best,
+            midPrice = ChampionCartColors.Price.Mid,
+            highPrice = ChampionCartColors.Price.High,
+            bestPriceGlow = ChampionCartColors.Price.BestGlow,
+            midPriceGlow = ChampionCartColors.Price.MidGlow,
+            highPriceGlow = ChampionCartColors.Price.HighGlow,
+            glassSurface = ChampionCartColors.Glass.Medium,
+            glassOverlay = ChampionCartColors.Glass.Light
+        )
     ) {
         MaterialTheme(
             colorScheme = animatedColorScheme,
@@ -121,7 +166,7 @@ private fun getCurrentTimeOfDay(): TimeOfDay {
         in 6..11 -> TimeOfDay.MORNING
         in 12..17 -> TimeOfDay.AFTERNOON
         in 18..23 -> TimeOfDay.EVENING
-        else -> TimeOfDay.AFTERNOON
+        else -> TimeOfDay.NIGHT
     }
 }
 
@@ -136,13 +181,17 @@ private fun applyTimeBasedColors(
         TimeOfDay.MORNING -> baseScheme.copy(
             primary = ChampionCartColors.Morning.primary,
             secondary = ChampionCartColors.Morning.secondary,
-            tertiary = ChampionCartColors.Morning.tertiary
+            tertiary = ChampionCartColors.Morning.tertiary,
+            surface = ChampionCartColors.Morning.surface,
+            background = ChampionCartColors.Morning.background
         )
         TimeOfDay.AFTERNOON -> baseScheme // Use default Electric Harmony colors
         TimeOfDay.EVENING -> baseScheme.copy(
             primary = ChampionCartColors.Evening.primary,
             secondary = ChampionCartColors.Evening.secondary,
-            tertiary = ChampionCartColors.Evening.tertiary
+            tertiary = ChampionCartColors.Evening.tertiary,
+            surface = ChampionCartColors.Evening.surface,
+            background = ChampionCartColors.Evening.background
         )
         TimeOfDay.NIGHT -> baseScheme // Night uses dark theme
     }
@@ -224,4 +273,19 @@ object ChampionCartTheme {
         @Composable
         @ReadOnlyComposable
         get() = LocalChampionCartConfig.current
+
+    val hazeState: HazeState?
+        @Composable
+        @ReadOnlyComposable
+        get() = LocalHazeState.current
+
+    val isReduceMotion: Boolean
+        @Composable
+        @ReadOnlyComposable
+        get() = LocalReduceMotion.current
+
+    val responsive: ResponsiveConfig
+        @Composable
+        @ReadOnlyComposable
+        get() = LocalResponsiveConfig.current
 }

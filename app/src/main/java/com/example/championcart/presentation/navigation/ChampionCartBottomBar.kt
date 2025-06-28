@@ -13,8 +13,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.championcart.R
-import com.example.championcart.presentation.components.GlassBottomNavigationBar
+import com.example.championcart.presentation.components.ModernGlassBottomNavigationBar
 import com.example.championcart.presentation.components.BottomNavItem as ComponentBottomNavItem
+import com.example.championcart.presentation.navigation.BottomNavItem
 
 @Composable
 fun ChampionCartBottomBar(
@@ -42,7 +43,8 @@ fun ChampionCartBottomBar(
         )
     }
 
-    GlassBottomNavigationBar(
+    // Use the modern glassmorphic bottom navigation with animated glow
+    ModernGlassBottomNavigationBar(
         navController = navController,
         items = items,
         modifier = modifier

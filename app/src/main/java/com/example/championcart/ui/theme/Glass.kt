@@ -5,19 +5,27 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import dev.chrisbanes.haze.HazeDefaults
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.hazeChild
+import dev.chrisbanes.haze.HazeStyle
 
 /**
  * Theme-Aware Glassmorphic Effects
  * Adapts to light/dark theme for better visibility
+ * Enhanced with Haze library for real blur effects
  */
 
 enum class GlassIntensity {
@@ -31,11 +39,16 @@ enum class GlassStyle {
     Default,    // Adaptive based on theme
     Elevated,   // Strong shadow for light theme
     Subtle,     // Minimal effect
-    Bordered    // With defined border
+    Bordered,   // With defined border
+    Colored     // With color tint (new)
 }
+
+// Global Haze state for consistent blur across components
+val LocalHazeState = compositionLocalOf<HazeState?> { null }
 
 /**
  * Main theme-aware glassmorphic modifier
+ * Enhanced with real blur using Haze
  */
 @Composable
 fun Modifier.glass(
@@ -44,9 +57,19 @@ fun Modifier.glass(
     style: GlassStyle = GlassStyle.Default,
     borderWidth: Dp = 1.5.dp,
     shadowElevation: Dp? = null, // Auto-calculated if null
-    darkTheme: Boolean = isSystemInDarkTheme()
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    hazeState: HazeState? = LocalHazeState.current, // New parameter for Haze
+    tintColor: Color? = null // Optional color tint
 ): Modifier = composed {
     val config = ChampionCartTheme.config
+
+    // Determine blur radius based on intensity
+    val blurRadius = when (intensity) {
+        GlassIntensity.Light -> 10.dp
+        GlassIntensity.Medium -> 20.dp
+        GlassIntensity.Heavy -> 30.dp
+        GlassIntensity.Ultra -> 40.dp
+    }
 
     if (!config.enableGlassEffects || config.performanceMode) {
         // Simplified version with theme awareness
@@ -136,6 +159,28 @@ fun Modifier.glass(
 
     // Build the modifier chain
     var modifier = this
+
+    // Apply Haze blur if available
+    if (hazeState != null && config.enableGlassEffects) {
+        modifier = modifier.hazeChild(
+            state = hazeState,
+            shape = shape,
+            style = HazeDefaults.style(
+                backgroundColor = when (style) {
+                    GlassStyle.Colored -> tintColor ?: ChampionCartColors.Brand.ElectricMint
+                    else -> MaterialTheme.colorScheme.surface
+                }.copy(alpha = glassColors[0].alpha),
+                tint = if (darkTheme) {
+                    Color.Black.copy(alpha = 0.2f)
+                } else {
+                    Color.White.copy(alpha = 0.3f)
+                },
+                blurRadius = blurRadius
+            )
+        )
+    }
+
+    modifier = modifier
         .shadow(
             elevation = actualElevation,
             shape = shape,
@@ -151,9 +196,13 @@ fun Modifier.glass(
             }
         )
         .clip(shape)
-        .background(
+
+    // Only apply background gradient if Haze is not being used
+    if (hazeState == null || !config.enableGlassEffects) {
+        modifier = modifier.background(
             brush = Brush.verticalGradient(colors = glassColors)
         )
+    }
 
     // Add border based on style
     when (style) {
@@ -187,6 +236,69 @@ fun Modifier.glass(
         }
         GlassStyle.Subtle -> {
             // Minimal or no border
+        }
+        GlassStyle.Colored -> {
+            // Add colored border
+            modifier = modifier.border(
+                width = 1.dp,
+                brush = Brush.linearGradient(
+                    colors = listOf(
+                        tintColor?.copy(alpha = 0.4f) ?: borderColor,
+                        tintColor?.copy(alpha = 0.1f) ?: borderColor.copy(alpha = 0.1f)
+                    )
+                ),
+                shape = shape
+            )
+        }
+    }
+
+    modifier
+}
+
+/**
+ * Modern glass with animated shimmer effect
+ */
+@Composable
+fun Modifier.modernGlass(
+    intensity: GlassIntensity = GlassIntensity.Medium,
+    shape: Shape = RoundedCornerShape(16.dp),
+    shimmer: Boolean = false,
+    hazeState: HazeState? = LocalHazeState.current
+): Modifier = composed {
+    val infiniteTransition = if (shimmer) {
+        rememberInfiniteTransition(label = "shimmer")
+    } else null
+
+    val shimmerAlpha = infiniteTransition?.animateFloat(
+        initialValue = 0.3f,
+        targetValue = 0.7f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2000, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "shimmerAlpha"
+    )?.value ?: 0.5f
+
+    var modifier = this.glass(
+        intensity = intensity,
+        shape = shape,
+        hazeState = hazeState
+    )
+
+    if (shimmer) {
+        modifier = modifier.drawWithContent {
+            drawContent()
+            drawRect(
+                brush = Brush.linearGradient(
+                    colors = listOf(
+                        Color.White.copy(alpha = 0f),
+                        Color.White.copy(alpha = shimmerAlpha * 0.3f),
+                        Color.White.copy(alpha = 0f)
+                    ),
+                    start = Offset(0f, 0f),
+                    end = Offset(size.width, size.height)
+                )
+            )
         }
     }
 
