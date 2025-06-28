@@ -2,156 +2,166 @@ package com.example.championcart.presentation.components
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.*
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.interaction.collectIsHoveredAsState
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.*
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.championcart.ui.theme.*
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import kotlin.math.sin
 
 /**
- * Custom Button Components
- * Theme-aware Electric Harmony styled buttons
- * Using ChampionCartAnimations from Animation.kt
+ * Modern Button Components
+ * Electric Harmony Design System
+ * Matching the HTML showcase with rounded, modern styling
  */
 
 /**
- * Primary Glass Button - Theme-aware gradient
+ * Primary Electric Button with shimmer effect
+ * Rounded pill shape with gradient background
  */
 @Composable
-fun GlassButton(
+fun ElectricButton(
     onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    enabled: Boolean = true,
     text: String,
+    modifier: Modifier = Modifier,
     icon: @Composable (() -> Unit)? = null,
-    shape: Shape = ComponentShapes.Button.Medium,
+    enabled: Boolean = true,
+    loading: Boolean = false,
     size: ButtonSize = ButtonSize.Medium
 ) {
-    val haptics = LocalHapticFeedback.current
-    val config = ChampionCartTheme.config
+    val hapticFeedback = LocalHapticFeedback.current
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
-    val isHovered by interactionSource.collectIsHoveredAsState()
-    val darkTheme = isSystemInDarkTheme()
-    val hazeState = LocalHazeState.current
+    val config = ChampionCartTheme.config
 
-    // Use ChampionCartAnimations
-    val animatedScale by animateFloatAsState(
+    // Scale animation matching HTML (0.92 when pressed)
+    val scale by animateFloatAsState(
         targetValue = when {
             !enabled -> 1f
-            isPressed -> 0.94f
-            isHovered -> 1.02f
+            isPressed -> 0.92f
             else -> 1f
         },
         animationSpec = if (!config.reduceMotion) {
-            ChampionCartAnimations.Springs.ButtonPress
-        } else {
-            snap()
-        },
+            spring(
+                dampingRatio = Spring.DampingRatioMediumBouncy,
+                stiffness = Spring.StiffnessLow
+            )
+        } else snap(),
         label = "buttonScale"
     )
 
-    // Color animation using ChampionCartAnimations
-    val animatedContainerColor by animateColorAsState(
-        targetValue = when {
-            !enabled -> ChampionCartColors.Brand.ElectricMint.copy(alpha = 0.38f)
-            isPressed -> ChampionCartColors.Brand.ElectricMintDark
-            isHovered -> ChampionCartColors.Brand.ElectricMintLight
-            else -> ChampionCartColors.Brand.ElectricMint
-        },
-        animationSpec = tween(
-            durationMillis = ChampionCartAnimations.Durations.Quick,
-            easing = ChampionCartAnimations.Easings.Standard
+    // Shimmer animation
+    val shimmerTransition = if (!config.reduceMotion && enabled && !loading) {
+        rememberInfiniteTransition(label = "shimmer")
+    } else null
+
+    val shimmerOffset by shimmerTransition?.animateFloat(
+        initialValue = -1f,
+        targetValue = 2f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1500, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
         ),
-        label = "containerColor"
-    )
+        label = "shimmerOffset"
+    ) ?: mutableStateOf(0f)
 
-    Box(modifier = modifier) {
-        // Glow effect for light theme
-        if (!config.reduceMotion && config.enableMicroAnimations && enabled && !darkTheme) {
-            Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .offset(y = 4.dp)
-                    .blur(16.dp)
-                    .clip(shape)
-                    .background(
-                        color = animatedContainerColor.copy(alpha = if (isPressed) 0.3f else 0.2f)
-                    )
+    Box(
+        modifier = modifier
+            .scale(scale)
+            .clip(ComponentShapes.Button.Large) // Using Large for pill shape (28dp)
+            .background(
+                brush = Brush.linearGradient(
+                    colors = if (enabled) {
+                        listOf(
+                            ChampionCartColors.Brand.ElectricMint,
+                            ChampionCartColors.Brand.ElectricMintLight.copy(alpha = 0.9f)
+                        )
+                    } else {
+                        listOf(
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f),
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
+                        )
+                    }
+                )
             )
-        }
-
-        Button(
-            onClick = {
-                if (config.enableHaptics) {
-                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+            .then(
+                if (shimmerTransition != null && enabled && !loading) {
+                    Modifier.drawWithContent {
+                        drawContent()
+                        // Shimmer overlay
+                        drawRect(
+                            brush = Brush.linearGradient(
+                                colors = listOf(
+                                    Color.White.copy(alpha = 0f),
+                                    Color.White.copy(alpha = 0.2f),
+                                    Color.White.copy(alpha = 0f)
+                                ),
+                                start = Offset(size.width * shimmerOffset, 0f),
+                                end = Offset(size.width * (shimmerOffset + 0.5f), size.height)
+                            )
+                        )
+                    }
+                } else Modifier
+            )
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                enabled = enabled && !loading,
+                onClick = {
+                    if (config.enableHaptics) {
+                        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                    }
+                    onClick()
                 }
-                onClick()
-            },
-            modifier = Modifier
-                .heightIn(min = size.height)
-                .widthIn(min = size.minWidth)
-                .graphicsLayer {
-                    scaleX = animatedScale
-                    scaleY = animatedScale
-                    shadowElevation = when {
-                        darkTheme && isPressed -> 12.dp.toPx()
-                        darkTheme -> 8.dp.toPx()
-                        isPressed -> 4.dp.toPx()
-                        else -> 2.dp.toPx()
-                    }
-                },
-            enabled = enabled,
-            shape = shape,
-            colors = ButtonDefaults.buttonColors(
-                containerColor = animatedContainerColor,
-                contentColor = Color.White,
-                disabledContainerColor = ChampionCartColors.Brand.ElectricMint.copy(alpha = 0.38f),
-                disabledContentColor = Color.White.copy(alpha = 0.6f)
+            )
+    ) {
+        Row(
+            modifier = Modifier.padding(
+                horizontal = size.horizontalPadding,
+                vertical = size.verticalPadding
             ),
-            elevation = ButtonDefaults.buttonElevation(
-                defaultElevation = 0.dp,
-                pressedElevation = 0.dp
-            ),
-            interactionSource = interactionSource
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(Spacing.s),
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(horizontal = Spacing.s)
-            ) {
-                if (icon != null) {
+            if (loading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(size.iconSize),
+                    color = Color.White,
+                    strokeWidth = 2.dp
+                )
+            } else {
+                icon?.let {
                     Box(modifier = Modifier.size(size.iconSize)) {
-                        icon()
+                        it()
                     }
+                    Spacer(modifier = Modifier.width(SpacingTokens.S))
                 }
                 Text(
                     text = text,
-                    style = size.getTextStyle(),
-                    fontWeight = FontWeight.SemiBold
+                    style = MaterialTheme.typography.labelLarge.copy(
+                        fontSize = size.fontSize,
+                        fontWeight = FontWeight.SemiBold
+                    ),
+                    color = Color.White
                 )
             }
         }
@@ -159,145 +169,230 @@ fun GlassButton(
 }
 
 /**
- * Secondary Glass Button - Theme-aware glass effect
+ * Glass Button with glassmorphic effect
+ * Secondary button style with transparency
  */
 @Composable
-fun SecondaryGlassButton(
+fun GlassButton(
     onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    enabled: Boolean = true,
     text: String,
+    modifier: Modifier = Modifier,
     icon: @Composable (() -> Unit)? = null,
-    shape: Shape = ComponentShapes.Button.Medium,
+    enabled: Boolean = true,
     size: ButtonSize = ButtonSize.Medium
 ) {
+    val hapticFeedback = LocalHapticFeedback.current
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
-    val isHovered by interactionSource.collectIsHoveredAsState()
-    val haptics = LocalHapticFeedback.current
     val config = ChampionCartTheme.config
-    val darkTheme = isSystemInDarkTheme()
     val hazeState = LocalHazeState.current
 
-    val animatedScale by animateFloatAsState(
-        targetValue = when {
-            !enabled -> 1f
-            isPressed -> 0.97f
-            isHovered -> 1.01f
-            else -> 1f
-        },
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.95f else 1f,
         animationSpec = if (!config.reduceMotion) {
-            ChampionCartAnimations.Springs.CardInteraction
-        } else {
-            snap()
-        },
+            spring(
+                dampingRatio = Spring.DampingRatioLowBouncy,
+                stiffness = Spring.StiffnessMedium
+            )
+        } else snap(),
         label = "buttonScale"
     )
 
-    // Animated border color
-    val animatedBorderColor by animateColorAsState(
-        targetValue = when {
-            !enabled -> MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
-            isPressed -> ChampionCartColors.Brand.ElectricMint
-            isHovered -> ChampionCartColors.Brand.ElectricMintLight
-            else -> MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
-        },
-        animationSpec = tween(
-            durationMillis = ChampionCartAnimations.Durations.Quick,
-            easing = ChampionCartAnimations.Easings.Standard
-        ),
-        label = "borderColor"
-    )
-
-    OutlinedButton(
-        onClick = {
-            if (config.enableHaptics) {
-                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-            }
-            onClick()
-        },
+    Box(
         modifier = modifier
-            .heightIn(min = size.height)
-            .widthIn(min = size.minWidth)
-            .graphicsLayer {
-                scaleX = animatedScale
-                scaleY = animatedScale
-            }
-            .modernGlass(
-                intensity = when {
-                    isPressed -> GlassIntensity.Medium
-                    isHovered -> GlassIntensity.Light
-                    else -> GlassIntensity.Light
-                },
-                shape = shape,
-                hazeState = hazeState
-            ),
-        enabled = enabled,
-        shape = shape,
-        colors = ButtonDefaults.outlinedButtonColors(
-            containerColor = Color.Transparent,
-            contentColor = MaterialTheme.colorScheme.primary,
-            disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-        ),
-        border = BorderStroke(
-            width = 1.5.dp,
-            color = animatedBorderColor
-        ),
-        elevation = ButtonDefaults.buttonElevation(
-            defaultElevation = 0.dp,
-            pressedElevation = 0.dp
-        ),
-        interactionSource = interactionSource
-    ) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(Spacing.s),
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(horizontal = Spacing.s)
-        ) {
-            if (icon != null) {
-                Box(modifier = Modifier.size(size.iconSize)) {
-                    icon()
+            .scale(scale)
+            .clip(ComponentShapes.Button.Large)
+            .then(
+                if (hazeState != null) {
+                    Modifier.modernGlass(
+                        intensity = GlassIntensity.Medium,
+                        shape = ComponentShapes.Button.Large,
+                        hazeState = hazeState
+                    )
+                } else {
+                    Modifier
+                        .background(
+                            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.1f)
+                        )
+                        .border(
+                            width = 1.dp,
+                            brush = Brush.linearGradient(
+                                colors = listOf(
+                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+                                )
+                            ),
+                            shape = ComponentShapes.Button.Large
+                        )
                 }
-            }
-            Text(
-                text = text,
-                style = size.getTextStyle(),
-                fontWeight = FontWeight.Medium
             )
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                enabled = enabled,
+                onClick = {
+                    if (config.enableHaptics) {
+                        hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    }
+                    onClick()
+                }
+            )
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    brush = Brush.radialGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                            Color.Transparent
+                        ),
+                        radius = 300f
+                    )
+                )
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(
+                        horizontal = size.horizontalPadding,
+                        vertical = size.verticalPadding
+                    ),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                icon?.let {
+                    Box(modifier = Modifier.size(size.iconSize)) {
+                        CompositionLocalProvider(
+                            LocalContentColor provides MaterialTheme.colorScheme.primary
+                        ) {
+                            it()
+                        }
+                    }
+                    Spacer(modifier = Modifier.width(SpacingTokens.S))
+                }
+                Text(
+                    text = text,
+                    style = MaterialTheme.typography.labelLarge.copy(
+                        fontSize = size.fontSize,
+                        fontWeight = FontWeight.Medium
+                    ),
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
         }
     }
 }
 
 /**
- * Text Button with Glass Effect
+ * Glowing Icon Button with animated glow effect
+ * Circular FAB-style button with pulsing glow
  */
 @Composable
-fun GlassTextButton(
+fun GlowingIconButton(
+    onClick: () -> Unit,
+    icon: @Composable () -> Unit,
+    modifier: Modifier = Modifier,
+    contentDescription: String? = null,
+    glowColor: Color = MaterialTheme.colorScheme.primary,
+    enabled: Boolean = true
+) {
+    val hapticFeedback = LocalHapticFeedback.current
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val config = ChampionCartTheme.config
+
+    // Glow animation
+    val glowAnimation = if (!config.reduceMotion) {
+        rememberInfiniteTransition(label = "glow")
+    } else null
+
+    val glowAlpha by glowAnimation?.animateFloat(
+        initialValue = 0.3f,
+        targetValue = 0.7f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "glowAlpha"
+    ) ?: mutableStateOf(0.5f)
+
+    Box(
+        modifier = modifier
+            .size(SizingTokens.ButtonHeightL) // 56.dp
+            .drawBehind {
+                // Glow effect
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        colors = listOf(
+                            glowColor.copy(alpha = glowAlpha),
+                            glowColor.copy(alpha = 0f)
+                        ),
+                        radius = size.minDimension / 1.5f
+                    )
+                )
+            }
+            .clip(CircleShape)
+            .background(glowColor)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                enabled = enabled,
+                onClick = {
+                    if (config.enableHaptics) {
+                        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                    }
+                    onClick()
+                }
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .size(SizingTokens.IconM) // 24.dp
+                .scale(if (isPressed) 0.85f else 1f)
+        ) {
+            CompositionLocalProvider(
+                LocalContentColor provides Color.White
+            ) {
+                icon()
+            }
+        }
+    }
+}
+
+/**
+ * Text Button with minimal glass effect
+ * Used for less prominent actions
+ */
+@Composable
+fun ElectricTextButton(
     onClick: () -> Unit,
     text: String,
     modifier: Modifier = Modifier,
-    enabled: Boolean = true,
-    icon: @Composable (() -> Unit)? = null
+    icon: @Composable (() -> Unit)? = null,
+    enabled: Boolean = true
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
-    val darkTheme = isSystemInDarkTheme()
+    val config = ChampionCartTheme.config
+    val hapticFeedback = LocalHapticFeedback.current
 
     TextButton(
-        onClick = onClick,
-        modifier = modifier
-            .then(
-                if (isPressed) {
-                    Modifier.glass(
-                        intensity = GlassIntensity.Light,
-                        shape = ComponentShapes.Button.Square,
-                        style = GlassStyle.Subtle,
-                        darkTheme = darkTheme
-                    )
-                } else {
-                    Modifier
-                }
-            ),
+        onClick = {
+            if (config.enableHaptics) {
+                hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+            }
+            onClick()
+        },
+        modifier = modifier.then(
+            if (isPressed) {
+                Modifier.background(
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f),
+                    shape = ComponentShapes.Button.Medium
+                )
+            } else Modifier
+        ),
         enabled = enabled,
         colors = ButtonDefaults.textButtonColors(
             contentColor = MaterialTheme.colorScheme.primary,
@@ -306,12 +401,12 @@ fun GlassTextButton(
         interactionSource = interactionSource
     ) {
         Row(
-            horizontalArrangement = Arrangement.spacedBy(Spacing.s),
+            horizontalArrangement = Arrangement.spacedBy(SpacingTokens.S),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if (icon != null) {
-                Box(modifier = Modifier.size(Sizing.Icon.s)) {
-                    icon()
+            icon?.let {
+                Box(modifier = Modifier.size(SizingTokens.IconS)) {
+                    it()
                 }
             }
             Text(
@@ -323,225 +418,116 @@ fun GlassTextButton(
 }
 
 /**
- * Floating Action Button with Glass - Enhanced with theme-aware glow
+ * Loading Button variant
+ * Shows loading state with disabled appearance
  */
 @Composable
-fun GlassFAB(
-    onClick: () -> Unit,
+fun LoadingButton(
+    text: String = "טוען...",
     modifier: Modifier = Modifier,
-    icon: @Composable () -> Unit,
-    extended: Boolean = false,
-    text: String? = null,
-    size: FABSize = FABSize.Medium
+    size: ButtonSize = ButtonSize.Medium
 ) {
-    val haptics = LocalHapticFeedback.current
-    val config = ChampionCartTheme.config
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-    val darkTheme = isSystemInDarkTheme()
-
-    // Animated glow effect for dark theme only
-    val infiniteTransition = if (!config.reduceMotion && config.enableMicroAnimations) {
-        rememberInfiniteTransition(label = "fabGlow")
-    } else null
-
-    val glowAlpha by infiniteTransition?.animateFloat(
-        initialValue = 0.3f,
-        targetValue = 0.6f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(
-                durationMillis = ChampionCartAnimations.Durations.Elaborate,
-                easing = ChampionCartAnimations.Easings.Standard
-            ),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "glowAlpha"
-    ) ?: mutableStateOf(0.45f)
-
-    Box(modifier = modifier) {
-        // Glow effect behind FAB (dark theme only)
-        if (!config.reduceMotion && darkTheme) {
-            Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .offset(y = 4.dp)
-                    .blur(20.dp)
-                    .clip(ComponentShapes.Special.FAB)
-                    .background(
-                        color = ChampionCartColors.Brand.ElectricMint.copy(alpha = glowAlpha * 0.3f)
-                    )
-            )
-        }
-
-        val fabElevation = FloatingActionButtonDefaults.elevation(
-            defaultElevation = if (darkTheme) 12.dp else 6.dp,
-            pressedElevation = if (darkTheme) 16.dp else 8.dp,
-            hoveredElevation = if (darkTheme) 14.dp else 7.dp
-        )
-
-        val animatedScale by animateFloatAsState(
-            targetValue = if (isPressed) 0.95f else 1f,
-            animationSpec = if (!config.reduceMotion) {
-                ChampionCartAnimations.Springs.ButtonPress
-            } else {
-                snap()
-            },
-            label = "fabScale"
-        )
-
-        if (extended && text != null) {
-            ExtendedFloatingActionButton(
-                onClick = {
-                    if (config.enableHaptics) {
-                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                    }
-                    onClick()
-                },
-                modifier = Modifier
-                    .graphicsLayer {
-                        scaleX = animatedScale
-                        scaleY = animatedScale
-                    },
-                shape = ComponentShapes.Special.FAB,
-                containerColor = ChampionCartColors.Brand.ElectricMint,
-                contentColor = Color.White,
-                elevation = fabElevation,
-                interactionSource = interactionSource,
-                icon = {
-                    Box(modifier = Modifier.size(size.iconSize)) {
-                        icon()
-                    }
-                },
-                text = {
-                    Text(
-                        text = text,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-            )
-        } else {
-            FloatingActionButton(
-                onClick = {
-                    if (config.enableHaptics) {
-                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                    }
-                    onClick()
-                },
-                modifier = Modifier
-                    .size(size.size)
-                    .graphicsLayer {
-                        scaleX = animatedScale
-                        scaleY = animatedScale
-                    },
-                shape = ComponentShapes.Special.FAB,
-                containerColor = ChampionCartColors.Brand.ElectricMint,
-                contentColor = Color.White,
-                elevation = fabElevation,
-                interactionSource = interactionSource
-            ) {
-                Box(modifier = Modifier.size(size.iconSize)) {
-                    icon()
-                }
-            }
-        }
-    }
+    ElectricButton(
+        onClick = { },
+        text = text,
+        loading = true,
+        enabled = false,
+        modifier = modifier,
+        size = size
+    )
 }
 
 /**
- * Icon Button with Glass Background - Theme-aware
+ * Button Size configurations
+ * Matches the HTML showcase sizing
  */
-@Composable
-fun GlassIconButton(
-    onClick: () -> Unit,
-    icon: @Composable () -> Unit,
-    modifier: Modifier = Modifier,
-    enabled: Boolean = true,
-    colors: IconButtonColors = IconButtonDefaults.iconButtonColors(),
-    isActive: Boolean = false
+enum class ButtonSize(
+    val horizontalPadding: Dp,
+    val verticalPadding: Dp,
+    val fontSize: androidx.compose.ui.unit.TextUnit,
+    val iconSize: Dp
 ) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-    val darkTheme = isSystemInDarkTheme()
-
-    IconButton(
-        onClick = onClick,
-        modifier = modifier
-            .glass(
-                intensity = when {
-                    isPressed -> GlassIntensity.Medium
-                    isActive -> GlassIntensity.Light
-                    else -> GlassIntensity.Light
-                },
-                shape = ComponentShapes.Button.Square,
-                style = if (darkTheme) GlassStyle.Subtle else GlassStyle.Default,
-                darkTheme = darkTheme
-            ),
-        enabled = enabled,
-        colors = colors,
-        interactionSource = interactionSource
-    ) {
-        icon()
-    }
+    Small(
+        horizontalPadding = SpacingTokens.L,      // 16.dp
+        verticalPadding = SpacingTokens.S,       // 8.dp
+        fontSize = 14.sp,
+        iconSize = SizingTokens.IconXS            // 18.dp
+    ),
+    Medium(
+        horizontalPadding = SpacingTokens.XXL,    // 24.dp
+        verticalPadding = SpacingTokens.M,       // 12.dp
+        fontSize = 16.sp,
+        iconSize = SizingTokens.IconS            // 20.dp
+    ),
+    Large(
+        horizontalPadding = 32.dp,                // Using direct value as XXL is 24.dp
+        verticalPadding = SpacingTokens.L,       // 16.dp
+        fontSize = 18.sp,
+        iconSize = SizingTokens.IconM            // 24.dp
+    )
 }
 
 /**
- * Chip-style button with theme-aware glass effect
+ * Chip Button for filters and selections
+ * Compact rounded button with selection state
  */
 @Composable
-fun GlassChipButton(
+fun ElectricChipButton(
     onClick: () -> Unit,
     text: String,
     modifier: Modifier = Modifier,
     selected: Boolean = false,
     icon: @Composable (() -> Unit)? = null
 ) {
-    val darkTheme = isSystemInDarkTheme()
     val config = ChampionCartTheme.config
-    val haptics = LocalHapticFeedback.current
+    val hapticFeedback = LocalHapticFeedback.current
 
-    val backgroundColor = when {
-        selected && darkTheme -> ChampionCartColors.Brand.ElectricMint.copy(alpha = 0.15f)
-        selected && !darkTheme -> ChampionCartColors.Brand.ElectricMint.copy(alpha = 0.08f)
-        !selected && darkTheme -> Color.White.copy(alpha = 0.1f)
-        else -> Color.Black.copy(alpha = 0.05f)
-    }
+    val backgroundColor by animateColorAsState(
+        targetValue = when {
+            selected -> MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+            else -> MaterialTheme.colorScheme.surface.copy(alpha = 0.08f)
+        },
+        animationSpec = tween(
+            durationMillis = ChampionCartAnimations.Durations.Quick,
+            easing = ChampionCartAnimations.Easings.Standard
+        ),
+        label = "chipBackground"
+    )
 
-    val contentColor = when {
-        selected -> ChampionCartColors.Brand.ElectricMint
-        else -> MaterialTheme.colorScheme.onSurface
-    }
+    val contentColor by animateColorAsState(
+        targetValue = when {
+            selected -> MaterialTheme.colorScheme.primary
+            else -> MaterialTheme.colorScheme.onSurfaceVariant
+        },
+        animationSpec = tween(
+            durationMillis = ChampionCartAnimations.Durations.Quick,
+            easing = ChampionCartAnimations.Easings.Standard
+        ),
+        label = "chipContent"
+    )
 
     Surface(
         onClick = {
             if (config.enableHaptics) {
-                haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
             }
             onClick()
         },
         modifier = modifier
-            .height(32.dp)
-            .glass(
-                intensity = GlassIntensity.Light,
-                shape = ComponentShapes.Button.Small,
-                style = when {
-                    selected && !darkTheme -> GlassStyle.Bordered
-                    selected && darkTheme -> GlassStyle.Default
-                    else -> GlassStyle.Subtle
-                },
-                darkTheme = darkTheme
-            ),
+            .height(SizingTokens.ButtonHeightS) // 32.dp
+            .clip(ComponentShapes.Button.Small),
         shape = ComponentShapes.Button.Small,
         color = backgroundColor,
         contentColor = contentColor
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 12.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            modifier = Modifier.padding(horizontal = SpacingTokens.M),
+            horizontalArrangement = Arrangement.spacedBy(SpacingTokens.XS),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if (icon != null) {
-                Box(modifier = Modifier.size(16.dp)) {
-                    icon()
+            icon?.let {
+                Box(modifier = Modifier.size(SizingTokens.IconXS)) {
+                    it()
                 }
             }
             Text(
@@ -551,58 +537,4 @@ fun GlassChipButton(
             )
         }
     }
-}
-
-/**
- * Button Sizes
- */
-enum class ButtonSize(
-    val height: Dp,
-    val minWidth: Dp,
-    val iconSize: Dp
-) {
-    Small(
-        height = 32.dp,
-        minWidth = 64.dp,
-        iconSize = 16.dp
-    ),
-    Medium(
-        height = 40.dp,
-        minWidth = 96.dp,
-        iconSize = 18.dp
-    ),
-    Large(
-        height = 48.dp,
-        minWidth = 128.dp,
-        iconSize = 20.dp
-    )
-}
-
-// Extension function to get text style within composable context
-@Composable
-fun ButtonSize.getTextStyle() = when (this) {
-    ButtonSize.Small -> MaterialTheme.typography.labelMedium
-    ButtonSize.Medium -> MaterialTheme.typography.labelLarge
-    ButtonSize.Large -> MaterialTheme.typography.titleMedium
-}
-
-/**
- * FAB Sizes
- */
-enum class FABSize(
-    val size: Dp,
-    val iconSize: Dp
-) {
-    Small(
-        size = 40.dp,
-        iconSize = 18.dp
-    ),
-    Medium(
-        size = 56.dp,
-        iconSize = 24.dp
-    ),
-    Large(
-        size = 72.dp,
-        iconSize = 28.dp
-    )
 }

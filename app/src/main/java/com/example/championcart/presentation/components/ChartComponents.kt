@@ -1,74 +1,57 @@
 package com.example.championcart.presentation.components
 
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.animate
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.*
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.scaleIn
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.*
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.example.championcart.ui.theme.ChampionCartColors
-import com.example.championcart.ui.theme.ChampionCartTheme
-import com.example.championcart.ui.theme.ComponentShapes
-import com.example.championcart.ui.theme.CustomTextStyles
-import com.example.championcart.ui.theme.GlassIntensity
-import com.example.championcart.ui.theme.PriceLevel
-import com.example.championcart.ui.theme.Sizing
-import com.example.championcart.ui.theme.Spacing
-import com.example.championcart.ui.theme.glass
+import com.example.championcart.ui.theme.*
+import com.example.championcart.ui.theme.ChampionCartAnimations.Transitions.fadeIn
+import com.example.championcart.ui.theme.ChampionCartAnimations.Transitions.scaleIn
+import kotlinx.coroutines.launch
 
 /**
- * Chart & Data Visualization Components
- * Price comparisons, savings tracking, and analytics
+ * Modern Chart & Data Visualization Components
+ * Electric Harmony Design System
  */
 
 /**
- * Price Comparison Bar Chart
+ * Modern Price Comparison Bar Chart
  */
 @Composable
-fun PriceComparisonChart(
+fun ModernPriceComparisonChart(
     stores: List<StorePrice>,
     modifier: Modifier = Modifier,
     animateOnLoad: Boolean = true
 ) {
-    var animationProgress by remember { mutableStateOf(if (animateOnLoad) 0f else 1f) }
+    val config = ChampionCartTheme.config
+    var animationProgress by remember { mutableStateOf(if (animateOnLoad && !config.reduceMotion) 0f else 1f) }
 
     LaunchedEffect(stores) {
-        if (animateOnLoad) {
+        if (animateOnLoad && !config.reduceMotion) {
             animate(
                 initialValue = 0f,
                 targetValue = 1f,
@@ -82,105 +65,152 @@ fun PriceComparisonChart(
     val maxPrice = stores.maxOfOrNull { it.price } ?: 0f
     val minPrice = stores.minOfOrNull { it.price } ?: 0f
 
-    GlassCard(
+    ModernGlassCard(
         modifier = modifier,
-        intensity = GlassIntensity.Light
+        shape = RoundedCornerShape(24.dp)
     ) {
         Column(
-            modifier = Modifier.padding(Spacing.Component.paddingL)
+            modifier = Modifier.padding(SpacingTokens.XL)
         ) {
             Text(
                 text = "השוואת מחירים",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
             )
 
-            Spacer(modifier = Modifier.height(Spacing.l))
+            Spacer(modifier = Modifier.height(SpacingTokens.L))
 
             stores.forEach { store ->
-                val barWidth = (store.price / maxPrice) * animationProgress
-                val priceLevel = when (store.price) {
-                    minPrice -> PriceLevel.Best
-                    maxPrice -> PriceLevel.High
-                    else -> PriceLevel.Mid
-                }
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = Spacing.s),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = store.name,
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.weight(0.3f)
-                    )
-
-                    Box(
-                        modifier = Modifier
-                            .weight(0.5f)
-                            .height(32.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxHeight()
-                                .fillMaxWidth(barWidth)
-                                .clip(ComponentShapes.Special.Indicator)
-                                .background(
-                                    brush = Brush.horizontalGradient(
-                                        colors = when (priceLevel) {
-                                            PriceLevel.Best -> listOf(
-                                                ChampionCartColors.Price.Best.copy(alpha = 0.8f),
-                                                ChampionCartColors.Price.Best
-                                            )
-                                            PriceLevel.Mid -> listOf(
-                                                ChampionCartColors.Price.Mid.copy(alpha = 0.8f),
-                                                ChampionCartColors.Price.Mid
-                                            )
-                                            PriceLevel.High -> listOf(
-                                                ChampionCartColors.Price.High.copy(alpha = 0.8f),
-                                                ChampionCartColors.Price.High
-                                            )
-                                        }
-                                    )
-                                )
-                        )
-                    }
-
-                    Text(
-                        text = "₪${store.price}",
-                        style = CustomTextStyles.priceSmall,
-                        fontWeight = FontWeight.Medium,
-                        modifier = Modifier.weight(0.2f),
-                        color = when (priceLevel) {
-                            PriceLevel.Best -> ChampionCartColors.Semantic.Success
-                            PriceLevel.Mid -> ChampionCartColors.Semantic.Warning
-                            PriceLevel.High -> ChampionCartColors.Semantic.Error
-                        }
-                    )
-                }
+                PriceComparisonBar(
+                    store = store,
+                    progress = animationProgress,
+                    maxPrice = maxPrice,
+                    isLowest = store.price == minPrice,
+                    isHighest = store.price == maxPrice
+                )
+                Spacer(modifier = Modifier.height(SpacingTokens.M))
             }
         }
     }
 }
 
+@Composable
+private fun PriceComparisonBar(
+    store: StorePrice,
+    progress: Float,
+    maxPrice: Float,
+    isLowest: Boolean,
+    isHighest: Boolean
+) {
+    val barWidth = (store.price / maxPrice) * progress
+    val color = when {
+        isLowest -> ChampionCartColors.Semantic.Success
+        isHighest -> ChampionCartColors.Semantic.Error
+        else -> ChampionCartColors.Semantic.Warning
+    }
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Store name
+        Text(
+            text = store.storeName,
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.width(100.dp),
+            fontWeight = if (isLowest) FontWeight.Bold else FontWeight.Normal
+        )
+
+        // Bar
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .height(36.dp)
+                .padding(horizontal = SpacingTokens.S)
+        ) {
+            // Background
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+            )
+
+            // Animated bar
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .fillMaxWidth(barWidth)
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(
+                        brush = Brush.horizontalGradient(
+                            colors = listOf(
+                                color.copy(alpha = 0.8f),
+                                color
+                            )
+                        )
+                    )
+                    .drawBehind {
+                        if (isLowest) {
+                            // Add shimmer effect for best price
+                            drawRect(
+                                brush = Brush.horizontalGradient(
+                                    colors = listOf(
+                                        Color.White.copy(alpha = 0f),
+                                        Color.White.copy(alpha = 0.2f),
+                                        Color.White.copy(alpha = 0f)
+                                    )
+                                )
+                            )
+                        }
+                    }
+            )
+        }
+
+        // Price
+        Text(
+            text = "₪${store.price}",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = color,
+            modifier = Modifier.width(70.dp),
+            textAlign = TextAlign.End
+        )
+    }
+}
+
 /**
- * Savings Trend Line Chart
+ * Modern Savings Trend Chart
  */
 @Composable
-fun SavingsTrendChart(
+fun ModernSavingsTrendChart(
     data: List<SavingsDataPoint>,
     modifier: Modifier = Modifier
 ) {
-    val maxSavings = data.maxOfOrNull { it.amount } ?: 0f
+    val config = ChampionCartTheme.config
+    var animationProgress by remember { mutableStateOf(if (!config.reduceMotion) 0f else 1f) }
 
-    GlassCard(
+    LaunchedEffect(data) {
+        if (!config.reduceMotion) {
+            animate(
+                initialValue = 0f,
+                targetValue = 1f,
+                animationSpec = tween(1500, easing = FastOutSlowInEasing)
+            ) { value, _ ->
+                animationProgress = value
+            }
+        }
+    }
+
+    val maxSavings = data.maxOfOrNull { it.amount } ?: 0f
+    val totalSavings = data.sumOf { it.amount.toInt() }
+
+    ModernGlassCard(
         modifier = modifier,
-        intensity = GlassIntensity.Light
+        shape = RoundedCornerShape(24.dp)
     ) {
         Column(
-            modifier = Modifier.padding(Spacing.Component.paddingL)
+            modifier = Modifier.padding(SpacingTokens.XL)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -189,102 +219,47 @@ fun SavingsTrendChart(
             ) {
                 Text(
                     text = "חיסכון לאורך זמן",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
                 )
 
-                Text(
-                    text = "₪${data.sumOf { it.amount.toInt() }}",
-                    style = CustomTextStyles.price,
-                    color = ChampionCartColors.Semantic.Success
-                )
+                Column(
+                    horizontalAlignment = Alignment.End
+                ) {
+                    Text(
+                        text = "₪$totalSavings",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = ChampionCartColors.Semantic.Success
+                    )
+                    Text(
+                        text = "סה״כ חיסכון",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
 
-            Spacer(modifier = Modifier.height(Spacing.l))
+            Spacer(modifier = Modifier.height(SpacingTokens.XL))
 
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(200.dp)
+                    .height(220.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                    .padding(SpacingTokens.M)
             ) {
                 Canvas(modifier = Modifier.fillMaxSize()) {
-                    val points = data.mapIndexed { index, point ->
-                        Offset(
-                            x = (index.toFloat() / (data.size - 1)) * size.width,
-                            y = size.height - (point.amount / maxSavings) * size.height
-                        )
-                    }
-
-                    // Draw gradient area
-                    val path = Path().apply {
-                        moveTo(0f, size.height)
-                        points.forEachIndexed { index, point ->
-                            if (index == 0) {
-                                lineTo(point.x, point.y)
-                            } else {
-                                val previousPoint = points[index - 1]
-                                val controlPoint1 = Offset(
-                                    (previousPoint.x + point.x) / 2,
-                                    previousPoint.y
-                                )
-                                val controlPoint2 = Offset(
-                                    (previousPoint.x + point.x) / 2,
-                                    point.y
-                                )
-                                cubicTo(
-                                    controlPoint1.x, controlPoint1.y,
-                                    controlPoint2.x, controlPoint2.y,
-                                    point.x, point.y
-                                )
-                            }
-                        }
-                        lineTo(size.width, size.height)
-                        close()
-                    }
-
-                    drawPath(
-                        path = path,
-                        brush = Brush.verticalGradient(
-                            colors = listOf(
-                                ChampionCartColors.Brand.ElectricMint.copy(alpha = 0.3f),
-                                ChampionCartColors.Brand.ElectricMint.copy(alpha = 0.1f),
-                                Color.Transparent
-                            )
-                        )
+                    drawTrendChart(
+                        data = data,
+                        maxValue = maxSavings,
+                        progress = animationProgress
                     )
-
-                    // Draw line
-                    points.forEachIndexed { index, point ->
-                        if (index > 0) {
-                            drawLine(
-                                brush = Brush.linearGradient(
-                                    colors = ChampionCartColors.Gradient.electricHarmony
-                                ),
-                                start = points[index - 1],
-                                end = point,
-                                strokeWidth = 3.dp.toPx(),
-                                cap = StrokeCap.Round
-                            )
-                        }
-                    }
-
-                    // Draw points
-                    points.forEach { point ->
-                        drawCircle(
-                            color = ChampionCartColors.Brand.ElectricMint,
-                            radius = 4.dp.toPx(),
-                            center = point
-                        )
-                        drawCircle(
-                            color = Color.White,
-                            radius = 2.dp.toPx(),
-                            center = point
-                        )
-                    }
                 }
             }
 
-            Spacer(modifier = Modifier.height(Spacing.m))
+            Spacer(modifier = Modifier.height(SpacingTokens.M))
 
             // X-axis labels
             Row(
@@ -295,7 +270,7 @@ fun SavingsTrendChart(
                     Text(
                         text = point.label,
                         style = MaterialTheme.typography.labelSmall,
-                        color = ChampionCartTheme.colors.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -303,216 +278,382 @@ fun SavingsTrendChart(
     }
 }
 
+private fun DrawScope.drawTrendChart(
+    data: List<SavingsDataPoint>,
+    maxValue: Float,
+    progress: Float
+) {
+    val points = data.mapIndexed { index, point ->
+        Offset(
+            x = (index.toFloat() / (data.size - 1)) * size.width,
+            y = size.height - ((point.amount / maxValue) * size.height * progress)
+        )
+    }
+
+    // Draw gradient area
+    val path = Path().apply {
+        moveTo(0f, size.height)
+        points.forEachIndexed { index, point ->
+            if (index == 0) {
+                lineTo(point.x, point.y)
+            } else {
+                val previousPoint = points[index - 1]
+                val controlPoint1 = Offset(
+                    (previousPoint.x + point.x) / 2,
+                    previousPoint.y
+                )
+                val controlPoint2 = Offset(
+                    (previousPoint.x + point.x) / 2,
+                    point.y
+                )
+                cubicTo(
+                    controlPoint1.x, controlPoint1.y,
+                    controlPoint2.x, controlPoint2.y,
+                    point.x, point.y
+                )
+            }
+        }
+        lineTo(size.width, size.height)
+        close()
+    }
+
+    drawPath(
+        path = path,
+        brush = Brush.verticalGradient(
+            colors = listOf(
+                ChampionCartColors.Brand.ElectricMint.copy(alpha = 0.3f),
+                ChampionCartColors.Brand.ElectricMint.copy(alpha = 0.05f)
+            )
+        )
+    )
+
+    // Draw line
+    points.forEachIndexed { index, point ->
+        if (index > 0) {
+            drawLine(
+                brush = Brush.linearGradient(
+                    colors = listOf(
+                        ChampionCartColors.Brand.ElectricMint,
+                        ChampionCartColors.Brand.CosmicPurple
+                    )
+                ),
+                start = points[index - 1],
+                end = point,
+                strokeWidth = 3.dp.toPx(),
+                cap = StrokeCap.Round
+            )
+        }
+    }
+
+    // Draw points with glow
+    points.forEach { point ->
+        // Glow
+        drawCircle(
+            brush = Brush.radialGradient(
+                colors = listOf(
+                    ChampionCartColors.Brand.ElectricMint.copy(alpha = 0.3f),
+                    Color.Transparent
+                ),
+                radius = 12.dp.toPx(),
+                center = point
+            ),
+            radius = 12.dp.toPx(),
+            center = point
+        )
+
+        // Outer circle
+        drawCircle(
+            color = ChampionCartColors.Brand.ElectricMint,
+            radius = 5.dp.toPx(),
+            center = point
+        )
+
+        // Inner circle
+        drawCircle(
+            color = Color.White,
+            radius = 3.dp.toPx(),
+            center = point
+        )
+    }
+}
+
 /**
- * Category Spending Pie Chart
+ * Modern Category Spending Chart
  */
 @Composable
-fun CategorySpendingChart(
+fun ModernCategorySpendingChart(
     categories: List<CategorySpending>,
     modifier: Modifier = Modifier
 ) {
     val total = categories.sumOf { it.amount.toDouble() }.toFloat()
-    var startAngle = -90f
+    val config = ChampionCartTheme.config
+    var animationProgress by remember { mutableStateOf(if (!config.reduceMotion) 0f else 1f) }
 
-    GlassCard(
+    LaunchedEffect(categories) {
+        if (!config.reduceMotion) {
+            animate(
+                initialValue = 0f,
+                targetValue = 1f,
+                animationSpec = tween(1200, easing = FastOutSlowInEasing)
+            ) { value, _ ->
+                animationProgress = value
+            }
+        }
+    }
+
+    ModernGlassCard(
         modifier = modifier,
-        intensity = GlassIntensity.Light
+        shape = RoundedCornerShape(24.dp)
     ) {
         Column(
-            modifier = Modifier.padding(Spacing.Component.paddingL),
+            modifier = Modifier.padding(SpacingTokens.XL),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
                 text = "הוצאות לפי קטגוריה",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
             )
 
-            Spacer(modifier = Modifier.height(Spacing.l))
+            Spacer(modifier = Modifier.height(SpacingTokens.XL))
 
+            // Donut Chart
             Box(
-                modifier = Modifier.size(200.dp),
+                modifier = Modifier.size(220.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Canvas(modifier = Modifier.fillMaxSize()) {
-                    val strokeWidth = 40.dp.toPx()
-                    val radius = (size.minDimension - strokeWidth) / 2
-                    val center = Offset(size.width / 2, size.height / 2)
-
-                    categories.forEach { category ->
-                        val sweepAngle = (category.amount / total) * 360f
-
-                        drawArc(
-                            color = getCategoryColor(category.name),
-                            startAngle = startAngle,
-                            sweepAngle = sweepAngle,
-                            useCenter = false,
-                            topLeft = center - Offset(radius, radius),
-                            size = Size(radius * 2, radius * 2),
-                            style = Stroke(strokeWidth)
-                        )
-
-                        startAngle += sweepAngle
-                    }
+                    drawDonutChart(
+                        categories = categories,
+                        total = total,
+                        progress = animationProgress
+                    )
                 }
 
-                // Center total
+                // Center content
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "סה״כ",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = ChampionCartTheme.colors.onSurfaceVariant
+                        text = "₪${total.toInt()}",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "₪${total.toInt()}",
-                        style = CustomTextStyles.price,
-                        fontWeight = FontWeight.Bold
+                        text = "סה״כ",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(Spacing.l))
+            Spacer(modifier = Modifier.height(SpacingTokens.XL))
 
-            // Legend
-            categories.forEach { category ->
-                CategoryLegendItem(
-                    category = category,
-                    percentage = (category.amount / total * 100).toInt(),
-                    modifier = Modifier.padding(vertical = Spacing.xs),
-                    categoryColor = getCategoryColor(category.name)
-                )
+            // Legend with modern styling
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(SpacingTokens.M)
+            ) {
+                categories.forEach { category ->
+                    ModernCategoryLegendItem(
+                        category = category,
+                        percentage = ((category.amount / total) * 100).toInt(),
+                        color = getCategoryColor(category.name)
+                    )
+                }
             }
         }
     }
 }
 
-/**
- * Category Legend Item
- */
+private fun DrawScope.drawDonutChart(
+    categories: List<CategorySpending>,
+    total: Float,
+    progress: Float
+) {
+    var startAngle = -90f
+    val strokeWidth = 50.dp.toPx()
+    val radius = (size.minDimension - strokeWidth) / 2
+    val center = Offset(size.width / 2, size.height / 2)
+
+    categories.forEach { category ->
+        val sweepAngle = ((category.amount / total) * 360f) * progress
+        val color = getCategoryColor(category.name)
+
+        // Shadow layer
+        drawArc(
+            color = color.copy(alpha = 0.2f),
+            startAngle = startAngle,
+            sweepAngle = sweepAngle,
+            useCenter = false,
+            topLeft = center - Offset(radius - 2.dp.toPx(), radius - 2.dp.toPx()),
+            size = Size((radius - 2.dp.toPx()) * 2, (radius - 2.dp.toPx()) * 2),
+            style = Stroke(strokeWidth + 4.dp.toPx())
+        )
+
+        // Main arc
+        drawArc(
+            brush = Brush.sweepGradient(
+                colors = listOf(
+                    color,
+                    color.copy(alpha = 0.8f),
+                    color
+                ),
+                center = center
+            ),
+            startAngle = startAngle,
+            sweepAngle = sweepAngle,
+            useCenter = false,
+            topLeft = center - Offset(radius, radius),
+            size = Size(radius * 2, radius * 2),
+            style = Stroke(
+                width = strokeWidth,
+                cap = StrokeCap.Round
+            )
+        )
+
+        startAngle += sweepAngle
+    }
+}
+
 @Composable
-private fun CategoryLegendItem(
+private fun ModernCategoryLegendItem(
     category: CategorySpending,
     percentage: Int,
-    categoryColor: Color,
-    modifier: Modifier = Modifier
+    color: Color
 ) {
     Row(
-        modifier = modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(color.copy(alpha = 0.1f))
+            .padding(SpacingTokens.M),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Row(
-            horizontalArrangement = Arrangement.spacedBy(Spacing.s),
+            horizontalArrangement = Arrangement.spacedBy(SpacingTokens.M),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
-                    .size(12.dp)
+                    .size(16.dp)
                     .clip(CircleShape)
-                    .background(categoryColor)
+                    .background(color)
             )
 
-            Text(
-                text = category.name,
-                style = MaterialTheme.typography.bodyMedium
-            )
+            Column {
+                Text(
+                    text = category.name,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium
+                )
+                Text(
+                    text = "$percentage%",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
 
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(Spacing.s),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "$percentage%",
-                style = MaterialTheme.typography.bodySmall,
-                color = ChampionCartTheme.colors.onSurfaceVariant
-            )
-
-            Text(
-                text = "₪${category.amount}",
-                style = CustomTextStyles.priceSmall,
-                fontWeight = FontWeight.Medium
-            )
-        }
+        Text(
+            text = "₪${category.amount.toInt()}",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = color
+        )
     }
 }
 
 /**
- * Quick Stats Grid
+ * Modern Quick Stats Grid
  */
 @Composable
-fun QuickStatsGrid(
+fun ModernQuickStatsGrid(
     stats: List<QuickStat>,
     modifier: Modifier = Modifier
 ) {
     LazyVerticalGrid(
         columns = GridCells.Fixed(2),
         modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(Spacing.m),
-        verticalArrangement = Arrangement.spacedBy(Spacing.m)
+        horizontalArrangement = Arrangement.spacedBy(SpacingTokens.M),
+        verticalArrangement = Arrangement.spacedBy(SpacingTokens.M)
     ) {
         items(stats) { stat ->
-            QuickStatCard(stat = stat)
+            ModernQuickStatCard(stat = stat)
         }
     }
 }
 
-/**
- * Quick Stat Card
- */
 @Composable
-fun QuickStatCard(
-    stat: QuickStat,
-    modifier: Modifier = Modifier
-) {
-    val iconTint = stat.iconTint ?: ChampionCartTheme.colors.primary
-    val valueColor = stat.valueColor ?: ChampionCartTheme.colors.onSurface
+private fun ModernQuickStatCard(stat: QuickStat) {
+    val config = ChampionCartTheme.config
+    var isVisible by remember { mutableStateOf(false) }
 
-    GlassCard(
-        modifier = modifier.height(100.dp),
-        intensity = GlassIntensity.Light
+    LaunchedEffect(stat) {
+        isVisible = true
+    }
+
+    AnimatedVisibility(
+        visible = isVisible,
+        enter = fadeIn() + scaleIn(initialScale = 0.9f)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(Spacing.Component.paddingM),
-            verticalArrangement = Arrangement.SpaceBetween
+        ModernGlassCard(
+            modifier = Modifier.height(120.dp),
+            shape = RoundedCornerShape(20.dp)
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        brush = Brush.linearGradient(
+                            colors = listOf(
+                                stat.color.copy(alpha = 0.1f),
+                                Color.Transparent
+                            )
+                        )
+                    )
+                    .padding(SpacingTokens.L)
             ) {
-                Text(
-                    text = stat.label,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = ChampionCartTheme.colors.onSurfaceVariant
-                )
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        Text(
+                            text = stat.label,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
 
-                Icon(
-                    imageVector = stat.icon,
-                    contentDescription = null,
-                    modifier = Modifier.size(Sizing.Icon.s),
-                    tint = iconTint
-                )
+                        Icon(
+                            imageVector = stat.icon,
+                            contentDescription = null,
+                            modifier = Modifier.size(SizingTokens.IconM),
+                            tint = stat.color
+                        )
+                    }
+
+                    Text(
+                        text = stat.value,
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = stat.color
+                    )
+                }
             }
-
-            Text(
-                text = stat.value,
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = valueColor
-            )
         }
     }
 }
 
-// Data classes
-data class StorePrice(
-    val name: String,
-    val price: Float
+// Updated data classes
+data class SavingsDataPoint(
+    val label: String,
+    val amount: Float
 )
 
 data class CategorySpending(
@@ -520,26 +661,20 @@ data class CategorySpending(
     val amount: Float
 )
 
-data class SavingsDataPoint(
-    val label: String,
-    val amount: Float
-)
-
 data class QuickStat(
     val label: String,
     val value: String,
     val icon: androidx.compose.ui.graphics.vector.ImageVector,
-    val iconTint: Color? = null,
-    val valueColor: Color? = null
+    val color: Color = ChampionCartColors.Brand.ElectricMint
 )
 
-// Helper function to get category color
+// Helper function
 private fun getCategoryColor(category: String): Color {
     return when (category.lowercase()) {
         "dairy", "חלב", "מוצרי חלב" -> ChampionCartColors.Category.Dairy
-        "meat", "בשר" -> ChampionCartColors.Category.Meat
-        "produce", "ירקות", "פירות" -> ChampionCartColors.Category.Produce
-        "bakery", "מאפה", "לחם" -> ChampionCartColors.Category.Bakery
+        "meat", "בשר", "בשר ודגים" -> ChampionCartColors.Category.Meat
+        "produce", "ירקות", "פירות", "פירות וירקות" -> ChampionCartColors.Category.Produce
+        "bakery", "מאפה", "לחם", "מאפים" -> ChampionCartColors.Category.Bakery
         "frozen", "קפואים" -> ChampionCartColors.Category.Frozen
         "household", "ניקיון", "בית" -> ChampionCartColors.Category.Household
         else -> ChampionCartColors.Brand.ElectricMint

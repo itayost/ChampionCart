@@ -3,13 +3,15 @@ package com.example.championcart.presentation.screens.home
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -18,14 +20,17 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.championcart.presentation.components.*
 import com.example.championcart.ui.theme.*
 import kotlinx.coroutines.delay
+import java.util.Calendar
 
 @Composable
 fun HomeScreen(
@@ -34,11 +39,9 @@ fun HomeScreen(
     onNavigateToProduct: (String) -> Unit,
     onNavigateToCitySelection: () -> Unit
 ) {
-    val darkTheme = isSystemInDarkTheme()
-
     // Time-based greeting
     val greeting = remember {
-        val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+        val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
         when (hour) {
             in 6..11 -> "בוקר טוב"
             in 12..17 -> "צהריים טובים"
@@ -47,13 +50,15 @@ fun HomeScreen(
         }
     }
 
+    val config = ChampionCartTheme.config
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
         // Subtle animated background gradient
-        if (darkTheme) {
+        if (!config.reduceMotion && config.enableMicroAnimations) {
             AnimatedBackgroundGradient()
         }
 
@@ -61,110 +66,64 @@ fun HomeScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = Spacing.m)
+                .padding(horizontal = SpacingTokens.L)
+                .padding(
+                    bottom = 80.dp + // Bottom nav height
+                            SpacingTokens.L +
+                            WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+                )
         ) {
-            Spacer(modifier = Modifier.height(Spacing.m))
+            Spacer(modifier = Modifier.height(SpacingTokens.M))
 
-            // Enhanced Header - using elevated style for light theme
-            GlassCard(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = Spacing.l),
-                intensity = GlassIntensity.Medium,
-                elevated = !darkTheme // Elevated in light theme for better visibility
-            ) {
-                Column(
-                    modifier = Modifier.padding(Spacing.l)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.Top
-                    ) {
-                        Column {
-                            Text(
-                                text = "$greeting, Champion! 🏆",
-                                style = MaterialTheme.typography.headlineSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = "מוכנים לחסוך היום?",
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-
-                        // City selector with proper theme handling
-                        CitySelector(
-                            currentCity = "תל אביב",
-                            onClick = onNavigateToCitySelection
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(Spacing.m))
-
-                    // Quick savings summary with theme-aware indicators
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(Spacing.s)
-                    ) {
-                        SavingsIndicator(
-                            label = "חסכת החודש",
-                            amount = "₪523",
-                            trend = 12.5f,
-                            modifier = Modifier.weight(1f),
-                            darkTheme = darkTheme
-                        )
-                        ActiveCartIndicator(
-                            itemCount = 12,
-                            totalSavings = "₪47",
-                            modifier = Modifier.weight(1f),
-                            darkTheme = darkTheme
-                        )
-                    }
-                }
-            }
-
-            // Enhanced Search Bar with proper visibility
-            SearchBarGlass(
-                onClick = { onNavigateToSearch(null) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = Spacing.l),
-                darkTheme = darkTheme
+            // Modern Header Section
+            ModernHeaderSection(
+                greeting = greeting,
+                onCityClick = onNavigateToCitySelection
             )
+
+            Spacer(modifier = Modifier.height(SpacingTokens.XL))
+
+            // Quick Stats Row
+            QuickStatsRow()
+
+            Spacer(modifier = Modifier.height(SpacingTokens.XL))
+
+            // Enhanced Search Bar
+            ModernSearchBar(
+                onClick = { onNavigateToSearch(null) }
+            )
+
+            Spacer(modifier = Modifier.height(SpacingTokens.XL))
 
             // Featured Deals Section
             FeaturedDealsSection(
-                onProductClick = onNavigateToProduct,
-                modifier = Modifier.padding(bottom = Spacing.l)
+                onProductClick = onNavigateToProduct
             )
 
-            // Categories Grid with animations
+            Spacer(modifier = Modifier.height(SpacingTokens.XL))
+
+            // Categories Grid
             Text(
                 text = "קטגוריות פופולריות",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = Spacing.m)
+                modifier = Modifier.padding(bottom = SpacingTokens.M)
             )
 
-            AnimatedCategoriesGrid(
-                onNavigateToCategory = onNavigateToCategory,
-                darkTheme = darkTheme
+            ModernCategoriesGrid(
+                onNavigateToCategory = onNavigateToCategory
             )
 
             // Bottom spacing
-            Spacer(modifier = Modifier.height(80.dp))
+            Spacer(modifier = Modifier.height(SpacingTokens.XXL))
         }
     }
 }
 
 @Composable
-fun AnimatedBackgroundGradient() {
+private fun AnimatedBackgroundGradient() {
     val infiniteTransition = rememberInfiniteTransition(label = "background")
-    val offset = infiniteTransition.animateFloat(
+    val offset by infiniteTransition.animateFloat(
         initialValue = 0f,
         targetValue = 2000f,
         animationSpec = infiniteRepeatable(
@@ -185,140 +144,57 @@ fun AnimatedBackgroundGradient() {
                         ChampionCartColors.Brand.CosmicPurple.copy(alpha = 0.02f),
                         Color.Transparent
                     ),
-                    start = androidx.compose.ui.geometry.Offset(offset.value, 0f),
-                    end = androidx.compose.ui.geometry.Offset(offset.value + 1000f, 1000f)
+                    start = Offset(offset, 0f),
+                    end = Offset(offset + 1000f, 1000f)
                 )
             )
     )
 }
 
 @Composable
-fun CitySelector(
-    currentCity: String,
-    onClick: () -> Unit
+private fun ModernHeaderSection(
+    greeting: String,
+    onCityClick: () -> Unit
 ) {
-    SecondaryGlassButton(
-        onClick = onClick,
-        text = currentCity,
-        icon = {
-            Icon(
-                Icons.Default.LocationOn,
-                contentDescription = null,
-                modifier = Modifier.size(16.dp)
-            )
-        },
-        size = ButtonSize.Small
-    )
-}
-
-@Composable
-fun SavingsIndicator(
-    label: String,
-    amount: String,
-    trend: Float,
-    modifier: Modifier = Modifier,
-    darkTheme: Boolean
-) {
-    val backgroundColor = if (darkTheme) {
-        ChampionCartColors.Brand.ElectricMint.copy(alpha = 0.15f)
-    } else {
-        ChampionCartColors.Brand.ElectricMint.copy(alpha = 0.08f)
-    }
-
-    Surface(
-        modifier = modifier
-            .cardGlass(
-                intensity = GlassIntensity.Light,
-                shape = ComponentShapes.Card.Small,
-                darkTheme = darkTheme
-            ),
-        color = backgroundColor,
-        shape = ComponentShapes.Card.Small
+    ModernGlassCard(
+        shape = RoundedCornerShape(32.dp),
+        borderGradient = true
     ) {
-        Row(
-            modifier = Modifier.padding(Spacing.m),
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            modifier = Modifier.padding(SpacingTokens.XL)
         ) {
-            Icon(
-                Icons.Default.TrendingUp,
-                contentDescription = null,
-                tint = ChampionCartColors.Brand.ElectricMint,
-                modifier = Modifier.size(20.dp)
-            )
-            Spacer(modifier = Modifier.width(Spacing.s))
-            Column {
-                Text(
-                    text = amount,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = ChampionCartColors.Brand.ElectricMint
-                )
-                Text(
-                    text = "$label (+${trend}%)",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun ActiveCartIndicator(
-    itemCount: Int,
-    totalSavings: String,
-    modifier: Modifier = Modifier,
-    darkTheme: Boolean
-) {
-    val backgroundColor = if (darkTheme) {
-        ChampionCartColors.Brand.CosmicPurple.copy(alpha = 0.15f)
-    } else {
-        ChampionCartColors.Brand.CosmicPurple.copy(alpha = 0.08f)
-    }
-
-    Surface(
-        modifier = modifier
-            .cardGlass(
-                intensity = GlassIntensity.Light,
-                shape = ComponentShapes.Card.Small,
-                darkTheme = darkTheme
-            ),
-        color = backgroundColor,
-        shape = ComponentShapes.Card.Small
-    ) {
-        Row(
-            modifier = Modifier.padding(Spacing.m),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box {
-                Icon(
-                    Icons.Default.ShoppingCart,
-                    contentDescription = null,
-                    tint = ChampionCartColors.Brand.CosmicPurple,
-                    modifier = Modifier.size(20.dp)
-                )
-                if (itemCount > 0) {
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .size(12.dp)
-                            .clip(androidx.compose.foundation.shape.CircleShape)
-                            .background(ChampionCartColors.Brand.NeonCoral)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
+                Column {
+                    Text(
+                        text = "$greeting, Champion! 🏆",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.height(SpacingTokens.XS))
+                    Text(
+                        text = "מוכנים לחסוך היום?",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-            }
-            Spacer(modifier = Modifier.width(Spacing.s))
-            Column {
-                Text(
-                    text = "$itemCount פריטים",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = ChampionCartColors.Brand.CosmicPurple
-                )
-                Text(
-                    text = "חוסכים $totalSavings",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+
+                // City selector using new GlassButton
+                GlassButton(
+                    onClick = onCityClick,
+                    text = "תל אביב",
+                    icon = {
+                        Icon(
+                            Icons.Default.LocationOn,
+                            contentDescription = null,
+                            modifier = Modifier.size(SizingTokens.IconXS)
+                        )
+                    },
+                    size = ButtonSize.Small
                 )
             }
         }
@@ -326,31 +202,52 @@ fun ActiveCartIndicator(
 }
 
 @Composable
-fun SearchBarGlass(
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    darkTheme: Boolean
+private fun QuickStatsRow() {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(SpacingTokens.M)
+    ) {
+        StatsCard(
+            title = "חיסכון החודש",
+            value = "₪523",
+            icon = Icons.Default.Savings,
+            trend = 12.5f,
+            accentColor = ChampionCartColors.Semantic.Success,
+            modifier = Modifier.weight(1f)
+        )
+
+        StatsCard(
+            title = "פריטים בעגלה",
+            value = "12",
+            icon = Icons.Default.ShoppingCart,
+            accentColor = ChampionCartColors.Brand.CosmicPurple,
+            modifier = Modifier.weight(1f)
+        )
+    }
+}
+
+@Composable
+private fun ModernSearchBar(
+    onClick: () -> Unit
 ) {
-    GlassCard(
+    ModernGlassCard(
         onClick = onClick,
-        modifier = modifier,
-        intensity = GlassIntensity.Medium,
-        elevated = !darkTheme // Better visibility in light theme
+        shape = RoundedCornerShape(28.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(Spacing.l),
+                .padding(SpacingTokens.L),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
                 Icons.Default.Search,
                 contentDescription = null,
                 tint = ChampionCartColors.Brand.ElectricMint,
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier.size(SizingTokens.IconM)
             )
-            Spacer(modifier = Modifier.width(Spacing.m))
-            Column {
+            Spacer(modifier = Modifier.width(SpacingTokens.M))
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = "חפש מוצרים, מותגים או חנויות",
                     style = MaterialTheme.typography.bodyLarge,
@@ -362,27 +259,29 @@ fun SearchBarGlass(
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                 )
             }
-            Spacer(modifier = Modifier.weight(1f))
-            Icon(
-                Icons.Default.PhotoCamera,
-                contentDescription = "Scan barcode",
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(20.dp)
+            GlowingIconButton(
+                onClick = { /* Barcode scanner */ },
+                icon = {
+                    Icon(
+                        Icons.Default.PhotoCamera,
+                        contentDescription = "Scan barcode"
+                    )
+                },
+                glowColor = ChampionCartColors.Brand.ElectricMint
             )
         }
     }
 }
 
 @Composable
-fun FeaturedDealsSection(
-    onProductClick: (String) -> Unit,
-    modifier: Modifier = Modifier
+private fun FeaturedDealsSection(
+    onProductClick: (String) -> Unit
 ) {
-    Column(modifier = modifier) {
+    Column {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = Spacing.m),
+                .padding(bottom = SpacingTokens.M),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -391,121 +290,63 @@ fun FeaturedDealsSection(
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
-            TextButton(
-                onClick = { /* Navigate to all deals */ }
-            ) {
-                Text("ראה הכל")
-                Icon(
-                    Icons.Default.ArrowForward,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp)
-                )
-            }
+            ElectricTextButton(
+                onClick = { /* Navigate to all deals */ },
+                text = "ראה הכל",
+                icon = {
+                    Icon(
+                        Icons.Default.ArrowForward,
+                        contentDescription = null,
+                        modifier = Modifier.size(SizingTokens.IconXS)
+                    )
+                }
+            )
         }
 
         LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(Spacing.m),
-            contentPadding = PaddingValues(horizontal = 4.dp)
+            horizontalArrangement = Arrangement.spacedBy(SpacingTokens.M),
+            contentPadding = PaddingValues(horizontal = SpacingTokens.XS)
         ) {
-            items(5) { index ->
-                FeaturedDealCard(
-                    productName = when (index) {
-                        0 -> "חלב תנובה 3%"
-                        1 -> "לחם אחיד פרוס"
-                        2 -> "במבה אוסם"
-                        3 -> "קוטג' תנובה"
-                        else -> "ביצים L"
-                    },
-                    originalPrice = when (index) {
-                        0 -> "₪8.90"
-                        1 -> "₪12.50"
-                        2 -> "₪7.90"
-                        3 -> "₪6.90"
-                        else -> "₪24.90"
-                    },
-                    discountedPrice = when (index) {
-                        0 -> "₪5.90"
-                        1 -> "₪8.90"
-                        2 -> "₪4.90"
-                        3 -> "₪4.50"
-                        else -> "₪19.90"
-                    },
-                    storeName = when (index) {
-                        0 -> "שופרסל"
-                        1 -> "רמי לוי"
-                        2 -> "ויקטורי"
-                        3 -> "מגה"
-                        else -> "אושר עד"
-                    },
-                    onClick = { onProductClick("product_$index") }
-                )
+            items(featuredDeals) { deal ->
+                var isVisible by remember { mutableStateOf(false) }
+
+                LaunchedEffect(deal) {
+                    isVisible = true
+                }
+
+                AnimatedVisibility(
+                    visible = isVisible,
+                    enter = fadeIn() + slideInHorizontally()
+                ) {
+                    ProductPriceCard(
+                        productName = deal.productName,
+                        prices = deal.prices,
+                        onAddToCart = { onProductClick(deal.id) },
+                        modifier = Modifier.width(300.dp)
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-fun FeaturedDealCard(
-    productName: String,
-    originalPrice: String,
-    discountedPrice: String,
-    storeName: String,
-    onClick: () -> Unit
+private fun ModernCategoriesGrid(
+    onNavigateToCategory: (String, String) -> Unit
 ) {
-    ProductGlassCard(
-        productName = productName,
-        productImage = {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Color.Gray.copy(alpha = 0.05f)
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    Icons.Default.ShoppingBag,
-                    contentDescription = null,
-                    modifier = Modifier.size(48.dp),
-                    tint = Color.Gray.copy(alpha = 0.3f)
-                )
-            }
-        },
-        price = discountedPrice,
-        storeName = storeName,
-        priceLevel = PriceLevel.Best,
-        onClick = onClick,
-        modifier = Modifier.width(160.dp)
-    )
-}
-
-@Composable
-fun AnimatedCategoriesGrid(
-    onNavigateToCategory: (String, String) -> Unit,
-    darkTheme: Boolean
-) {
-    val categories = remember {
-        listOf(
-            CategoryData("1", "פירות וירקות", Icons.Default.LocalFlorist, ChampionCartColors.Category.Produce),
-            CategoryData("2", "מוצרי חלב", Icons.Default.Kitchen, ChampionCartColors.Category.Dairy),
-            CategoryData("3", "בשר ודגים", Icons.Default.Restaurant, ChampionCartColors.Category.Meat),
-            CategoryData("4", "מאפים", Icons.Default.Cake, ChampionCartColors.Category.Bakery),
-            CategoryData("5", "משקאות", Icons.Default.LocalDrink, ChampionCartColors.Brand.CosmicPurple),
-            CategoryData("6", "ניקיון", Icons.Default.CleaningServices, ChampionCartColors.Category.Household)
-        )
-    }
+    val categories = remember { categoryData }
 
     LazyVerticalGrid(
-        columns = GridCells.Fixed(3),
-        horizontalArrangement = Arrangement.spacedBy(Spacing.s),
-        verticalArrangement = Arrangement.spacedBy(Spacing.s),
-        modifier = Modifier.height(250.dp)
+        columns = GridCells.Fixed(2),
+        horizontalArrangement = Arrangement.spacedBy(SpacingTokens.M),
+        verticalArrangement = Arrangement.spacedBy(SpacingTokens.M),
+        modifier = Modifier.height(320.dp)
     ) {
-        items(categories.size) { index ->
+        items(categories, key = { it.id }) { category ->
             var isVisible by remember { mutableStateOf(false) }
 
-            LaunchedEffect(key1 = index) {
-                delay(index * 50L)
+            LaunchedEffect(category) {
+                delay(categories.indexOf(category) * 50L)
                 isVisible = true
             }
 
@@ -519,72 +360,110 @@ fun AnimatedCategoriesGrid(
                     )
                 )
             ) {
-                EnhancedCategoryCard(
-                    category = categories[index],
+                CategoryCard(
+                    title = category.name,
+                    icon = category.icon,
+                    itemCount = category.itemCount,
                     onClick = {
-                        onNavigateToCategory(categories[index].id, categories[index].name)
+                        onNavigateToCategory(category.id, category.name)
                     },
-                    darkTheme = darkTheme
+                    gradient = listOf(
+                        category.color,
+                        category.color.copy(alpha = 0.7f)
+                    )
                 )
             }
         }
     }
 }
 
-@Composable
-fun EnhancedCategoryCard(
-    category: CategoryData,
-    onClick: () -> Unit,
-    darkTheme: Boolean
-) {
-    val categoryAlpha = if (darkTheme) 0.15f else 0.08f
-
-    GlassCard(
-        onClick = onClick,
-        modifier = Modifier
-            .aspectRatio(1f),
-        intensity = GlassIntensity.Light
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    category.color.copy(alpha = categoryAlpha)
-                )
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(Spacing.m),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Icon(
-                    imageVector = category.icon,
-                    contentDescription = null,
-                    tint = if (darkTheme) {
-                        category.color
-                    } else {
-                        category.color.copy(alpha = 0.8f)
-                    },
-                    modifier = Modifier.size(36.dp)
-                )
-                Spacer(modifier = Modifier.height(Spacing.s))
-                Text(
-                    text = category.name,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 2
-                )
-            }
-        }
-    }
-}
-
+// Data Models
 data class CategoryData(
     val id: String,
     val name: String,
     val icon: ImageVector,
-    val color: Color
+    val color: Color,
+    val itemCount: Int
+)
+
+data class FeaturedDeal(
+    val id: String,
+    val productName: String,
+    val prices: List<StorePrice>
+)
+
+// Sample Data
+private val categoryData = listOf(
+    CategoryData(
+        "1",
+        "פירות וירקות",
+        Icons.Default.Spa,
+        ChampionCartColors.Category.Produce,
+        89
+    ),
+    CategoryData(
+        "2",
+        "מוצרי חלב",
+        Icons.Default.LocalDrink,
+        ChampionCartColors.Category.Dairy,
+        45
+    ),
+    CategoryData(
+        "3",
+        "בשר ודגים",
+        Icons.Default.Restaurant,
+        ChampionCartColors.Category.Meat,
+        67
+    ),
+    CategoryData(
+        "4",
+        "מאפים",
+        Icons.Default.Cake,
+        ChampionCartColors.Category.Bakery,
+        34
+    ),
+    CategoryData(
+        "5",
+        "משקאות",
+        Icons.Default.WineBar,
+        ChampionCartColors.Brand.CosmicPurple,
+        78
+    ),
+    CategoryData(
+        "6",
+        "ניקיון",
+        Icons.Default.CleaningServices,
+        ChampionCartColors.Category.Household,
+        56
+    )
+)
+
+private val featuredDeals = listOf(
+    FeaturedDeal(
+        "1",
+        "חלב תנובה 3% שומן 1 ליטר",
+        listOf(
+            StorePrice("רמי לוי", 5.90f),
+            StorePrice("שופרסל", 6.90f),
+            StorePrice("ויקטורי", 6.50f)
+        )
+    ),
+    FeaturedDeal(
+        "2",
+        "לחם אחיד פרוס",
+        listOf(
+            StorePrice("ויקטורי", 8.90f),
+            StorePrice("רמי לוי", 9.50f),
+            StorePrice("מגה", 10.90f)
+        )
+    ),
+    FeaturedDeal(
+        "3",
+        "במבה אוסם 80 גרם",
+        listOf(
+            StorePrice("אושר עד", 4.90f),
+            StorePrice("שופרסל", 5.90f),
+            StorePrice("רמי לוי", 5.50f)
+        )
+    )
 )

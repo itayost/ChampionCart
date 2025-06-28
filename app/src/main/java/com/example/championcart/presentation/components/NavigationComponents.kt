@@ -22,6 +22,7 @@ import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.geometry.toRect
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
@@ -82,8 +83,9 @@ fun ModernGlassBottomNavigationBar(
     Box(
         modifier = modifier
             .fillMaxWidth()
+            .navigationBarsPadding()
             .height(Sizing.Navigation.bottomBarHeight)
-            .padding(horizontal = SpacingTokens.L, vertical = SpacingTokens.S)
+            .padding(horizontal = Spacing.l)
     ) {
         // Animated glow layer behind the navigation bar
         if (!config.reduceMotion && config.enableMicroAnimations) {
@@ -298,7 +300,7 @@ private fun RowScope.ModernNavigationBarItem(
  */
 @Composable
 private fun ModernNavIcon(
-    icon: Int,
+    icon: ImageVector,
     selected: Boolean,
     badge: Int?,
     index: Int,
@@ -404,3 +406,10 @@ fun ModernGlassBadge(
         )
     }
 }
+
+data class BottomNavItem(
+    val route: String,
+    val icon: ImageVector,
+    val label: String,
+    val badge: Int? = null
+)

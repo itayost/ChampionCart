@@ -4,10 +4,11 @@ import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.lazy.grid.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -16,121 +17,93 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.championcart.ui.theme.*
 import kotlinx.coroutines.delay
 
 /**
- * List & Grid Components
- * Theme-aware animated lists with Electric Harmony styling
+ * Modern List & Grid Components
+ * Electric Harmony Design System
  */
 
 /**
- * Animate DP with accessibility consideration
+ * Modern Product List Item
  */
 @Composable
-fun animateDpWithAccessibility(
-    targetValue: Dp,
-    animationSpec: AnimationSpec<Dp> = spring(
-        dampingRatio = Spring.DampingRatioMediumBouncy,
-        stiffness = Spring.StiffnessLow
-    ),
-    label: String = "DpAnimation",
-    finishedListener: ((Dp) -> Unit)? = null
-): State<Dp> {
-    val reduceMotion = LocalReduceMotion.current
-    return animateDpAsState(
-        targetValue = targetValue,
-        animationSpec = if (reduceMotion) snap() else animationSpec,
-        label = label,
-        finishedListener = finishedListener
-    )
-}
-
-/**
- * Product List Item - Theme-aware
- */
-@Composable
-fun ProductListItem(
+fun ModernProductListItem(
     product: ProductItemData,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     index: Int = 0,
     isVisible: Boolean = true
 ) {
-    val darkTheme = isSystemInDarkTheme()
-    val density = LocalDensity.current
+    val config = ChampionCartTheme.config
 
     AnimatedVisibility(
         visible = isVisible,
-        enter = ChampionCartAnimations.List.staggeredSlideIn(index) +
-                ChampionCartAnimations.List.staggeredFadeIn(index),
+        enter = fadeIn(
+            animationSpec = tween(
+                durationMillis = 300,
+                delayMillis = index * 50
+            )
+        ) + slideInVertically(
+            initialOffsetY = { it / 4 },
+            animationSpec = tween(
+                durationMillis = 300,
+                delayMillis = index * 50
+            )
+        ),
         exit = fadeOut() + slideOutHorizontally(),
         modifier = modifier
     ) {
-        GlassCard(
+        ModernGlassCard(
             onClick = onClick,
             modifier = Modifier.fillMaxWidth(),
-            intensity = GlassIntensity.Light,
-            elevated = !darkTheme // Better visibility in light theme
+            shape = RoundedCornerShape(20.dp)
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(Spacing.Component.paddingM),
-                horizontalArrangement = Arrangement.spacedBy(Spacing.m),
+                    .padding(SpacingTokens.L),
+                horizontalArrangement = Arrangement.spacedBy(SpacingTokens.M),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Product Image with theme-aware background
+                // Product Image
                 Box(
                     modifier = Modifier
                         .size(60.dp)
-                        .clip(ComponentShapes.Product.Image)
+                        .clip(RoundedCornerShape(16.dp))
                         .background(
-                            if (darkTheme) {
-                                Color.White.copy(alpha = 0.05f)
-                            } else {
-                                Color.Black.copy(alpha = 0.03f)
-                            }
-                        )
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                        ),
+                    contentAlignment = Alignment.Center
                 ) {
-                    // Placeholder for image
-                    if (!product.imageUrl.isNullOrEmpty()) {
-                        // Load image
-                    } else {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                Icons.Default.ShoppingBag,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
-                    }
+                    Icon(
+                        Icons.Default.ShoppingBag,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                        modifier = Modifier.size(SizingTokens.IconM)
+                    )
                 }
 
                 // Product Info
                 Column(
                     modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(Spacing.xs)
+                    verticalArrangement = Arrangement.spacedBy(SpacingTokens.XS)
                 ) {
                     Text(
                         text = product.name,
-                        style = MaterialTheme.typography.titleSmall,
+                        style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Medium,
                         maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                        color = MaterialTheme.colorScheme.onSurface
+                        overflow = TextOverflow.Ellipsis
                     )
 
                     Text(
@@ -139,38 +112,40 @@ fun ProductListItem(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
-                    // Price comparison with theme-aware styling
+                    // Price with store
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(Spacing.s),
+                        horizontalArrangement = Arrangement.spacedBy(SpacingTokens.S),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        PriceTag(
-                            price = product.bestPrice,
-                            priceLevel = PriceLevel.Best,
-                            animate = false
+                        Text(
+                            text = product.bestPrice,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = ChampionCartColors.Semantic.Success
                         )
-
                         Text(
                             text = "ב-${product.bestStore}",
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
 
-                // Favorite button with theme-aware colors
+                // Favorite button
+                var isFavorite by remember { mutableStateOf(product.isFavorite) }
+
                 IconButton(
-                    onClick = { /* Toggle favorite */ },
+                    onClick = { isFavorite = !isFavorite },
                     modifier = Modifier.size(40.dp)
                 ) {
                     Icon(
-                        imageVector = if (product.isFavorite) {
-                            Icons.Default.Favorite
+                        imageVector = if (isFavorite) {
+                            Icons.Filled.Favorite
                         } else {
-                            Icons.Default.FavoriteBorder
+                            Icons.Filled.FavoriteBorder
                         },
-                        contentDescription = if (product.isFavorite) "Remove from favorites" else "Add to favorites",
-                        tint = if (product.isFavorite) {
+                        contentDescription = if (isFavorite) "הסר מהמועדפים" else "הוסף למועדפים",
+                        tint = if (isFavorite) {
                             ChampionCartColors.Brand.NeonCoral
                         } else {
                             MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
@@ -183,28 +158,26 @@ fun ProductListItem(
 }
 
 /**
- * Product Grid - Theme-aware
+ * Modern Product Grid
  */
 @Composable
-fun ProductGrid(
+fun ModernProductGrid(
     products: List<ProductItemData>,
     onProductClick: (ProductItemData) -> Unit,
     modifier: Modifier = Modifier,
-    contentPadding: PaddingValues = PaddingValues(Spacing.m),
+    contentPadding: PaddingValues = PaddingValues(SpacingTokens.M),
     isLoading: Boolean = false
 ) {
-    val darkTheme = isSystemInDarkTheme()
-
     LazyVerticalGrid(
-        columns = GridCells.Adaptive(minSize = 160.dp),
+        columns = GridCells.Adaptive(minSize = 180.dp),
         modifier = modifier,
         contentPadding = contentPadding,
-        horizontalArrangement = Arrangement.spacedBy(Spacing.m),
-        verticalArrangement = Arrangement.spacedBy(Spacing.m)
+        horizontalArrangement = Arrangement.spacedBy(SpacingTokens.M),
+        verticalArrangement = Arrangement.spacedBy(SpacingTokens.M)
     ) {
         if (isLoading) {
             items(6) { index ->
-                ProductCardSkeleton(darkTheme = darkTheme)
+                ProductCardSkeleton()
             }
         } else {
             itemsIndexed(
@@ -222,34 +195,16 @@ fun ProductGrid(
                     visible = isVisible,
                     enter = fadeIn() + scaleIn(initialScale = 0.9f)
                 ) {
-                    ProductGlassCard(
+                    val mockPrices = listOf(
+                        StorePrice(product.bestStore, product.bestPrice.replace("₪", "").toFloatOrNull() ?: 0f),
+                        StorePrice("חנות אחרת", (product.bestPrice.replace("₪", "").toFloatOrNull() ?: 0f) * 1.1f)
+                    )
+
+                    ProductPriceCard(
                         productName = product.name,
-                        productImage = {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .background(
-                                        if (darkTheme) {
-                                            Color.White.copy(alpha = 0.05f)
-                                        } else {
-                                            Color.Gray.copy(alpha = 0.05f)
-                                        }
-                                    ),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    Icons.Default.ShoppingBag,
-                                    contentDescription = null,
-                                    tint = Color.Gray.copy(alpha = 0.3f),
-                                    modifier = Modifier.size(32.dp)
-                                )
-                            }
-                        },
-                        price = product.bestPrice,
-                        storeName = product.bestStore,
-                        priceLevel = PriceLevel.Best,
-                        onClick = { onProductClick(product) },
-                        isFavorite = product.isFavorite
+                        prices = mockPrices,
+                        onAddToCart = { onProductClick(product) },
+                        modifier = Modifier.fillMaxWidth()
                     )
                 }
             }
@@ -258,170 +213,119 @@ fun ProductGrid(
 }
 
 /**
- * Store List - Theme-aware
+ * Modern Store List
  */
 @Composable
-fun StoreList(
+fun ModernStoreList(
     stores: List<StoreItemData>,
     onStoreClick: (StoreItemData) -> Unit,
     modifier: Modifier = Modifier,
     selectedStoreId: String? = null
 ) {
-    val darkTheme = isSystemInDarkTheme()
-
     LazyColumn(
         modifier = modifier,
-        contentPadding = PaddingValues(vertical = Spacing.m),
-        verticalArrangement = Arrangement.spacedBy(Spacing.s)
+        contentPadding = PaddingValues(
+            horizontal = SpacingTokens.L,
+            vertical = SpacingTokens.M
+        ),
+        verticalArrangement = Arrangement.spacedBy(SpacingTokens.M)
     ) {
         itemsIndexed(
             items = stores,
             key = { _, store -> store.id }
         ) { index, store ->
-            StoreListItem(
-                store = store,
-                isSelected = store.id == selectedStoreId,
-                onClick = { onStoreClick(store) },
-                index = index,
-                modifier = Modifier.padding(horizontal = Spacing.m),
-                darkTheme = darkTheme
-            )
-        }
-    }
-}
+            var isVisible by remember { mutableStateOf(false) }
 
-/**
- * Store List Item - Theme-aware
- */
-@Composable
-fun StoreListItem(
-    store: StoreItemData,
-    isSelected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    index: Int = 0,
-    darkTheme: Boolean
-) {
-    val animatedScale by animateFloatWithAccessibility(
-        targetValue = if (isSelected) 1.02f else 1f,
-        animationSpec = ChampionCartAnimations.Springs.smooth(),
-        label = "storeScale"
-    )
-
-    AnimatedVisibility(
-        visible = true,
-        enter = ChampionCartAnimations.List.staggeredSlideIn(index, baseDelay = 50) +
-                ChampionCartAnimations.List.staggeredFadeIn(index, baseDelay = 50),
-        modifier = modifier
-    ) {
-        Box(
-            modifier = Modifier.graphicsLayer {
-                scaleX = animatedScale
-                scaleY = animatedScale
+            LaunchedEffect(index) {
+                delay(index * 50L)
+                isVisible = true
             }
-        ) {
-            StoreGlassCard(
-                storeName = store.name,
-                storeIcon = {
-                    Text(
-                        text = store.name.take(2).uppercase(),
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold
-                    )
-                },
-                itemCount = store.itemCount,
-                totalPrice = store.totalPrice,
-                onClick = onClick,
-                modifier = Modifier
-                    .then(
-                        if (isSelected) {
-                            if (darkTheme) {
-                                Modifier.border(
-                                    width = 2.dp,
-                                    color = ChampionCartColors.Brand.ElectricMint,
-                                    shape = ComponentShapes.Store.Card
-                                )
-                            } else {
-                                Modifier.border(
-                                    width = 2.dp,
-                                    color = ChampionCartColors.Brand.ElectricMint,
-                                    shape = ComponentShapes.Store.Card
-                                ).shadow(
-                                    elevation = 4.dp,
-                                    shape = ComponentShapes.Store.Card,
-                                    ambientColor = ChampionCartColors.Brand.ElectricMint.copy(alpha = 0.1f)
-                                )
-                            }
-                        } else {
-                            Modifier
-                        }
-                    )
-            )
+
+            AnimatedVisibility(
+                visible = isVisible,
+                enter = fadeIn() + slideInHorizontally { -it / 4 }
+            ) {
+                StoreComparisonCard(
+                    storeName = store.name,
+                    totalPrice = store.totalPrice,
+                    itemCount = store.itemCount,
+                    savings = if (index == 0) 15f else null, // Mock savings for demo
+                    onClick = { onStoreClick(store) },
+                    isSelected = store.id == selectedStoreId,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
         }
     }
 }
 
 /**
- * Cart Item List - Theme-aware
+ * Modern Cart Item List
  */
 @Composable
-fun CartItemList(
+fun ModernCartItemList(
     items: List<CartItemData>,
     onQuantityChange: (CartItemData, Int) -> Unit,
     onRemoveItem: (CartItemData) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val darkTheme = isSystemInDarkTheme()
-
     LazyColumn(
         modifier = modifier,
-        contentPadding = PaddingValues(vertical = Spacing.m),
-        verticalArrangement = Arrangement.spacedBy(Spacing.s)
+        contentPadding = PaddingValues(
+            horizontal = SpacingTokens.L,
+            vertical = SpacingTokens.M
+        ),
+        verticalArrangement = Arrangement.spacedBy(SpacingTokens.M)
     ) {
         itemsIndexed(
             items = items,
             key = { _, item -> item.id }
         ) { index, item ->
-            CartListItem(
-                item = item,
-                onQuantityChange = { newQuantity ->
-                    onQuantityChange(item, newQuantity)
-                },
-                onRemove = { onRemoveItem(item) },
-                index = index,
-                modifier = Modifier.padding(horizontal = Spacing.m),
-                darkTheme = darkTheme
-            )
+            var isVisible by remember { mutableStateOf(false) }
+
+            LaunchedEffect(index) {
+                delay(index * 50L)
+                isVisible = true
+            }
+
+            AnimatedVisibility(
+                visible = isVisible,
+                enter = fadeIn() + slideInVertically { it / 4 }
+            ) {
+                ModernCartListItem(
+                    item = item,
+                    onQuantityChange = { newQuantity ->
+                        onQuantityChange(item, newQuantity)
+                    },
+                    onRemove = { onRemoveItem(item) }
+                )
+            }
         }
 
         // Total section
         item {
-            Spacer(modifier = Modifier.height(Spacing.m))
-            TotalPriceDisplay(
+            Spacer(modifier = Modifier.height(SpacingTokens.M))
+            ModernTotalPriceDisplay(
                 totalPrice = "₪%.2f".format(
                     items.sumOf { item ->
                         (item.price.replace("₪", "").toDoubleOrNull() ?: 0.0) * item.quantity
                     }
                 ),
-                itemCount = items.sumOf { it.quantity },
-                modifier = Modifier.padding(horizontal = Spacing.m)
+                itemCount = items.sumOf { it.quantity }
             )
         }
     }
 }
 
 /**
- * Cart List Item - Theme-aware
+ * Modern Cart List Item
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CartListItem(
+fun ModernCartListItem(
     item: CartItemData,
     onQuantityChange: (Int) -> Unit,
     onRemove: () -> Unit,
-    modifier: Modifier = Modifier,
-    index: Int = 0,
-    darkTheme: Boolean
+    modifier: Modifier = Modifier
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
 
@@ -454,271 +358,240 @@ fun CartListItem(
         )
     }
 
-    SwipeableCartItem(
-        onDelete = { showDeleteDialog = true },
-        modifier = modifier,
-        darkTheme = darkTheme
-    ) {
-        GlassCard(
-            modifier = Modifier.fillMaxWidth(),
-            intensity = GlassIntensity.Light,
-            elevated = !darkTheme
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(Spacing.Component.paddingM),
-                horizontalArrangement = Arrangement.spacedBy(Spacing.m),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Product image
-                Box(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clip(ComponentShapes.Product.Image)
-                        .background(
-                            if (darkTheme) {
-                                Color.White.copy(alpha = 0.05f)
-                            } else {
-                                Color.Black.copy(alpha = 0.03f)
-                            }
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        Icons.Default.ShoppingBag,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-
-                // Product info
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(Spacing.xs)
-                ) {
-                    Text(
-                        text = item.name,
-                        style = MaterialTheme.typography.titleSmall,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-
-                    Text(
-                        text = item.price,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = ChampionCartColors.Brand.ElectricMint,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-
-                // Quantity selector
-                QuantityInput(
-                    quantity = item.quantity,
-                    onQuantityChange = onQuantityChange,
-                    darkTheme = darkTheme
-                )
-            }
-        }
-    }
-}
-
-/**
- * Swipeable Cart Item - Theme-aware
- */
-@Composable
-fun SwipeableCartItem(
-    onDelete: () -> Unit,
-    modifier: Modifier = Modifier,
-    darkTheme: Boolean,
-    content: @Composable () -> Unit
-) {
-    Box(modifier = modifier) {
-        // Delete background
-        Box(
-            modifier = Modifier
-                .matchParentSize()
-                .background(
-                    ChampionCartColors.Semantic.Error.copy(
-                        alpha = if (darkTheme) 0.9f else 0.8f
-                    ),
-                    shape = ComponentShapes.Card.Small
-                )
-                .padding(horizontal = Spacing.l),
-            contentAlignment = Alignment.CenterEnd
-        ) {
-            Icon(
-                imageVector = Icons.Default.Delete,
-                contentDescription = "Remove",
-                tint = Color.White
-            )
-        }
-
-        // Swipeable content
-        Box(
-            modifier = Modifier.fillMaxWidth()
-            // Add swipe gesture handling here if needed
-        ) {
-            content()
-        }
-    }
-}
-
-/**
- * Product Card Skeleton - Theme-aware
- */
-@Composable
-fun ProductCardSkeleton(
-    modifier: Modifier = Modifier,
-    darkTheme: Boolean = isSystemInDarkTheme()
-) {
-    Box(
-        modifier = modifier
-            .width(160.dp)
-            .height(240.dp)
-            .cardGlass(
-                intensity = GlassIntensity.Light,
-                shape = ComponentShapes.Product.Card,
-                darkTheme = darkTheme
-            )
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(12.dp)
-        ) {
-            // Image skeleton
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(120.dp)
-                    .clip(ComponentShapes.Product.Image)
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Text skeleton
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(16.dp)
-                    .clip(RoundedCornerShape(4.dp))
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth(0.7f)
-                    .height(14.dp)
-                    .clip(RoundedCornerShape(4.dp))
-            )
-        }
-    }
-}
-
-/**
- * Total Price Display - Theme-aware
- */
-@Composable
-fun TotalPriceDisplay(
-    totalPrice: String,
-    itemCount: Int,
-    modifier: Modifier = Modifier
-) {
-    val darkTheme = isSystemInDarkTheme()
-
-    GlassCard(
-        modifier = modifier,
-        intensity = GlassIntensity.Medium,
-        elevated = !darkTheme
+    ModernGlassCard(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(Spacing.l),
-            horizontalArrangement = Arrangement.SpaceBetween,
+                .padding(SpacingTokens.L),
+            horizontalArrangement = Arrangement.spacedBy(SpacingTokens.M),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column {
-                Text(
-                    text = "סה״כ לתשלום",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    text = "$itemCount פריטים",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+            // Product image
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    Icons.Default.ShoppingBag,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                    modifier = Modifier.size(SizingTokens.IconS)
                 )
             }
 
-            Text(
-                text = totalPrice,
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = ChampionCartColors.Brand.ElectricMint
+            // Product info
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(SpacingTokens.XS)
+            ) {
+                Text(
+                    text = item.name,
+                    style = MaterialTheme.typography.titleSmall,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                Text(
+                    text = item.price,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = ChampionCartColors.Brand.ElectricMint,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+
+            // Quantity selector
+            ModernQuantityInput(
+                quantity = item.quantity,
+                onQuantityChange = onQuantityChange
             )
+
+            // Delete button
+            IconButton(
+                onClick = { showDeleteDialog = true },
+                modifier = Modifier.size(36.dp)
+            ) {
+                Icon(
+                    Icons.Default.Delete,
+                    contentDescription = "הסר מוצר",
+                    tint = ChampionCartColors.Semantic.Error.copy(alpha = 0.7f),
+                    modifier = Modifier.size(SizingTokens.IconS)
+                )
+            }
         }
     }
 }
 
 /**
- * Quantity Input - Theme-aware
+ * Modern Quantity Input
  */
 @Composable
-fun QuantityInput(
+fun ModernQuantityInput(
     quantity: Int,
     onQuantityChange: (Int) -> Unit,
-    modifier: Modifier = Modifier,
-    darkTheme: Boolean = isSystemInDarkTheme()
+    modifier: Modifier = Modifier
 ) {
     Row(
         modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(SpacingTokens.XS),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        IconButton(
+        Surface(
             onClick = { if (quantity > 1) onQuantityChange(quantity - 1) },
-            modifier = Modifier
-                .size(32.dp)
-                .glass(
-                    intensity = GlassIntensity.Light,
-                    style = if (darkTheme) GlassStyle.Subtle else GlassStyle.Default,
-                    darkTheme = darkTheme
-                ),
+            modifier = Modifier.size(32.dp),
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
             enabled = quantity > 1
         ) {
-            Icon(
-                Icons.Default.Remove,
-                contentDescription = "Decrease quantity",
-                modifier = Modifier.size(16.dp)
-            )
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    Icons.Default.Remove,
+                    contentDescription = "הפחת כמות",
+                    modifier = Modifier.size(SizingTokens.IconXS),
+                    tint = if (quantity > 1) {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
+                    }
+                )
+            }
         }
 
         Text(
             text = quantity.toString(),
             style = MaterialTheme.typography.titleSmall,
             modifier = Modifier.widthIn(min = 32.dp),
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            textAlign = TextAlign.Center,
+            fontWeight = FontWeight.Medium
         )
 
-        IconButton(
+        Surface(
             onClick = { onQuantityChange(quantity + 1) },
-            modifier = Modifier
-                .size(32.dp)
-                .glass(
-                    intensity = GlassIntensity.Light,
-                    style = if (darkTheme) GlassStyle.Subtle else GlassStyle.Default,
-                    darkTheme = darkTheme
-                )
+            modifier = Modifier.size(32.dp),
+            shape = CircleShape,
+            color = ChampionCartColors.Brand.ElectricMint.copy(alpha = 0.1f)
         ) {
-            Icon(
-                Icons.Default.Add,
-                contentDescription = "Increase quantity",
-                modifier = Modifier.size(16.dp)
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    Icons.Default.Add,
+                    contentDescription = "הוסף כמות",
+                    modifier = Modifier.size(SizingTokens.IconXS),
+                    tint = ChampionCartColors.Brand.ElectricMint
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Modern Total Price Display
+ */
+@Composable
+fun ModernTotalPriceDisplay(
+    totalPrice: String,
+    itemCount: Int,
+    modifier: Modifier = Modifier
+) {
+    ModernGlassCard(
+        modifier = modifier,
+        shape = RoundedCornerShape(24.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    brush = Brush.horizontalGradient(
+                        colors = listOf(
+                            ChampionCartColors.Brand.ElectricMint.copy(alpha = 0.1f),
+                            ChampionCartColors.Brand.CosmicPurple.copy(alpha = 0.05f)
+                        )
+                    )
+                )
+                .padding(SpacingTokens.XL)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = "סה״כ לתשלום",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Text(
+                        text = "$itemCount פריטים",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                Text(
+                    text = totalPrice,
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = ChampionCartColors.Brand.ElectricMint
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Product Card Skeleton
+ */
+@Composable
+fun ProductCardSkeleton(
+    modifier: Modifier = Modifier
+) {
+    ModernGlassCard(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(SpacingTokens.L)
+        ) {
+            // Image skeleton
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(120.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(
+                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                    )
+            )
+
+            Spacer(modifier = Modifier.height(SpacingTokens.M))
+
+            // Text skeletons
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(16.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(
+                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                    )
+            )
+
+            Spacer(modifier = Modifier.height(SpacingTokens.S))
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(0.7f)
+                    .height(14.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(
+                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                    )
             )
         }
     }

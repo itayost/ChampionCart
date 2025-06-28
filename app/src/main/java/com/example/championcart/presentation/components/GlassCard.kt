@@ -1,742 +1,638 @@
 package com.example.championcart.presentation.components
 
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.snap
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
-import androidx.compose.animation.togetherWith
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.TrendingDown
-import androidx.compose.material.icons.filled.TrendingFlat
-import androidx.compose.material.icons.filled.TrendingUp
-import androidx.compose.material.icons.outlined.FavoriteBorder
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.draw.*
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.*
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.example.championcart.ui.theme.ChampionCartAnimations
-import com.example.championcart.ui.theme.ChampionCartColors
-import com.example.championcart.ui.theme.ChampionCartTheme
-import com.example.championcart.ui.theme.ComponentShapes
-import com.example.championcart.ui.theme.GlassIntensity
-import com.example.championcart.ui.theme.LocalHazeState
-import com.example.championcart.ui.theme.PriceLevel
-import com.example.championcart.ui.theme.getPriceLevelColor
-import com.example.championcart.ui.theme.getPriceLevelGlowColor
-import com.example.championcart.ui.theme.getStoreColor
-import com.example.championcart.ui.theme.modernGlass
+import androidx.compose.ui.unit.sp
+import com.example.championcart.ui.theme.*
+import kotlinx.coroutines.launch
 
 /**
- * Enhanced Glassmorphic Card Component
- * Theme-aware glass effect with modern animations
+ * Modern Card Components
+ * Electric Harmony Design System
+ * Matching the HTML showcase with ultra-rounded, glassmorphic styling
  */
 
-@OptIn(ExperimentalMaterial3Api::class)
+/**
+ * Base Glassmorphic Card
+ * Foundation for all card components with modern glass effect
+ */
 @Composable
-fun GlassCard(
+fun ModernGlassCard(
     onClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
-    enabled: Boolean = true,
-    shape: Shape = ComponentShapes.Card.Medium,
-    intensity: GlassIntensity = GlassIntensity.Medium,
-    elevated: Boolean = false,
-    shimmer: Boolean = false, // New parameter for shimmer effect
+    shape: Shape = RoundedCornerShape(32.dp), // Ultra rounded
+    glassmorphic: Boolean = true,
+    borderGradient: Boolean = true,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    val darkTheme = isSystemInDarkTheme()
-    val config = ChampionCartTheme.config
-    val haptics = LocalHapticFeedback.current
-    val hazeState = LocalHazeState.current
-
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
-    val isHovered by interactionSource.collectIsHoveredAsState()
+    val config = ChampionCartTheme.config
+    val hapticFeedback = LocalHapticFeedback.current
+    val hazeState = LocalHazeState.current
 
-    // Animation for press state
-    val animatedScale by animateFloatAsState(
-        targetValue = when {
-            !enabled -> 1f
-            isPressed -> 0.98f
-            isHovered -> 1.01f
-            else -> 1f
-        },
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed && onClick != null) 0.98f else 1f,
         animationSpec = if (!config.reduceMotion) {
-            ChampionCartAnimations.Springs.CardInteraction
-        } else {
-            snap()
-        },
+            spring(
+                dampingRatio = Spring.DampingRatioMediumBouncy,
+                stiffness = Spring.StiffnessLow
+            )
+        } else snap(),
         label = "cardScale"
     )
 
-    // Shimmer animation
-    val infiniteTransition = if (shimmer && !config.reduceMotion) {
-        rememberInfiniteTransition(label = "shimmer")
-    } else null
-
-    val shimmerOffset by infiniteTransition?.animateFloat(
-        initialValue = -1f,
-        targetValue = 2f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(
-                durationMillis = ChampionCartAnimations.Durations.Elaborate,
-                easing = LinearEasing
-            ),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "shimmerOffset"
-    ) ?: mutableStateOf(0f)
-
-    val glassModifier = modifier
-        .graphicsLayer {
-            scaleX = animatedScale
-            scaleY = animatedScale
-        }
-        .modernGlass(
-            intensity = intensity,
-            shape = shape,
-            hazeState = hazeState,
-            shimmer = shimmer && isHovered
+    val cardModifier = modifier
+        .scale(scale)
+        .clip(shape)
+        .then(
+            if (glassmorphic && hazeState != null) {
+                Modifier.modernGlass(
+                    intensity = GlassIntensity.Medium,
+                    shape = shape,
+                    hazeState = hazeState
+                )
+            } else if (glassmorphic) {
+                Modifier
+                    .background(
+                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.05f)
+                    )
+                    .blur(10.dp)
+            } else {
+                Modifier.background(
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
+                )
+            }
         )
-
-    if (onClick != null) {
-        Card(
-            onClick = {
-                if (config.enableHaptics) {
-                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                }
-                onClick()
-            },
-            modifier = glassModifier,
-            enabled = enabled,
-            shape = shape,
-            colors = CardDefaults.cardColors(
-                containerColor = Color.Transparent,
-                contentColor = ChampionCartTheme.colors.onSurface
-            ),
-            elevation = CardDefaults.cardElevation(
-                defaultElevation = 0.dp,
-                pressedElevation = 0.dp
-            ),
-            interactionSource = interactionSource,
-            content = content
-        )
-    } else {
-        Surface(
-            modifier = glassModifier,
-            shape = shape,
-            color = Color.Transparent,
-            contentColor = ChampionCartTheme.colors.onSurface
-        ) {
-            Column(content = content)
-        }
-    }
-}
-
-/**
- * Enhanced Hero Glass Card with animated gradient
- */
-@Composable
-fun HeroGlassCard(
-    modifier: Modifier = Modifier,
-    shape: Shape = ComponentShapes.Card.Hero,
-    animated: Boolean = true,
-    content: @Composable ColumnScope.() -> Unit
-) {
-    val config = ChampionCartTheme.config
-
-    // Animated gradient for hero cards
-    val infiniteTransition = if (animated && !config.reduceMotion && config.enableMicroAnimations) {
-        rememberInfiniteTransition(label = "heroGradient")
-    } else null
-
-    val gradientOffset by infiniteTransition?.animateFloat(
-        initialValue = 0f,
-        targetValue = 1000f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(
-                durationMillis = 3000,
-                easing = LinearEasing
-            ),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "gradientOffset"
-    ) ?: mutableStateOf(500f)
-
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .heightIn(min = 200.dp)
-    ) {
-        // Animated background gradient
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .clip(shape)
-                .background(
+        .then(
+            if (borderGradient) {
+                Modifier.border(
+                    width = 1.dp,
                     brush = Brush.linearGradient(
                         colors = listOf(
-                            ChampionCartColors.Brand.ElectricMint.copy(alpha = 0.08f),
-                            ChampionCartColors.Brand.CosmicPurple.copy(alpha = 0.06f),
-                            ChampionCartColors.Brand.NeonCoral.copy(alpha = 0.04f)
-                        ),
-                        start = Offset(0f, 0f),
-                        end = Offset(gradientOffset, gradientOffset)
-                    )
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
+                            MaterialTheme.colorScheme.secondary.copy(alpha = 0.1f)
+                        )
+                    ),
+                    shape = shape
                 )
+            } else Modifier
         )
 
-        // Glow effect
-        if (!config.reduceMotion) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .offset(x = 4.dp, y = 4.dp)
-                    .blur(20.dp)
-                    .clip(shape)
-                    .background(
-                        ChampionCartColors.Brand.ElectricMint.copy(alpha = 0.1f)
-                    )
-            )
-        }
-
-        // Main glass card
-        GlassCard(
-            modifier = Modifier.fillMaxSize(),
-            shape = shape,
-            intensity = GlassIntensity.Heavy,
-            shimmer = true,
-            content = content
-        )
-    }
-}
-
-/**
- * Enhanced Product Glass Card with micro-animations
- */
-@Composable
-fun ProductGlassCard(
-    productName: String,
-    productImage: @Composable () -> Unit,
-    price: String,
-    storeName: String,
-    priceLevel: PriceLevel,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    isFavorite: Boolean = false,
-    onFavoriteClick: () -> Unit = {},
-    isNew: Boolean = false // New parameter for highlighting new products
-) {
-    val config = ChampionCartTheme.config
-
-    // Pulse animation for best price
-    val infiniteTransition = if (priceLevel == PriceLevel.Best && !config.reduceMotion) {
-        rememberInfiniteTransition(label = "pricePulse")
-    } else null
-
-    val pulseScale by infiniteTransition?.animateFloat(
-        initialValue = 1f,
-        targetValue = 1.05f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(
-                durationMillis = 1500,
-                easing = ChampionCartAnimations.Easings.AccelerateDecelerate
-            ),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "pulseScale"
-    ) ?: mutableStateOf(1f)
-
-    GlassCard(
-        onClick = onClick,
-        modifier = modifier
-            .width(180.dp)
-            .height(260.dp),
-        shape = ComponentShapes.Product.Card,
-        intensity = GlassIntensity.Medium,
-        shimmer = isNew
+    Surface(
+        modifier = cardModifier,
+        shape = shape,
+        color = Color.Transparent,
+        onClick = onClick?.let { {
+            if (config.enableHaptics) {
+                hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+            }
+            onClick()
+        } } ?: {},
+        enabled = onClick != null,
+        interactionSource = interactionSource
     ) {
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(12.dp)
-        ) {
-            // Product Image with overlay
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-                    .clip(ComponentShapes.Product.Image)
-                    .background(Color.White.copy(alpha = 0.05f))
-            ) {
-                productImage()
-
-                // New badge
-                if (isNew) {
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.TopStart)
-                            .padding(8.dp)
-                            .clip(ComponentShapes.Special.Badge)
-                            .background(ChampionCartColors.Accent.CyberYellow)
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
-                    ) {
-                        Text(
-                            text = "חדש",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = Color.Black,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-
-                // Enhanced favorite button
-                IconButton(
-                    onClick = onFavoriteClick,
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(4.dp)
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .then(
-                            if (isFavorite) {
-                                Modifier.background(
-                                    brush = Brush.radialGradient(
-                                        colors = listOf(
-                                            ChampionCartColors.Brand.NeonCoral.copy(alpha = 0.3f),
-                                            ChampionCartColors.Brand.NeonCoral.copy(alpha = 0.1f)
-                                        )
-                                    )
-                                )
-                            } else {
-                                Modifier.background(Color.White.copy(alpha = 0.1f))
-                            }
-                        )
-                ) {
-                    Icon(
-                        imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                        contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites",
-                        tint = if (isFavorite) {
-                            ChampionCartColors.Brand.NeonCoral
-                        } else {
-                            ChampionCartTheme.colors.onSurface.copy(alpha = 0.6f)
-                        },
-                        modifier = Modifier.graphicsLayer {
-                            if (isFavorite && !config.reduceMotion) {
-                                scaleX = pulseScale
-                                scaleY = pulseScale
-                            }
-                        }
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Product name
-            Text(
-                text = productName,
-                style = MaterialTheme.typography.bodyMedium,
-                maxLines = 2,
-                color = ChampionCartTheme.colors.onSurface
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            // Enhanced price with animation
-            val priceColor = getPriceLevelColor(priceLevel)
-            val priceGlowColor = getPriceLevelGlowColor(priceLevel)
-
-            Box(
-                modifier = Modifier
-                    .clip(ComponentShapes.Product.Badge)
-                    .then(
-                        if (priceLevel == PriceLevel.Best && !config.reduceMotion) {
-                            Modifier.drawWithContent {
-                                drawContent()
-                                drawRect(
-                                    brush = Brush.radialGradient(
-                                        colors = listOf(
-                                            priceGlowColor.copy(alpha = 0.3f),
-                                            Color.Transparent
-                                        ),
-                                        radius = size.width
-                                    )
-                                )
-                            }
-                        } else Modifier
-                    )
-                    .background(priceColor.copy(alpha = 0.1f))
-                    .border(
-                        width = 1.dp,
-                        color = priceColor.copy(alpha = 0.3f),
-                        shape = ComponentShapes.Product.Badge
-                    )
-                    .padding(horizontal = 8.dp, vertical = 4.dp)
-            ) {
-                Text(
-                    text = price,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = priceColor,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.graphicsLayer {
-                        scaleX = pulseScale
-                        scaleY = pulseScale
-                    }
-                )
-            }
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            // Store name with store color
-            val storeColor = getStoreColor(storeName)
-            Text(
-                text = storeName,
-                style = MaterialTheme.typography.bodySmall,
-                color = storeColor.copy(alpha = 0.9f),
-                fontWeight = FontWeight.Medium
-            )
-        }
-    }
-}
-
-/**
- * Enhanced Stats Glass Card with animated values
- */
-@Composable
-fun StatsGlassCard(
-    title: String,
-    value: String,
-    subtitle: String? = null,
-    icon: @Composable (() -> Unit)? = null,
-    modifier: Modifier = Modifier,
-    intensity: GlassIntensity = GlassIntensity.Light,
-    trend: TrendDirection? = null // New parameter for trend indication
-) {
-    val config = ChampionCartTheme.config
-
-    GlassCard(
-        modifier = modifier,
-        intensity = intensity,
-        shimmer = trend == TrendDirection.UP
-    ) {
-        Row(
-            modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = ChampionCartTheme.colors.onSurface
-                    )
-
-                    // Trend indicator
-                    trend?.let {
-                        Icon(
-                            imageVector = when (it) {
-                                TrendDirection.UP -> Icons.Default.TrendingUp
-                                TrendDirection.DOWN -> Icons.Default.TrendingDown
-                                TrendDirection.STABLE -> Icons.Default.TrendingFlat
-                            },
-                            contentDescription = null,
-                            tint = when (it) {
-                                TrendDirection.UP -> ChampionCartColors.Semantic.Success
-                                TrendDirection.DOWN -> ChampionCartColors.Semantic.Error
-                                TrendDirection.STABLE -> ChampionCartTheme.colors.onSurfaceVariant
-                            },
-                            modifier = Modifier.size(16.dp)
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.05f),
+                            Color.Transparent
                         )
-                    }
-                }
-
-                if (subtitle != null) {
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = subtitle,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = ChampionCartTheme.colors.onSurfaceVariant.copy(alpha = 0.8f)
-                    )
-                }
-            }
-
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                if (icon != null) {
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(CircleShape)
-                            .background(ChampionCartColors.Brand.ElectricMint.copy(alpha = 0.1f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        icon()
-                    }
-                }
-
-                // Animated value text
-                AnimatedContent(
-                    targetState = value,
-                    transitionSpec = {
-                        if (!config.reduceMotion) {
-                            slideInVertically { -it } + fadeIn() togetherWith
-                                    slideOutVertically { it } + fadeOut()
-                        } else {
-                            fadeIn() togetherWith fadeOut()
-                        }
-                    },
-                    label = "valueAnimation"
-                ) { targetValue ->
-                    Text(
-                        text = targetValue,
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = ChampionCartTheme.colors.primary,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-        }
-    }
-}
-
-/**
- * Enhanced Store Glass Card with hover effects
- */
-@Composable
-fun StoreGlassCard(
-    storeName: String,
-    storeIcon: @Composable () -> Unit,
-    itemCount: Int,
-    totalPrice: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    discount: Float? = null // New parameter for showing discounts
-) {
-    val storeColor = getStoreColor(storeName)
-    val config = ChampionCartTheme.config
-    val haptics = LocalHapticFeedback.current
-
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-
-    val animatedScale by animateFloatAsState(
-        targetValue = if (isPressed) 0.98f else 1f,
-        animationSpec = if (!config.reduceMotion) {
-            ChampionCartAnimations.Springs.CardInteraction
-        } else {
-            snap()
-        },
-        label = "storeCardScale"
-    )
-
-    Card(
-        onClick = {
-            if (config.enableHaptics) {
-                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-            }
-            onClick()
-        },
-        modifier = modifier
-            .fillMaxWidth()
-            .graphicsLayer {
-                scaleX = animatedScale
-                scaleY = animatedScale
-            }
-            .shadow(
-                elevation = 6.dp,
-                shape = ComponentShapes.Store.Card,
-                ambientColor = storeColor.copy(alpha = 0.1f),
-                spotColor = storeColor.copy(alpha = 0.15f)
-            )
-            .clip(ComponentShapes.Store.Card)
-            .background(
-                brush = Brush.verticalGradient(
-                    colors = listOf(
-                        storeColor.copy(alpha = 0.1f),
-                        storeColor.copy(alpha = 0.08f),
-                        storeColor.copy(alpha = 0.05f)
-                    )
-                )
-            )
-            .border(
-                width = 1.5.dp,
-                brush = Brush.linearGradient(
-                    colors = listOf(
-                        storeColor.copy(alpha = 0.4f),
-                        storeColor.copy(alpha = 0.2f)
                     )
                 ),
-                shape = ComponentShapes.Store.Card
-            ),
-        colors = CardDefaults.cardColors(
-            containerColor = Color.Transparent
-        ),
-        shape = ComponentShapes.Store.Card,
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        interactionSource = interactionSource
+            content = content
+        )
+    }
+}
+
+/**
+ * Product Price Card
+ * Displays product with price comparison across stores
+ */
+@Composable
+fun ProductPriceCard(
+    productName: String,
+    imageContent: @Composable (() -> Unit)? = null,
+    prices: List<StorePrice>,
+    onAddToCart: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val bestPrice = prices.minByOrNull { it.price }
+    val priceSpread = prices.maxOf { it.price } - prices.minOf { it.price }
+
+    ModernGlassCard(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(32.dp)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            modifier = Modifier.padding(SpacingTokens.L)
         ) {
-            // Left side - Store info
+            // Product Header
             Row(
-                modifier = Modifier.weight(1f),
-                horizontalArrangement = Arrangement.Start,
-                verticalAlignment = Alignment.CenterVertically
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
             ) {
-                // Enhanced store icon with glow
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = productName,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+
+                    bestPrice?.let {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(top = SpacingTokens.XS)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Star,
+                                contentDescription = null,
+                                modifier = Modifier.size(SizingTokens.IconXS),
+                                tint = ChampionCartColors.Semantic.Warning
+                            )
+                            Spacer(modifier = Modifier.width(SpacingTokens.XS))
+                            Text(
+                                text = "חיסכון של ₪${String.format("%.2f", priceSpread)}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                }
+
+                // Product Image
                 Box(
                     modifier = Modifier
-                        .size(48.dp)
-                        .clip(ComponentShapes.Store.Logo)
+                        .size(60.dp)
+                        .clip(RoundedCornerShape(20.dp))
                         .background(
-                            brush = Brush.radialGradient(
-                                colors = listOf(
-                                    storeColor.copy(alpha = 0.15f),
-                                    Color.White.copy(alpha = 0.1f)
-                                )
-                            )
-                        )
-                        .border(
-                            width = 1.dp,
-                            color = storeColor.copy(alpha = 0.3f),
-                            shape = ComponentShapes.Store.Logo
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
                         ),
                     contentAlignment = Alignment.Center
                 ) {
-                    storeIcon()
+                    imageContent?.invoke() ?: Icon(
+                        imageVector = Icons.Filled.ShoppingCart,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(SpacingTokens.L))
+
+            // Price Comparison
+            prices.take(3).forEachIndexed { index, storePrice ->
+                PriceRow(
+                    storePrice = storePrice,
+                    isBestPrice = storePrice == bestPrice,
+                    modifier = Modifier.padding(vertical = SpacingTokens.XS)
+                )
+            }
+
+            if (prices.size > 3) {
+                Text(
+                    text = "+${prices.size - 3} חנויות נוספות",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    modifier = Modifier.padding(top = SpacingTokens.XS)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(SpacingTokens.M))
+
+            // Add to Cart Button
+            ElectricButton(
+                onClick = onAddToCart,
+                text = "הוסף לעגלה",
+                icon = { Icon(Icons.Filled.Add, contentDescription = null) },
+                size = ButtonSize.Small,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+    }
+}
+
+/**
+ * Stats Card with animated number
+ */
+@Composable
+fun StatsCard(
+    title: String,
+    value: String,
+    icon: ImageVector,
+    trend: Float? = null,
+    accentColor: Color = MaterialTheme.colorScheme.primary,
+    modifier: Modifier = Modifier
+) {
+    var animatedValue by remember { mutableStateOf(0f) }
+    val targetValue = remember(value) {
+        value.filter { it.isDigit() }.toFloatOrNull() ?: 0f
+    }
+    val config = ChampionCartTheme.config
+
+    LaunchedEffect(targetValue) {
+        if (!config.reduceMotion) {
+            animate(
+                initialValue = 0f,
+                targetValue = targetValue,
+                animationSpec = tween(1500, easing = FastOutSlowInEasing)
+            ) { animValue, _ ->
+                animatedValue = animValue
+            }
+        } else {
+            animatedValue = targetValue
+        }
+    }
+
+    ModernGlassCard(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(SpacingTokens.L) // 16dp for stats cards
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    brush = Brush.linearGradient(
+                        colors = listOf(
+                            accentColor.copy(alpha = 0.1f),
+                            accentColor.copy(alpha = 0.05f),
+                            Color.Transparent
+                        ),
+                        start = Offset(0f, 0f),
+                        end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
+                    )
+                )
+                .padding(SpacingTokens.L)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    )
+
+                    Row(
+                        verticalAlignment = Alignment.Bottom,
+                        modifier = Modifier.padding(top = SpacingTokens.XS)
+                    ) {
+                        Text(
+                            text = if (value.contains("₪")) {
+                                "₪${animatedValue.toInt()}"
+                            } else {
+                                animatedValue.toInt().toString()
+                            },
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = accentColor
+                        )
+
+                        trend?.let {
+                            val trendColor = if (it > 0) ChampionCartColors.Semantic.Success
+                            else ChampionCartColors.Semantic.Error
+                            val trendIcon = if (it > 0) Icons.Filled.TrendingUp
+                            else Icons.Filled.TrendingDown
+
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(start = SpacingTokens.S, bottom = SpacingTokens.XS)
+                            ) {
+                                Icon(
+                                    imageVector = trendIcon,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(SizingTokens.IconXS),
+                                    tint = trendColor
+                                )
+                                Text(
+                                    text = "${kotlin.math.abs(it).toInt()}%",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = trendColor,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+                    }
                 }
 
-                Spacer(modifier = Modifier.width(12.dp))
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .background(accentColor.copy(alpha = 0.1f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        modifier = Modifier.size(SizingTokens.IconM),
+                        tint = accentColor
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Category Card with gradient background
+ */
+@Composable
+fun CategoryCard(
+    title: String,
+    icon: ImageVector,
+    itemCount: Int,
+    onClick: () -> Unit,
+    gradient: List<Color> = listOf(
+        MaterialTheme.colorScheme.primary,
+        MaterialTheme.colorScheme.secondary
+    ),
+    modifier: Modifier = Modifier
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val config = ChampionCartTheme.config
+    val hapticFeedback = LocalHapticFeedback.current
+
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.95f else 1f,
+        animationSpec = if (!config.reduceMotion) {
+            spring(
+                dampingRatio = Spring.DampingRatioMediumBouncy,
+                stiffness = Spring.StiffnessLow
+            )
+        } else snap(),
+        label = "categoryScale"
+    )
+
+    Card(
+        modifier = modifier
+            .scale(scale)
+            .height(140.dp),
+        shape = RoundedCornerShape(28.dp), // Very rounded
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 4.dp,
+            pressedElevation = 1.dp
+        ),
+        onClick = {
+            if (config.enableHaptics) {
+                hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+            }
+            onClick()
+        },
+        interactionSource = interactionSource
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    brush = Brush.linearGradient(
+                        colors = gradient,
+                        start = Offset(0f, 0f),
+                        end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
+                    )
+                )
+                .padding(SpacingTokens.XL) // 24dp padding
+        ) {
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.Top
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        modifier = Modifier.size(32.dp),
+                        tint = Color.White
+                    )
+
+                    Text(
+                        text = "$itemCount פריטים",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.White.copy(alpha = 0.8f)
+                    )
+                }
+
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color.White
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Store Comparison Card
+ * Shows store with total price for cart
+ */
+@Composable
+fun StoreComparisonCard(
+    storeName: String,
+    totalPrice: String,
+    itemCount: Int,
+    savings: Float? = null,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    isSelected: Boolean = false
+) {
+    val storeColor = getStoreColor(storeName)
+    val config = ChampionCartTheme.config
+
+    val animatedBorder by animateFloatAsState(
+        targetValue = if (isSelected) 3f else 1f,
+        animationSpec = if (!config.reduceMotion) {
+            spring(stiffness = Spring.StiffnessMedium)
+        } else snap(),
+        label = "borderWidth"
+    )
+
+    ModernGlassCard(
+        onClick = onClick,
+        modifier = modifier
+            .fillMaxWidth()
+            .then(
+                if (isSelected) {
+                    Modifier.border(
+                        width = animatedBorder.dp,
+                        color = storeColor,
+                        shape = RoundedCornerShape(20.dp)
+                    )
+                } else Modifier
+            ),
+        shape = RoundedCornerShape(20.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(SpacingTokens.L),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Store Info
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.weight(1f)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .background(storeColor.copy(alpha = 0.1f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = storeName.take(2),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = storeColor
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(SpacingTokens.M))
 
                 Column {
                     Text(
                         text = storeName,
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = ChampionCartTheme.colors.onSurface
+                        fontWeight = FontWeight.Medium
                     )
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "$itemCount פריטים",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = ChampionCartTheme.colors.onSurfaceVariant.copy(alpha = 0.8f)
-                        )
-
-                        // Discount badge
-                        discount?.let {
-                            Box(
-                                modifier = Modifier
-                                    .clip(ComponentShapes.Special.Badge)
-                                    .background(ChampionCartColors.Semantic.Success.copy(alpha = 0.1f))
-                                    .padding(horizontal = 6.dp, vertical = 2.dp)
-                            ) {
-                                Text(
-                                    text = "-${it.toInt()}%",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = ChampionCartColors.Semantic.Success,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        }
-                    }
+                    Text(
+                        text = "$itemCount פריטים",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
 
-            // Right side - Total price
+            // Price Info
             Column(
                 horizontalAlignment = Alignment.End
             ) {
                 Text(
-                    text = "סה״כ",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = ChampionCartTheme.colors.onSurfaceVariant.copy(alpha = 0.7f)
-                )
-                Text(
                     text = totalPrice,
-                    style = MaterialTheme.typography.titleLarge,
+                    style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
-                    color = ChampionCartTheme.colors.primary
+                    color = if (savings != null && savings > 0) {
+                        ChampionCartColors.Semantic.Success
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    }
                 )
+                savings?.let {
+                    if (it > 0) {
+                        Text(
+                            text = "חיסכון: ${it.toInt()}%",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = ChampionCartColors.Semantic.Success
+                        )
+                    }
+                }
             }
         }
     }
 }
 
 /**
- * Trend direction for stats cards
+ * Helper Components
  */
-enum class TrendDirection {
-    UP, DOWN, STABLE
+@Composable
+private fun PriceRow(
+    storePrice: StorePrice,
+    isBestPrice: Boolean,
+    modifier: Modifier = Modifier
+) {
+    val priceColor = when {
+        isBestPrice -> ChampionCartColors.Semantic.Success
+        else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+    }
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .then(
+                if (isBestPrice) {
+                    Modifier
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(ChampionCartColors.Semantic.Success.copy(alpha = 0.1f))
+                        .padding(horizontal = SpacingTokens.S, vertical = SpacingTokens.XS)
+                } else {
+                    Modifier.padding(horizontal = SpacingTokens.S, vertical = SpacingTokens.XS)
+                }
+            ),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (isBestPrice) {
+                Icon(
+                    imageVector = Icons.Filled.CheckCircle,
+                    contentDescription = null,
+                    modifier = Modifier.size(SizingTokens.IconXS),
+                    tint = ChampionCartColors.Semantic.Success
+                )
+                Spacer(modifier = Modifier.width(SpacingTokens.XS))
+            }
+            Text(
+                text = storePrice.storeName,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = if (isBestPrice) FontWeight.Medium else FontWeight.Normal
+            )
+        }
+
+        Text(
+            text = "₪${String.format("%.2f", storePrice.price)}",
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = if (isBestPrice) FontWeight.Bold else FontWeight.Normal,
+            color = priceColor
+        )
+    }
 }
+
+/**
+ * Data class for store prices
+ */
+data class StorePrice(
+    val storeName: String,
+    val price: Float
+)
