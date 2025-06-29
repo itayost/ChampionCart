@@ -13,6 +13,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.championcart.ui.theme.*
 
@@ -97,38 +98,47 @@ fun SwipeableListItem(
         )
     }
 ) {
-    val dismissState = rememberDismissState(
+    val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = { dismissValue ->
-            if (dismissValue == DismissValue.DismissedToStart) {
-                onDelete()
-                true
-            } else {
-                false
+            when (dismissValue) {
+                SwipeToDismissBoxValue.EndToStart -> {
+                    onDelete()
+                    true
+                }
+                else -> false
             }
         }
     )
 
-    SwipeToDismiss(
+    SwipeToDismissBox(
         state = dismissState,
         modifier = modifier,
-        background = {
+        backgroundContent = {
+            val color = when (dismissState.targetValue) {
+                SwipeToDismissBoxValue.EndToStart -> SemanticColors.Error
+                else -> Color.Transparent
+            }
+
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(SemanticColors.Error)
+                    .background(color)
                     .padding(horizontal = Spacing.xl),
                 contentAlignment = Alignment.CenterEnd
             ) {
-                Icon(
-                    imageVector = Icons.Rounded.Delete,
-                    contentDescription = "מחק",
-                    tint = Color.White,
-                    modifier = Modifier.size(Size.icon)
-                )
+                if (dismissState.targetValue == SwipeToDismissBoxValue.EndToStart) {
+                    Icon(
+                        imageVector = Icons.Rounded.Delete,
+                        contentDescription = "מחק",
+                        tint = Color.White,
+                        modifier = Modifier.size(Size.icon)
+                    )
+                }
             }
         },
-        dismissContent = content,
-        directions = setOf(DismissDirection.EndToStart)
+        content = { content() },
+        enableDismissFromStartToEnd = false,
+        enableDismissFromEndToStart = true
     )
 }
 

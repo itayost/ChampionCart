@@ -1,6 +1,13 @@
 package com.example.championcart.presentation.navigation
 
-sealed class Screen(val route: String) {
+import androidx.navigation.NamedNavArgument
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
+
+sealed class Screen(
+    val route: String,
+    val arguments: List<NamedNavArgument> = emptyList()
+) {
     // Main Screens
     object Home : Screen("home")
     object Search : Screen("search")
@@ -13,7 +20,12 @@ sealed class Screen(val route: String) {
     object Onboarding : Screen("onboarding")
 
     // Product Screens
-    object ProductDetail : Screen("product/{productId}") {
+    object ProductDetail : Screen(
+        route = "product/{productId}",
+        arguments = listOf(
+            navArgument("productId") { type = NavType.StringType }
+        )
+    ) {
         fun createRoute(productId: String) = "product/$productId"
     }
 

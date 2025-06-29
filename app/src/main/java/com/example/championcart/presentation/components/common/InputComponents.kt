@@ -30,6 +30,7 @@ fun ChampionTextField(
     errorMessage: String? = null,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     keyboardActions: KeyboardActions = KeyboardActions.Default,
+    visualTransformation: VisualTransformation = VisualTransformation.None,
     singleLine: Boolean = true,
     enabled: Boolean = true
 ) {
@@ -39,7 +40,7 @@ fun ChampionTextField(
             onValueChange = onValueChange,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(Size.inputHeight),
+                .defaultMinSize(minHeight = Size.inputHeight),
             label = { Text(label) },
             placeholder = placeholder?.let { { Text(it) } },
             leadingIcon = leadingIcon?.let {
@@ -53,6 +54,7 @@ fun ChampionTextField(
             },
             trailingIcon = trailingIcon,
             isError = isError,
+            visualTransformation = visualTransformation,
             keyboardOptions = keyboardOptions,
             keyboardActions = keyboardActions,
             singleLine = singleLine,
@@ -90,7 +92,7 @@ fun SearchBar(
         onValueChange = onQueryChange,
         modifier = modifier
             .fillMaxWidth()
-            .height(Size.inputHeight),
+            .defaultMinSize(minHeight = Size.inputHeight),
         placeholder = { Text(placeholder) },
         leadingIcon = {
             Icon(
@@ -198,7 +200,7 @@ fun <T> ChampionDropdown(
             onValueChange = {},
             modifier = Modifier
                 .fillMaxWidth()
-                .height(Size.inputHeight)
+                .defaultMinSize(minHeight = Size.inputHeight)
                 .menuAnchor(),
             readOnly = true,
             label = { Text(label) },

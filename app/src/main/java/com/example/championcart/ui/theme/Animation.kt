@@ -9,7 +9,7 @@ import androidx.compose.animation.*
  */
 
 object Animations {
-    // Spring specs
+    // Spring specs for Float animations
     val springGentle = spring<Float>(
         dampingRatio = Spring.DampingRatioNoBouncy,
         stiffness = Spring.StiffnessLow
@@ -41,12 +41,18 @@ object Animations {
 
     val slideInFromBottom = slideInVertically(
         initialOffsetY = { it },
-        animationSpec = springGentle
+        animationSpec = tween(
+            durationMillis = durationStandard,
+            easing = FastOutSlowInEasing
+        )
     )
 
     val slideOutToBottom = slideOutVertically(
         targetOffsetY = { it },
-        animationSpec = springGentle
+        animationSpec = tween(
+            durationMillis = durationQuick,
+            easing = FastOutSlowInEasing
+        )
     )
 
     val scaleIn = scaleIn(
