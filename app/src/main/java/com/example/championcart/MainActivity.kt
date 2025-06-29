@@ -1,3 +1,4 @@
+// File: app/src/main/java/com/example/championcart/MainActivity.kt
 package com.example.championcart
 
 import android.os.Bundle
@@ -6,13 +7,17 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.core.view.WindowCompat
 import com.example.championcart.data.local.PreferencesManager
 import com.example.championcart.data.local.TokenManager
 import com.example.championcart.presentation.navigation.ChampionCartNavHost
 import com.example.championcart.ui.theme.ChampionCartTheme
 import dagger.hilt.android.AndroidEntryPoint
+import java.util.Locale
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -31,15 +36,17 @@ class MainActivity : ComponentActivity() {
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
         setContent {
-            ChampionCartTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    ChampionCartNavHost(
-                        tokenManager = tokenManager,
-                        preferencesManager = preferencesManager
-                    )
+            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                ChampionCartTheme {
+                    Surface(
+                        modifier = Modifier.fillMaxSize(),
+                        color = MaterialTheme.colorScheme.background
+                    ) {
+                        ChampionCartNavHost(
+                            tokenManager = tokenManager,
+                            preferencesManager = preferencesManager
+                        )
+                    }
                 }
             }
         }

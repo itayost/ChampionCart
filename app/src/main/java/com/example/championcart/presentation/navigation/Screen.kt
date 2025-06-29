@@ -8,6 +8,9 @@ sealed class Screen(
     val route: String,
     val arguments: List<NamedNavArgument> = emptyList()
 ) {
+    // Splash Screen
+    object Splash : Screen("splash")
+
     // Main Screens
     object Home : Screen("home")
     object Search : Screen("search")

@@ -1,22 +1,55 @@
 package com.example.championcart.presentation.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.championcart.data.local.PreferencesManager
+import com.example.championcart.data.local.TokenManager
 import com.example.championcart.presentation.screens.showcase.ComponentShowcaseScreen
 import com.example.championcart.presentation.screens.home.SimpleHomeScreen
 import com.example.championcart.presentation.screens.auth.*
+import com.example.championcart.presentation.screens.splash.SplashScreen
 
 @Composable
 fun ChampionCartNavHost(
-    navController: NavHostController = rememberNavController()
+    navController: NavHostController = rememberNavController(),
+    tokenManager: TokenManager,
+    preferencesManager: PreferencesManager
 ) {
+    // Check authentication state
+    val isLoggedIn = remember { tokenManager.isLoggedIn() }
+    val isFirstLaunch = remember { preferencesManager.isFirstLaunch() }
+
     NavHost(
         navController = navController,
-        startDestination = Screen.Login.route // Start with login for testing
+        startDestination = Screen.Splash.route // Always start with splash
     ) {
+        // Splash Screen
+        composable(route = Screen.Splash.route) {
+            SplashScreen(
+                onNavigateToHome = {
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.Splash.route) { inclusive = true }
+                    }
+                },
+                onNavigateToLogin = {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(Screen.Splash.route) { inclusive = true }
+                    }
+                },
+                onNavigateToOnboarding = {
+                    navController.navigate(Screen.Onboarding.route) {
+                        popUpTo(Screen.Splash.route) { inclusive = true }
+                    }
+                },
+                isLoggedIn = isLoggedIn,
+                isFirstLaunch = isFirstLaunch
+            )
+        }
+
         // Auth Screens
         composable(route = Screen.Login.route) {
             LoginScreen(
@@ -30,11 +63,6 @@ fun ChampionCartNavHost(
                     navController.navigate(Screen.Home.route) {
                         popUpTo(Screen.Login.route) { inclusive = true }
                     }
-                },
-                onGuestMode = {
-                    navController.navigate(Screen.Home.route) {
-                        popUpTo(Screen.Login.route) { inclusive = true }
-                    }
                 }
             )
         }
@@ -45,7 +73,7 @@ fun ChampionCartNavHost(
                     navController.popBackStack()
                 },
                 onNavigateToHome = {
-                    navController.navigate(Screen.Onboarding.route) {
+                    navController.navigate(Screen.Home.route) {
                         popUpTo(Screen.Register.route) { inclusive = true }
                     }
                 }
@@ -58,6 +86,12 @@ fun ChampionCartNavHost(
                     navController.navigate(Screen.Home.route) {
                         popUpTo(Screen.Onboarding.route) { inclusive = true }
                     }
+                },
+                onSkip = {
+                    preferencesManager.setFirstLaunch(false)
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(Screen.Onboarding.route) { inclusive = true }
+                    }
                 }
             )
         }
@@ -67,6 +101,13 @@ fun ChampionCartNavHost(
             SimpleHomeScreen(
                 onNavigateToShowcase = {
                     navController.navigate(Screen.ComponentShowcase.route)
+                },
+                onLogout = {
+                    // Clear token and navigate to login
+                    tokenManager.clearToken()
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(0) { inclusive = true }
+                    }
                 }
             )
         }

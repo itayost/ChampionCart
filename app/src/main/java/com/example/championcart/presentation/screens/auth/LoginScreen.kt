@@ -193,7 +193,10 @@ fun LoginScreen(
                 // Guest Mode
                 SecondaryButton(
                     text = "המשך כאורח",
-                    onClick = onGuestMode,
+                    onClick = {
+                        keyboardController?.hide()
+                        viewModel.loginAsGuest()
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     icon = Icons.Rounded.PersonOutline,
                     enabled = !uiState.isLoading

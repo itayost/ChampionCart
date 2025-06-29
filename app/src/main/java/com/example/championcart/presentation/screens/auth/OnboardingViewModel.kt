@@ -47,17 +47,6 @@ class OnboardingViewModel @Inject constructor(
         _uiState.update { it.copy(selectedCity = city) }
     }
 
-    fun toggleStore(store: String) {
-        _uiState.update { state ->
-            val updatedStores = if (store in state.selectedStores) {
-                state.selectedStores - store
-            } else {
-                state.selectedStores + store
-            }
-            state.copy(selectedStores = updatedStores)
-        }
-    }
-
     fun toggleNotifications(enabled: Boolean) {
         _uiState.update { it.copy(notificationsEnabled = enabled) }
     }
@@ -73,11 +62,21 @@ class OnboardingViewModel @Inject constructor(
 
             // Mark onboarding as completed
             preferencesManager.setFirstLaunch(false)
+        }
+    }
 
-            // Note: Store preferences could be saved to a separate preference
-            // For now, we'll just log them
-            val stores = _uiState.value.selectedStores.joinToString(",")
-            // Could save this to preferences or send to backend
+    fun skipOnboarding() {
+        viewModelScope.launch {
+            // Set default city if none selected
+            if (_uiState.value.selectedCity == null) {
+                preferencesManager.setSelectedCity("תל אביב") // Default city
+            }
+
+            // Keep notifications enabled by default
+            preferencesManager.setNotificationsEnabled(true)
+
+            // Mark onboarding as completed
+            preferencesManager.setFirstLaunch(false)
         }
     }
 }
@@ -85,6 +84,5 @@ class OnboardingViewModel @Inject constructor(
 data class OnboardingUiState(
     val cities: List<String> = emptyList(),
     val selectedCity: String? = null,
-    val selectedStores: Set<String> = emptySet(),
     val notificationsEnabled: Boolean = true
 )

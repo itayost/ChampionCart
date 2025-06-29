@@ -16,12 +16,22 @@ import com.example.championcart.ui.theme.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SimpleHomeScreen(
-    onNavigateToShowcase: () -> Unit
+    onNavigateToShowcase: () -> Unit,
+    onLogout: () -> Unit
 ) {
     Scaffold(
         topBar = {
             ChampionTopBar(
-                title = "ChampionCart"
+                title = "ChampionCart",
+                actions = {
+                    IconButton(onClick = onLogout) {
+                        Icon(
+                            imageVector = Icons.Rounded.Logout,
+                            contentDescription = "התנתק",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
             )
         }
     ) { paddingValues ->
@@ -58,6 +68,67 @@ fun SimpleHomeScreen(
             )
 
             Spacer(modifier = Modifier.height(Spacing.xxl))
+
+            // Main Actions
+            GlassCard(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(Padding.l),
+                    verticalArrangement = Arrangement.spacedBy(Spacing.m)
+                ) {
+                    Text(
+                        text = "פעולות ראשיות",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+
+                    ChampionDivider()
+
+                    ChampionListItem(
+                        title = "חפש מוצרים",
+                        subtitle = "השווה מחירים בין חנויות",
+                        leadingIcon = Icons.Rounded.Search,
+                        onClick = { /* TODO: Navigate to search */ },
+                        trailingContent = {
+                            Icon(
+                                imageVector = Icons.Rounded.ChevronRight,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    )
+
+                    ChampionListItem(
+                        title = "העגלה שלי",
+                        subtitle = "צפה ונהל את העגלה שלך",
+                        leadingIcon = Icons.Rounded.ShoppingCart,
+                        onClick = { /* TODO: Navigate to cart */ },
+                        trailingContent = {
+                            Icon(
+                                imageVector = Icons.Rounded.ChevronRight,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    )
+
+                    ChampionListItem(
+                        title = "התנתק",
+                        subtitle = "צא מהחשבון שלך",
+                        leadingIcon = Icons.Rounded.Logout,
+                        onClick = onLogout,
+                        trailingContent = {
+                            Icon(
+                                imageVector = Icons.Rounded.ChevronRight,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(Spacing.xl))
 
             // Developer Options
             if (BuildConfig.DEBUG) {
