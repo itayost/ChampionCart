@@ -41,6 +41,9 @@ fun HomeScreen(
     val scope = rememberCoroutineScope()
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
 
+    // State for city bottom sheet
+    var showCityBottomSheet by remember { mutableStateOf(false) }
+
     // Show snackbar messages
     LaunchedEffect(uiState.snackbarMessage) {
         uiState.snackbarMessage?.let { message ->
@@ -59,10 +62,23 @@ fun HomeScreen(
 
     Scaffold(
         topBar = {
-            HomeTopBar(
-                userName = uiState.userName,
-                isGuest = uiState.isGuest,
-                onProfileClick = onNavigateToProfile,
+            ChampionCartTopBar(
+                title = if (uiState.isGuest) "אורח" else uiState.userName,
+                subtitle = getGreeting(),
+                showTimeBasedGradient = false,
+                actions = listOf(
+                    TopBarAction(
+                        icon = Icons.Rounded.LocationOn,
+                        contentDescription = "מיקום - ${uiState.selectedCity}",
+                        onClick = { showCityBottomSheet = true },
+                        tint = BrandColors.ElectricMint
+                    ),
+                    TopBarAction(
+                        icon = Icons.Rounded.AccountCircle,
+                        contentDescription = "פרופיל",
+                        onClick = onNavigateToProfile
+                    )
+                ),
                 scrollBehavior = scrollBehavior
             )
         },
@@ -110,36 +126,6 @@ fun HomeScreen(
                     onSearchQueryChange = viewModel::onSearchQueryChange,
                     onSearch = viewModel::onSearch
                 )
-            }
-
-            // City Selection
-            if (uiState.cities.isNotEmpty()) {
-                item {
-                    SectionHeader(
-                        title = "בחר עיר",
-                        modifier = Modifier.padding(horizontal = Spacing.l)
-                    )
-                }
-
-                item {
-                    if (uiState.isCitiesLoading) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(120.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator()
-                        }
-                    } else {
-                        CitySelector(
-                            selectedCity = uiState.selectedCity,
-                            cities = uiState.cities,
-                            onCitySelected = viewModel::onCitySelected,
-                            modifier = Modifier.padding(horizontal = Spacing.l)
-                        )
-                    }
-                }
             }
 
             // Quick Actions
@@ -270,46 +256,34 @@ fun HomeScreen(
             item { Spacer(modifier = Modifier.height(Spacing.xl)) }
         }
     }
+
+    // City Selection Bottom Sheet
+    CitySelectionBottomSheet(
+        visible = showCityBottomSheet,
+        selectedCity = uiState.selectedCity,
+        cities = uiState.cities,
+        onCitySelected = { city ->
+            viewModel.onCitySelected(city)
+        },
+        onRequestLocation = {
+            // TODO: Implement location permission request
+            scope.launch {
+                snackbarHostState.showSnackbar("זיהוי מיקום אוטומטי בקרוב...")
+            }
+        },
+        onDismiss = { showCityBottomSheet = false }
+    )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun HomeTopBar(
-    userName: String,
-    isGuest: Boolean,
-    onProfileClick: () -> Unit,
-    scrollBehavior: TopAppBarScrollBehavior? = null
-) {
-    TopAppBar(
-        title = {
-            Column {
-                Text(
-                    text = getGreeting(),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = if (isGuest) "אורח" else userName,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        },
-        actions = {
-            IconButton(onClick = onProfileClick) {
-                Icon(
-                    imageVector = Icons.Rounded.AccountCircle,
-                    contentDescription = "פרופיל",
-                    modifier = Modifier.size(32.dp)
-                )
-            }
-        },
-        scrollBehavior = scrollBehavior,
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = Color.Transparent,
-            scrolledContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
-        )
-    )
+// Utility function for time-based greeting
+private fun getGreeting(): String {
+    val hour = LocalTime.now().hour
+    return when (hour) {
+        in 5..11 -> "בוקר טוב"
+        in 12..16 -> "צהריים טובים"
+        in 17..20 -> "ערב טוב"
+        else -> "לילה טוב"
+    }
 }
 
 @OptIn(ExperimentalAnimationApi::class)
@@ -723,15 +697,3 @@ private fun HomeBottomBar(
         }
     }
 }
-
-    // Utility function for time-based greeting
-    @Composable
-    private fun getGreeting(): String {
-        val hour = LocalTime.now().hour
-        return when (hour) {
-            in 5..11 -> "בוקר טוב"
-            in 12..16 -> "צהריים טובים"
-            in 17..20 -> "ערב טוב"
-            else -> "לילה טוב"
-        }
-    }
