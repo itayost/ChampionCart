@@ -9,7 +9,8 @@ import androidx.navigation.compose.rememberNavController
 import com.example.championcart.data.local.PreferencesManager
 import com.example.championcart.data.local.TokenManager
 import com.example.championcart.presentation.screens.showcase.ComponentShowcaseScreen
-import com.example.championcart.presentation.screens.home.SimpleHomeScreen
+import com.example.championcart.presentation.screens.home.HomeScreen
+import com.example.championcart.presentation.screens.search.SearchScreen
 import com.example.championcart.presentation.screens.auth.*
 import com.example.championcart.presentation.screens.splash.SplashScreen
 
@@ -98,11 +99,31 @@ fun ChampionCartNavHost(
 
         // Home Screen
         composable(route = Screen.Home.route) {
-            SimpleHomeScreen(
-                onNavigateToShowcase = {
-                    navController.navigate(Screen.ComponentShowcase.route)
+            HomeScreen(
+                onNavigateToProduct = { productId ->
+                    navController.navigate(Screen.ProductDetail.createRoute(productId))
                 },
-                onLogout = TODO()
+                onNavigateToCart = {
+                    navController.navigate(Screen.Cart.route)
+                },
+                onNavigateToSearch = {
+                    navController.navigate(Screen.Search.route)
+                },
+                onNavigateToProfile = {
+                    navController.navigate(Screen.Profile.route)
+                }
+            )
+        }
+
+        // Search Screen
+        composable(route = Screen.Search.route) {
+            SearchScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onNavigateToProduct = { productId ->
+                    navController.navigate(Screen.ProductDetail.createRoute(productId))
+                }
             )
         }
 

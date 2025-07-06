@@ -15,9 +15,12 @@ class PreferencesManager @Inject constructor(
         private const val KEY_THEME_MODE = "theme_mode"
         private const val KEY_NOTIFICATIONS_ENABLED = "notifications_enabled"
         private const val KEY_FIRST_LAUNCH = "first_launch"
+        private const val KEY_RECENT_SEARCHES = "recent_searches"
 
         private const val DEFAULT_CITY = "תל אביב"
         private const val DEFAULT_LANGUAGE = "he"
+        private const val SEARCH_DELIMITER = "|"
+        private const val MAX_RECENT_SEARCHES = 5
     }
 
     fun getSelectedCity(): String {
@@ -68,6 +71,45 @@ class PreferencesManager @Inject constructor(
     fun setFirstLaunch(isFirst: Boolean) {
         sharedPreferences.edit()
             .putBoolean(KEY_FIRST_LAUNCH, isFirst)
+            .apply()
+    }
+
+    fun getRecentSearches(): List<String> {
+        val searchesString = sharedPreferences.getString(KEY_RECENT_SEARCHES, "") ?: ""
+        return if (searchesString.isEmpty()) {
+            emptyList()
+        } else {
+            searchesString.split(SEARCH_DELIMITER).filter { it.isNotBlank() }
+        }
+    }
+
+    fun addRecentSearch(search: String) {
+        val currentSearches = getRecentSearches().toMutableList()
+
+        // Remove if already exists (to move to front)
+        currentSearches.remove(search)
+
+        // Add to front
+        currentSearches.add(0, search)
+
+        // Keep only last N searches
+        val trimmedSearches = currentSearches.take(MAX_RECENT_SEARCHES)
+
+        // Save
+        sharedPreferences.edit()
+            .putString(KEY_RECENT_SEARCHES, trimmedSearches.joinToString(SEARCH_DELIMITER))
+            .apply()
+    }
+
+    fun clearRecentSearches() {
+        sharedPreferences.edit()
+            .remove(KEY_RECENT_SEARCHES)
+            .apply()
+    }
+
+    fun clearAll() {
+        sharedPreferences.edit()
+            .clear()
             .apply()
     }
 }
