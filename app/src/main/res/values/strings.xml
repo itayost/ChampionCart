@@ -7,7 +7,8 @@
     <string name="nav_home">בית</string>
     <string name="nav_search">חיפוש</string>
     <string name="nav_cart">עגלה</string>
-    <string name="nav_profile">פרופיל</string>
+    <string name="nav_scan">סרוק</string>
+    <string name="nav_profile">איזור אישי</string>
 
     <!-- Screen Titles -->
     <string name="title_home">ChampionCart</string>

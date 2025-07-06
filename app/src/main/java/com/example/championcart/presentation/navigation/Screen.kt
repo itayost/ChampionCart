@@ -14,6 +14,7 @@ sealed class Screen(
     // Main Screens
     object Home : Screen("home")
     object Search : Screen("search")
+    object Scan : Screen("scan")
     object Cart : Screen("cart")
     object Profile : Screen("profile")
 

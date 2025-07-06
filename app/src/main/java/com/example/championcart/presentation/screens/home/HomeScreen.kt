@@ -89,13 +89,6 @@ fun HomeScreen(
                     ChampionSnackbar(snackbarData = data)
                 }
             )
-        },
-        bottomBar = {
-            HomeBottomBar(
-                cartItemCount = uiState.cartItemCount,
-                onCartClick = onNavigateToCart,
-                onSearchClick = onNavigateToSearch
-            )
         }
     ) { paddingValues ->
         LazyColumn(
@@ -111,7 +104,7 @@ fun HomeScreen(
                 ),
             contentPadding = PaddingValues(
                 top = paddingValues.calculateTopPadding(),
-                bottom = paddingValues.calculateBottomPadding() + Spacing.xxl,
+                bottom = paddingValues.calculateBottomPadding() + Size.bottomNavHeight + Spacing.xl,
                 start = 0.dp,
                 end = 0.dp
             ),
@@ -361,7 +354,8 @@ private fun HeroSection(
             query = searchQuery,
             onQueryChange = onSearchQueryChange,
             onSearch = onSearch,
-            placeholder = "חפש מוצרים, מותגים או ברקודים..."
+            placeholder = "חפש מוצרים...",
+            modifier = Modifier.fillMaxWidth()
         )
     }
 }
@@ -631,69 +625,4 @@ private fun StatsSection(
     }
 }
 
-@Composable
-private fun HomeBottomBar(
-    cartItemCount: Int,
-    onCartClick: () -> Unit,
-    onSearchClick: () -> Unit
-) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        color = Color.Transparent
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .glass(
-                    shape = Shapes.bottomSheet,
-                    elevation = 8.dp
-                )
-                .navigationBarsPadding()
-                .padding(
-                    horizontal = Spacing.l,
-                    vertical = Spacing.m
-                ),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-            // Search FAB
-            ExtendedFloatingActionButton(
-                onClick = onSearchClick,
-                containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.Search,
-                    contentDescription = "חיפוש"
-                )
-                Spacer(modifier = Modifier.width(Spacing.s))
-                Text("חפש מוצרים")
-            }
-
-            // Cart FAB
-            ExtendedFloatingActionButton(
-                onClick = onCartClick,
-                containerColor = BrandColors.ElectricMint,
-                contentColor = Color.White
-            ) {
-                BadgedBox(
-                    badge = {
-                        if (cartItemCount > 0) {
-                            Badge(
-                                containerColor = SemanticColors.Error
-                            ) {
-                                Text(cartItemCount.toString())
-                            }
-                        }
-                    }
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.ShoppingCart,
-                        contentDescription = "עגלה"
-                    )
-                }
-                Spacer(modifier = Modifier.width(Spacing.s))
-                Text("העגלה שלי")
-            }
-        }
-    }
-}
+// The HomeBottomBar component is no longer needed - removed
