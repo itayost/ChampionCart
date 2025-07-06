@@ -102,13 +102,7 @@ fun ChampionCartNavHost(
                 onNavigateToShowcase = {
                     navController.navigate(Screen.ComponentShowcase.route)
                 },
-                onLogout = {
-                    // Clear token and navigate to login
-                    tokenManager.clearToken()
-                    navController.navigate(Screen.Login.route) {
-                        popUpTo(0) { inclusive = true }
-                    }
-                }
+                onLogout = TODO()
             )
         }
 
