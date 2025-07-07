@@ -32,6 +32,7 @@ import com.example.championcart.presentation.screens.home.HomeScreen
 import com.example.championcart.presentation.screens.search.SearchScreen
 import com.example.championcart.presentation.screens.showcase.ComponentShowcaseScreen
 import com.example.championcart.presentation.screens.splash.SplashScreen
+import com.example.championcart.presentation.screens.cart.CartScreen
 import com.example.championcart.ui.theme.Size
 
 /*
@@ -206,13 +207,19 @@ fun ChampionCartNavHost(
             }
 
             composable(route = Screen.Cart.route) {
-                // TODO: Implement cart screen
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("Cart Screen - Coming Soon!")
-                }
+                CartScreen(
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    },
+                    onNavigateToSearch = {
+                        navController.navigate(Screen.Search.route)
+                    },
+                    onNavigateToStore = { storeName ->
+                        // TODO: Navigate to store details or map screen
+                        // For now, just log or show a toast
+                        android.util.Log.d("Navigation", "Navigate to store: $storeName")
+                    }
+                )
             }
 
             composable(route = Screen.Profile.route) {

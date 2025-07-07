@@ -7,5 +7,6 @@ import kotlinx.coroutines.flow.Flow
 interface CartRepository {
     suspend fun saveCart(name: String): Flow<Result<String>>
     suspend fun getSavedCarts(): Flow<Result<List<SavedCart>>>
+    suspend fun loadSavedCart(cartId: String): Flow<Result<Unit>>
     suspend fun calculateCheapestStore(city: String? = null): Flow<Result<CheapestStoreResult>>
 }

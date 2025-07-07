@@ -6,6 +6,7 @@ import com.example.championcart.data.api.AuthApi
 import com.example.championcart.data.api.CartApi
 import com.example.championcart.data.api.CityApi
 import com.example.championcart.data.api.PriceApi
+import com.example.championcart.data.api.ProductApi
 import com.example.championcart.data.local.TokenManager
 import dagger.Module
 import dagger.Provides
@@ -85,5 +86,11 @@ object NetworkModule {
     @Singleton
     fun provideCityApi(retrofit: Retrofit): CityApi {
         return retrofit.create(CityApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideProductApi(retrofit: Retrofit): ProductApi {
+        return retrofit.create(ProductApi::class.java)
     }
 }
