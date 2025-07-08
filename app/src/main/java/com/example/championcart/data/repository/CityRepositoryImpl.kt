@@ -21,16 +21,13 @@ class CityRepositoryImpl @Inject constructor(
         try {
             Log.d(TAG, "Fetching cities list")
 
-            val response = cityApi.getCities()
+            val cities = cityApi.getCities()
 
-            if (response.success && response.cities != null) {
-                Log.d(TAG, "Found ${response.cities.size} cities")
-                emit(Result.success(response.cities))
-            } else {
-                emit(Result.success(emptyList()))
-            }
+            Log.d(TAG, "Found ${cities.size} cities")
+            emit(Result.success(cities))
+
         } catch (e: Exception) {
-            Log.e(TAG, "Get cities error", e)
+            Log.e(TAG, "Get cities error (Ask Gemini)", e)
             // Return default cities if API fails
             emit(Result.success(
                 listOf(

@@ -6,10 +6,7 @@ import com.example.championcart.data.api.PriceApi
 import com.example.championcart.data.local.CartManager
 import com.example.championcart.data.local.PreferencesManager
 import com.example.championcart.data.mappers.toDomainModel
-import com.example.championcart.data.models.cart.CartItemRequest
-import com.example.championcart.data.models.cart.CheapestCartRequest
-import com.example.championcart.data.models.cart.SaveCartItemRequest
-import com.example.championcart.data.models.cart.SaveCartRequest
+import com.example.championcart.data.models.cart.*
 import com.example.championcart.domain.models.CheapestStoreResult
 import com.example.championcart.domain.models.SavedCart
 import com.example.championcart.domain.repository.CartRepository
@@ -41,7 +38,7 @@ class CartRepositoryImpl @Inject constructor(
                 city = city,
                 items = cartItems.map { item ->
                     SaveCartItemRequest(
-                        barcode = item.product.barcode ?: item.product.id, // Use barcode if available
+                        barcode = item.product.barcode ?: item.product.id,
                         quantity = item.quantity,
                         name = item.product.name
                     )
@@ -67,14 +64,14 @@ class CartRepositoryImpl @Inject constructor(
         try {
             Log.d(TAG, "Fetching saved carts")
 
-            val savedCarts = cartApi.getSavedCarts() // Returns List<SavedCartSummary>
+            val savedCarts = cartApi.getSavedCarts()
 
             val domainCarts = savedCarts.map { cart ->
                 SavedCart(
                     id = cart.cartId.toString(),
                     name = cart.cartName,
                     itemCount = cart.itemCount,
-                    totalItems = cart.itemCount, // Server doesn't provide total quantity
+                    totalItems = cart.itemCount,
                     createdAt = cart.createdAt
                 )
             }
@@ -91,20 +88,15 @@ class CartRepositoryImpl @Inject constructor(
         try {
             Log.d(TAG, "Loading saved cart with ID: $cartId")
 
-            // Get cart details from server
             val response = cartApi.getCartDetails(cartId.toInt())
 
             if (response.success) {
                 val cartDetails = response.cart
 
-                // Clear current cart
                 cartManager.clearCart()
 
-                // For each item in the saved cart, search for the product by name
-                // since we don't have barcode lookup implemented
                 cartDetails.items.forEach { cartItem ->
                     try {
-                        // Search for the product to get current prices
                         val productResponse = priceApi.searchProductPrices(
                             city = cartDetails.city,
                             itemName = cartItem.name
@@ -138,36 +130,62 @@ class CartRepositoryImpl @Inject constructor(
     ): Flow<Result<CheapestStoreResult>> = flow {
         try {
             val cartItems = cartManager.cartItems.value
+
+            // Filter out items without barcodes
+            val itemsWithBarcodes = cartItems.filter { !it.product.barcode.isNullOrEmpty() }
+
+            if (itemsWithBarcodes.isEmpty()) {
+                emit(Result.failure(Exception("No items with barcodes in cart")))
+                return@flow
+            }
+
             val searchCity = city ?: preferencesManager.getSelectedCity()
 
-            Log.d(TAG, "Calculating cheapest store for ${cartItems.size} items in $searchCity")
+            Log.d(TAG, "Calculating cheapest store for ${itemsWithBarcodes.size} items in $searchCity")
 
-            // Using the /api/cheapest-cart endpoint with item names
-            val request = CheapestCartRequest(
+            // Create request for /api/cart/compare endpoint
+            val request = CartCompareRequest(
                 city = searchCity,
-                items = cartItems.map { item ->
-                    CartItemRequest(
-                        itemName = item.product.name,
+                items = itemsWithBarcodes.map { item ->
+                    CartCompareItem(
+                        barcode = item.product.barcode!!, // We already filtered nulls
                         quantity = item.quantity,
-                        category = item.product.category
+                        name = item.product.name
                     )
                 }
             )
 
-            val response = cartApi.calculateCheapestCart(request)
+            val response = cartApi.compareCart(request)
 
-            if (response.success && response.data != null) {
+            if (response.success) {
+                val cheapestStore = response.cheapestStore
+
+                // Create a map of all store totals
+                val storeTotals = mutableMapOf<String, Double>()
+                response.allStores.forEach { store ->
+                    storeTotals[store.chainDisplayName] = store.totalPrice
+                }
+
+                // Get missing items
+                val missingItems = mutableListOf<String>()
+                cheapestStore.itemsDetail
+                    .filter { !it.available }
+                    .forEach { item ->
+                        missingItems.add(item.name)
+                    }
+
                 val result = CheapestStoreResult(
-                    cheapestStore = response.data.cheapestStore,
-                    totalPrice = response.data.totalPrice,
-                    storeTotals = response.data.storeTotals,
-                    missingItems = response.data.missingItems ?: emptyList()
+                    cheapestStore = "${cheapestStore.chainDisplayName} - ${cheapestStore.branchName}",
+                    totalPrice = cheapestStore.totalPrice,
+                    storeTotals = storeTotals,
+                    missingItems = missingItems
                 )
+
                 Log.d(TAG, "Cheapest store: ${result.cheapestStore} - ₪${result.totalPrice}")
                 emit(Result.success(result))
             } else {
-                Log.e(TAG, "Calculate cheapest failed: ${response.message}")
-                emit(Result.failure(Exception(response.message ?: "Failed to calculate")))
+                Log.e(TAG, "Calculate cheapest failed")
+                emit(Result.failure(Exception("Failed to compare cart prices")))
             }
         } catch (e: Exception) {
             Log.e(TAG, "Calculate cheapest error", e)
@@ -180,7 +198,7 @@ class CartRepositoryImpl @Inject constructor(
         try {
             Log.d(TAG, "Comparing saved cart with ID: $cartId")
 
-            val response = cartApi.compareCart(cartId.toInt())
+            val response = cartApi.compareSavedCart(cartId.toInt())
 
             if (response.success) {
                 val comparison = response.comparison
@@ -189,7 +207,6 @@ class CartRepositoryImpl @Inject constructor(
                     totalPrice = comparison.cheapestStore.totalPrice,
                     storeTotals = mapOf(
                         comparison.cheapestStore.chainName to comparison.cheapestStore.totalPrice
-                        // Server doesn't provide other store totals in this endpoint
                     ),
                     missingItems = if (comparison.cheapestStore.missingItems > 0) {
                         listOf("${comparison.cheapestStore.missingItems} פריטים חסרים")
