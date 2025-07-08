@@ -67,53 +67,43 @@ fun CartScreen(
             )
         },
         topBar = {
-            TopAppBar(
-                title = {
-                    Column {
-                        Text("העגלה שלי")
-                        if (uiState.cartItems.isNotEmpty()) {
-                            Text(
-                                text = "${uiState.cartItems.sumOf { it.quantity }} פריטים",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                },
+            ChampionCartTopBar(
+                title = "העגלה שלי",
+                subtitle = if (uiState.cartItems.isNotEmpty()) {
+                    "${uiState.cartItems.sumOf { it.quantity }} פריטים"
+                } else null,
                 navigationIcon = {
-                    BackButton(onClick = onNavigateBack)
-                },
-                actions = {
-                    if (uiState.cartItems.isNotEmpty()) {
-                        IconButton(onClick = { showSaveDialog = true }) {
-                            Icon(
-                                imageVector = Icons.Rounded.Save,
-                                contentDescription = "שמור עגלה"
-                            )
-                        }
-                        IconButton(onClick = { showClearConfirmation = true }) {
-                            Icon(
-                                imageVector = Icons.Rounded.DeleteOutline,
-                                contentDescription = "נקה עגלה"
-                            )
-                        }
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(
+                            imageVector = Icons.Rounded.ArrowBack,
+                            contentDescription = "חזור"
+                        )
                     }
-                }
+                },
+                actions = listOf(
+                    TopBarAction(
+                        icon = Icons.Rounded.Save,
+                        contentDescription = "שמור עגלה",
+                        onClick = { showSaveDialog = true }
+                    ),
+                    TopBarAction(
+                        icon = Icons.Rounded.Delete,
+                        contentDescription = "נקה עגלה",
+                        onClick = { showClearConfirmation = true },
+                        tint = if (uiState.cartItems.isNotEmpty()) SemanticColors.Error else null
+                    )
+                )
             )
         },
         bottomBar = {
             AnimatedVisibility(
-                visible = uiState.cartItems.isNotEmpty(),
+                visible = uiState.cartItems.isNotEmpty() && !uiState.isCalculating,
                 enter = slideInVertically { it } + fadeIn(),
                 exit = slideOutVertically { it } + fadeOut()
             ) {
-                CartBottomBar(
+                BottomActionBar(
                     totalPrice = uiState.totalPrice,
-                    onContinueShopping = onNavigateToSearch,
-                    onFindBestStore = {
-                        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                        viewModel.calculateCheapestStore()
-                    },
+                    onFindCheapestStore = { viewModel.calculateCheapestStore() },
                     isCalculating = uiState.isCalculating
                 )
             }
@@ -143,7 +133,13 @@ fun CartScreen(
                     state = listState,
                     contentPadding = PaddingValues(
                         top = Spacing.m,
-                        bottom = Size.bottomNavHeight + Spacing.xl  // Account for both bottom bar and nav bar
+                        bottom = if (uiState.cartItems.isNotEmpty() && !uiState.isCalculating) {
+                            // Account for bottom action bar + nav bar + extra spacing
+                            Size.bottomNavHeight + 80.dp + Spacing.xl
+                        } else {
+                            // Just nav bar when no bottom action bar
+                            Size.bottomNavHeight + Spacing.xl
+                        }
                     ),
                     verticalArrangement = Arrangement.spacedBy(Spacing.s)
                 ) {
@@ -156,182 +152,160 @@ fun CartScreen(
                                 itemCount = uiState.cartItems.sumOf { it.quantity },
                                 totalPrice = uiState.totalPrice,
                                 potentialSavings = uiState.potentialSavings ?: 0.0,
-                                isCalculating = uiState.isCalculating
-                            )
-                        }
-                    }
-
-                    // Store Recommendations
-                    uiState.cheapestStoreResult?.let { result ->
-                        item {
-                            StoreRecommendationCard(
-                                result = result,
-                                totalPrice = uiState.totalPrice,
-                                onStoreClick = onNavigateToStore,
-                                modifier = Modifier
-                                    .padding(horizontal = Spacing.l)
-                                    .padding(top = Spacing.m)
+                                modifier = Modifier.padding(Padding.l)
                             )
                         }
                     }
 
                     // Cart Items
-                    item {
-                        SectionHeader(
-                            title = "המוצרים שלך"
+                    items(
+                        items = uiState.cartItems,
+                        key = { it.product.id }
+                    ) { cartItem ->
+                        CartItemCard(
+                            cartItem = cartItem,
+                            onQuantityChange = { newQuantity ->
+                                viewModel.updateQuantity(cartItem.product.id, newQuantity)
+                            },
+                            onRemove = {
+                                hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                                viewModel.removeFromCart(cartItem.product.id)
+                            },
+                            modifier = Modifier
+                                .padding(horizontal = Spacing.l)
+
                         )
                     }
 
-                    items(
-                        items = uiState.cartItems,
-                        key = { item -> item.product.id }
-                    ) { cartItem ->
-                        AnimatedVisibility(
-                            visible = true,
-                            enter = fadeIn() + expandVertically(),
-                            exit = fadeOut() + shrinkVertically()
-                        ) {
-                            CartItemCard(
-                                cartItem = cartItem,
-                                onQuantityChange = { quantity ->
-                                    hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                    viewModel.updateQuantity(cartItem.product.id, quantity)
-                                },
-                                onRemove = {
-                                    hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    viewModel.removeFromCart(cartItem.product.id)
-                                },
+                    // Cheapest store result
+                    uiState.cheapestStoreResult?.let { result ->
+                        item {
+                            CheapestStoreCard(
+                                result = result,
+                                onNavigateToStore = onNavigateToStore,
                                 modifier = Modifier.padding(horizontal = Spacing.l)
                             )
                         }
                     }
-
-                    // Extra space at the bottom for smoother scrolling
-                    item {
-                        Spacer(modifier = Modifier.height(Spacing.xl))
-                    }
                 }
             }
-        }
 
-        // Loading overlay
-        if (uiState.isCalculating) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = Color.Black.copy(alpha = 0.5f)
-                ) {}
-
-                Card(
-                    shape = Shapes.card,
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface
-                    )
+            // Loading overlay
+            if (uiState.isCalculating) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.5f))
+                        .clickable(enabled = false) { },
+                    contentAlignment = Alignment.Center
                 ) {
-                    Column(
-                        modifier = Modifier.padding(Padding.xl),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        CircularProgressIndicator(
-                            color = BrandColors.ElectricMint
-                        )
-                        Spacer(modifier = Modifier.height(Spacing.l))
-                        Text(
-                            text = "מחשב את החנות הזולה ביותר...",
-                            style = MaterialTheme.typography.bodyLarge
-                        )
-                    }
+                    LoadingIndicator(
+                        size = 64.dp,
+                        strokeWidth = 6.dp
+                    )
                 }
             }
         }
     }
 
-    // Dialogs
-    if (showClearConfirmation) {
-        ConfirmationDialog(
-            visible = true,
-            title = "ניקוי העגלה",
-            text = "האם אתה בטוח שברצונך לנקות את כל המוצרים מהעגלה?",
-            confirmText = "נקה",
-            onConfirm = {
-                viewModel.clearCart()
-                showClearConfirmation = false
-            },
-            onDismiss = { showClearConfirmation = false },
-            isDangerous = true
+    // Save Cart Dialog
+    if (showSaveDialog) {
+        SaveCartDialog(
+            onDismiss = { showSaveDialog = false },
+            onSave = { cartName ->
+                viewModel.saveCart(cartName)
+                showSaveDialog = false
+            }
         )
     }
 
-    if (showSaveDialog) {
-        SaveCartDialog(
+    // Clear Cart Confirmation
+    if (showClearConfirmation) {
+        ChampionDialog(
             visible = true,
-            onSave = { name ->
-                viewModel.saveCart(name)
-                showSaveDialog = false
+            onDismiss = { showClearConfirmation = false },
+            title = "נקה עגלה?",
+            text = "האם אתה בטוח שברצונך לנקות את כל הפריטים בעגלה?",
+            icon = Icons.Rounded.DeleteForever,
+            confirmButton = {
+                PrimaryButton(
+                    text = "נקה",
+                    onClick = {
+                        viewModel.clearCart()
+                        showClearConfirmation = false
+                    }
+                )
             },
-            onDismiss = { showSaveDialog = false }
+            dismissButton = {
+                SecondaryButton(
+                    text = "ביטול",
+                    onClick = { showClearConfirmation = false }
+                )
+            }
         )
     }
 }
 
-
-
 @Composable
-private fun CartBottomBar(
+private fun CartSummaryContent(
+    itemCount: Int,
     totalPrice: Double,
-    onContinueShopping: () -> Unit,
-    onFindBestStore: () -> Unit,
-    isCalculating: Boolean,
+    potentialSavings: Double,
     modifier: Modifier = Modifier
 ) {
-    Surface(
-        modifier = modifier.fillMaxWidth(),
-        shadowElevation = 8.dp,
-        color = MaterialTheme.colorScheme.surface
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(Spacing.m)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(Spacing.l)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
+            Text(
+                text = "סיכום עגלה",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+            ChampionChip(
+                text = "$itemCount פריטים",
+                selected = true
+            )
+        }
+
+        ChampionDivider()
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = "סה״כ משוער",
+                style = MaterialTheme.typography.bodyLarge
+            )
+            Text(
+                text = "₪${String.format("%.2f", totalPrice)}",
+                style = TextStyles.price,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
+
+        if (potentialSavings > 0) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Column {
-                    Text(
-                        text = "סה״כ משוער",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = "₪${String.format("%.2f", totalPrice)}",
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-
-                PrimaryButton(
-                    text = "מצא חנות זולה",
-                    onClick = onFindBestStore,
-                    enabled = !isCalculating,
-                    isLoading = isCalculating,
-                    icon = Icons.Rounded.Store
+                Text(
+                    text = "חיסכון פוטנציאלי",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = "₪${String.format("%.2f", potentialSavings)}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = PriceColors.Best,
+                    fontWeight = FontWeight.Medium
                 )
             }
-
-            Spacer(modifier = Modifier.height(Spacing.m))
-
-            SecondaryButton(
-                text = "המשך קניות",
-                onClick = onContinueShopping,
-                modifier = Modifier.fillMaxWidth(),
-                icon = Icons.Rounded.AddShoppingCart
-            )
         }
     }
 }
@@ -343,9 +317,8 @@ private fun CartItemCard(
     onRemove: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = Shapes.card
+    GlassCard(
+        modifier = modifier
     ) {
         Row(
             modifier = Modifier
@@ -405,82 +378,53 @@ private fun CartItemCard(
                 horizontalArrangement = Arrangement.spacedBy(Spacing.s)
             ) {
                 IconButton(
-                    onClick = {
-                        if (cartItem.quantity > 1) {
-                            onQuantityChange(cartItem.quantity - 1)
-                        } else {
-                            onRemove()
-                        }
-                    },
-                    modifier = Modifier.size(36.dp)
+                    onClick = { onQuantityChange(cartItem.quantity - 1) },
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
                 ) {
                     Icon(
-                        imageVector = if (cartItem.quantity == 1)
-                            Icons.Rounded.Delete else Icons.Rounded.Remove,
-                        contentDescription = "הקטן כמות",
-                        tint = if (cartItem.quantity == 1)
-                            SemanticColors.Error else MaterialTheme.colorScheme.onSurface
+                        imageVector = Icons.Rounded.Remove,
+                        contentDescription = "הפחת",
+                        modifier = Modifier.size(18.dp)
                     )
                 }
 
                 Text(
-                    text = "${cartItem.quantity}",
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Medium,
-                    modifier = Modifier.width(32.dp),
-                    textAlign = TextAlign.Center
+                    text = cartItem.quantity.toString(),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.width(32.dp)
                 )
 
                 IconButton(
                     onClick = { onQuantityChange(cartItem.quantity + 1) },
-                    modifier = Modifier.size(36.dp)
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(CircleShape)
+                        .background(BrandColors.ElectricMint)
                 ) {
                     Icon(
                         imageVector = Icons.Rounded.Add,
-                        contentDescription = "הגדל כמות"
+                        contentDescription = "הוסף",
+                        tint = Color.White,
+                        modifier = Modifier.size(18.dp)
                     )
                 }
             }
-        }
-    }
-}
 
-@Composable
-private fun CartSummaryContent(
-    itemCount: Int,
-    totalPrice: Double,
-    potentialSavings: Double,
-    isCalculating: Boolean
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(Padding.l)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-            StatCard(
-                value = itemCount.toString(),
-                label = "מוצרים",
-                icon = Icons.Rounded.ShoppingCart,
-                color = BrandColors.ElectricMint
-            )
-
-            StatCard(
-                value = "₪${String.format("%.2f", totalPrice)}",
-                label = "סה״כ משוער",
-                icon = Icons.Rounded.AttachMoney,
-                color = MaterialTheme.colorScheme.primary
-            )
-
-            if (potentialSavings > 0 && !isCalculating) {
-                StatCard(
-                    value = "₪${String.format("%.2f", potentialSavings)}",
-                    label = "חיסכון אפשרי",
-                    icon = Icons.Rounded.Savings,
-                    color = PriceColors.Best
+            // Remove button
+            IconButton(
+                onClick = onRemove,
+                modifier = Modifier.size(32.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Close,
+                    contentDescription = "הסר",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp)
                 )
             }
         }
@@ -488,150 +432,124 @@ private fun CartSummaryContent(
 }
 
 @Composable
-private fun StatCard(
-    value: String,
-    label: String,
-    icon: ImageVector,
-    color: Color
-) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = color,
-            modifier = Modifier.size(24.dp)
-        )
-        Spacer(modifier = Modifier.height(Spacing.xs))
-        Text(
-            text = value,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = color
-        )
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-}
-
-@Composable
-private fun StoreRecommendationCard(
+private fun CheapestStoreCard(
     result: CheapestStoreResult,
-    totalPrice: Double,
-    onStoreClick: (String) -> Unit,
+    onNavigateToStore: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    GlassCard(
+    Column(
         modifier = modifier,
-        onClick = { onStoreClick(result.cheapestStore) }
+        verticalArrangement = Arrangement.spacedBy(Spacing.m)
     ) {
-        Column(
+        Text(
+            text = "החנות הזולה ביותר",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold
+        )
+
+        StoreCard(
+            storeName = "${result.cheapestStore} - ${result.address ?: ""}",
+            totalPrice = "₪${String.format("%.2f", result.totalPrice)}",
+            itemCount = result.availableItems ?: result.storeTotals.size,
+            distance = null,
+            onClick = { onNavigateToStore(result.cheapestStore) },
+            isRecommended = true
+        )
+
+        if ((result.totalMissingItems ?: 0) > 0 || result.missingItems.isNotEmpty()) {
+            InfoCard(
+                message = "${result.totalMissingItems ?: result.missingItems.size} מוצרים לא נמצאו בחנות זו",
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+    }
+}
+
+@Composable
+private fun BottomActionBar(
+    totalPrice: Double,
+    onFindCheapestStore: () -> Unit,
+    isCalculating: Boolean,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier,
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = 8.dp
+    ) {
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(Padding.l)
+                .padding(Padding.l),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column {
-                    Text(
-                        text = "החנות הזולה ביותר",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = result.cheapestStore,
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-
-                Column(
-                    horizontalAlignment = Alignment.End
-                ) {
-                    Text(
-                        text = "₪${String.format("%.2f", result.totalPrice)}",
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = PriceColors.Best
-                    )
-                    val savings = (totalPrice - result.totalPrice).coerceAtLeast(0.0)
-                    if (savings > 0) {
-                        Text(
-                            text = "חיסכון של ₪${String.format("%.2f", savings)}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = PriceColors.Best
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(Spacing.m))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(Spacing.m)
-            ) {
-                SecondaryButton(
-                    text = "פרטי החנות",
-                    onClick = { onStoreClick(result.cheapestStore) },
-                    modifier = Modifier.weight(1f),
-                    icon = Icons.Rounded.Info
+            Column {
+                Text(
+                    text = "סה״כ לתשלום",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-
-                PrimaryButton(
-                    text = "נווט לחנות",
-                    onClick = { /* TODO: Open in maps */ },
-                    modifier = Modifier.weight(1f),
-                    icon = Icons.Rounded.Navigation
+                Text(
+                    text = "₪${String.format("%.2f", totalPrice)}",
+                    style = TextStyles.price,
+                    fontWeight = FontWeight.Bold
                 )
             }
+
+            PrimaryButton(
+                text = "מצא חנות זולה",
+                onClick = onFindCheapestStore,
+                isLoading = isCalculating,
+                icon = Icons.Rounded.Search
+            )
         }
     }
 }
 
 @Composable
 private fun SaveCartDialog(
-    visible: Boolean,
-    onSave: (String) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onSave: (String) -> Unit
 ) {
     var cartName by remember { mutableStateOf("") }
 
-    ChampionDialog(
-        visible = visible,
+    ChampionBottomSheet(
+        visible = true,
         onDismiss = onDismiss,
-        title = "שמור עגלה",
-        icon = Icons.Rounded.Save,
-        confirmButton = {
-            PrimaryButton(
-                text = "שמור",
-                onClick = { onSave(cartName) },
-                enabled = cartName.isNotBlank()
+        title = "שמור עגלה"
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(Spacing.l),
+            verticalArrangement = Arrangement.spacedBy(Spacing.m)
+        ) {
+            ChampionTextField(
+                value = cartName,
+                onValueChange = { cartName = it },
+                label = "שם העגלה",
+                placeholder = "לדוגמה: קניות שבועיות",
+                leadingIcon = Icons.Rounded.ShoppingCart,
+                modifier = Modifier.fillMaxWidth()
             )
-        },
-        dismissButton = {
-            TextButton(
-                text = "ביטול",
-                onClick = onDismiss
-            )
-        }
-    )
 
-    ChampionTextField(
-        value = cartName,
-        onValueChange = { cartName = it },
-        label = "שם העגלה",
-        placeholder = "לדוגמה: קניות שבועיות",
-        leadingIcon = Icons.Rounded.ShoppingCart,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = Spacing.m)
-    )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(Spacing.m)
+            ) {
+                SecondaryButton(
+                    text = "ביטול",
+                    onClick = onDismiss,
+                    modifier = Modifier.weight(1f)
+                )
+                PrimaryButton(
+                    text = "שמור",
+                    onClick = { onSave(cartName) },
+                    enabled = cartName.isNotBlank(),
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+    }
 }
