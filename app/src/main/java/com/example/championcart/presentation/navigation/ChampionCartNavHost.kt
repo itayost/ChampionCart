@@ -33,7 +33,10 @@ import com.example.championcart.presentation.screens.search.SearchScreen
 import com.example.championcart.presentation.screens.showcase.ComponentShowcaseScreen
 import com.example.championcart.presentation.screens.splash.SplashScreen
 import com.example.championcart.presentation.screens.cart.CartScreen
+import com.example.championcart.presentation.screens.profile.ProfileScreen
+import com.example.championcart.presentation.screens.scan.ScanScreen
 import com.example.championcart.ui.theme.Size
+
 
 /*
  * NOTE: For screens with bottom navigation, make sure to add bottom padding
@@ -181,29 +184,13 @@ fun ChampionCartNavHost(
                 )
             }
 
-            composable(route = Screen.Scan.route) {
-                // TODO: Implement barcode scanning screen
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(bottom = Size.bottomNavHeight), // Add bottom padding for nav bar
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = "סורק ברקודים",
-                            style = MaterialTheme.typography.headlineMedium
-                        )
-                        Spacer(modifier = Modifier.height(com.example.championcart.ui.theme.Spacing.m))
-                        Text(
-                            text = "בקרוב!",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+            composable(Screen.Scan.route) {
+                ScanScreen(
+                    onNavigateBack = { navController.navigateUp() },
+                    onNavigateToProduct = { productId ->
+                        navController.navigate(Screen.ProductDetail.createRoute(productId))
                     }
-                }
+                )
             }
 
             composable(route = Screen.Cart.route) {
@@ -222,14 +209,20 @@ fun ChampionCartNavHost(
                 )
             }
 
-            composable(route = Screen.Profile.route) {
-                // TODO: Implement profile screen
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("Profile Screen - Coming Soon!")
-                }
+            composable(Screen.Profile.route) {
+                ProfileScreen(
+                    onNavigateToSavedCarts = {
+                        navController.navigate(Screen.SavedCarts.route)
+                    },
+                    onNavigateToSettings = {
+                        navController.navigate(Screen.Settings.route)
+                    },
+                    onNavigateToLogin = {
+                        navController.navigate(Screen.Login.route) {
+                            popUpTo(Screen.Profile.route) { inclusive = true }
+                        }
+                    }
+                )
             }
 
             // Product Detail

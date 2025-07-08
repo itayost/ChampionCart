@@ -6,4 +6,5 @@ import kotlinx.coroutines.flow.Flow
 interface PriceRepository {
     suspend fun searchProducts(query: String, city: String? = null): Flow<Result<List<Product>>>
     suspend fun getProductDetails(productId: String, city: String? = null): Flow<Result<Product>>
+    suspend fun getProductByBarcode(barcode: String, city: String?): Flow<Result<Product?>>
 }

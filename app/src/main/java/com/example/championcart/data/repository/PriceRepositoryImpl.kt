@@ -105,4 +105,25 @@ class PriceRepositoryImpl @Inject constructor(
             emit(Result.failure(e))
         }
     }
+
+    override suspend fun getProductByBarcode(barcode: String, city: String?): Flow<Result<Product?>> = flow {
+        try {
+            val selectedCity = city ?: preferencesManager.getSelectedCity()
+            Log.d(TAG, "Getting product by barcode: $barcode in city: $selectedCity")
+
+            val response = productApi.getProductByBarcode(barcode, selectedCity)
+
+            if (response.available && response.allPrices.isNotEmpty()) {
+                val product = response.toDomainModel()
+                Log.d(TAG, "Product found by barcode: ${product.name}")
+                emit(Result.success(product))
+            } else {
+                Log.d(TAG, "Product not found by barcode")
+                emit(Result.success(null))
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error getting product by barcode", e)
+            emit(Result.failure(e))
+        }
+    }
 }

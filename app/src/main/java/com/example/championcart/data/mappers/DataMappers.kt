@@ -2,6 +2,7 @@ package com.example.championcart.data.mappers
 
 import com.example.championcart.data.models.price.GroupedProductResponse
 import com.example.championcart.data.models.price.StorePriceResponse
+import com.example.championcart.data.models.product.ProductBarcodeResponse
 import com.example.championcart.data.models.product.ProductSearchResponse
 import com.example.championcart.domain.models.PriceLevel
 import com.example.championcart.domain.models.Product
@@ -116,4 +117,29 @@ private fun extractCategory(productName: String): String {
         productName.contains("שמן") || productName.contains("תבלין") -> "בישול ואפייה"
         else -> "כללי"
     }
+}
+
+fun ProductBarcodeResponse.toDomainModel(): Product {
+    val storePrices = allPrices.map { priceDetail ->
+        StorePrice(
+            storeName = "${priceDetail.chain} - ${priceDetail.branchName}",
+            price = priceDetail.price,
+            priceLevel = when {
+                priceDetail.isCheapest -> PriceLevel.BEST
+                priceDetail.price == priceSummary?.maxPrice -> PriceLevel.HIGH
+                else -> PriceLevel.MID
+            }
+        )
+    }.sortedBy { it.price }
+
+    return Product(
+        id = barcode,
+        barcode = barcode,
+        name = name,
+        category = "כללי", // Default category as API doesn't provide it
+        bestPrice = priceSummary?.minPrice ?: storePrices.firstOrNull()?.price ?: 0.0,
+        bestStore = allPrices.find { it.isCheapest }?.let { "${it.chain} - ${it.branchName}" } ?: "",
+        stores = storePrices,
+        imageUrl = null // API doesn't provide images
+    )
 }

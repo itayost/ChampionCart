@@ -82,6 +82,17 @@ dependencies {
     // Image Loading
     implementation(libs.coil.compose)
 
+    // CameraX
+    implementation(libs.androidx.camera.camera2)
+    implementation(libs.androidx.camera.lifecycle)
+    implementation(libs.androidx.camera.view)
+
+    // ML Kit Barcode Scanning
+    implementation(libs.barcode.scanning)
+
+    // Permissions
+    implementation(libs.accompanist.permissions)
+
     // Animation
     implementation(libs.lottie.compose)
 
