@@ -113,12 +113,16 @@ class PriceRepositoryImpl @Inject constructor(
 
             val response = productApi.getProductByBarcode(barcode, selectedCity)
 
+            // Log the full response for debugging
+            Log.d(TAG, "Barcode API response: available=${response.available}, name=${response.name}, city=${response.city}")
+
             if (response.available && response.allPrices.isNotEmpty()) {
                 val product = response.toDomainModel()
                 Log.d(TAG, "Product found by barcode: ${product.name}")
                 emit(Result.success(product))
             } else {
-                Log.d(TAG, "Product not found by barcode")
+                // Product exists but is not available in this city
+                Log.d(TAG, "Product '${response.name}' not available in $selectedCity")
                 emit(Result.success(null))
             }
         } catch (e: Exception) {

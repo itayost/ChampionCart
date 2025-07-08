@@ -189,6 +189,9 @@ fun ChampionCartNavHost(
                     onNavigateBack = { navController.navigateUp() },
                     onNavigateToProduct = { productId ->
                         navController.navigate(Screen.ProductDetail.createRoute(productId))
+                    },
+                    onNavigateToSettings = {
+                        navController.navigate(Screen.Settings.route)
                     }
                 )
             }

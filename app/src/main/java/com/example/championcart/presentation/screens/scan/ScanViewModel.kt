@@ -4,9 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.championcart.data.local.CartManager
 import com.example.championcart.data.local.PreferencesManager
-import com.example.championcart.domain.models.CartItem
 import com.example.championcart.domain.models.Product
 import com.example.championcart.domain.repository.PriceRepository
+import com.example.championcart.ui.theme.PriceLevel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
@@ -43,7 +43,8 @@ class ScanViewModel @Inject constructor(
             _uiState.update { it.copy(
                 isProcessing = true,
                 lastScannedBarcode = barcode,
-                error = null
+                error = null,
+                showCityChangeOption = false
             ) }
 
             // Add to recently scanned with cooldown
@@ -66,7 +67,8 @@ class ScanViewModel @Inject constructor(
                     if (product != null) {
                         handleProductFound(product, barcode)
                     } else {
-                        handleProductNotFound(barcode)
+                        // Product exists but not available in this city
+                        handleProductNotAvailableInCity(barcode, city)
                     }
                 },
                 onFailure = { error ->
@@ -109,11 +111,21 @@ class ScanViewModel @Inject constructor(
     }
 
     private fun handleProductNotFound(barcode: String) {
-        // Try alternative search or show not found message
+        // Product not found at all
         _uiState.update { it.copy(
             isProcessing = false,
             scannedProduct = null,
             error = "המוצר לא נמצא במאגר. נסה להקליד את שם המוצר בחיפוש"
+        ) }
+    }
+
+    private fun handleProductNotAvailableInCity(barcode: String, city: String) {
+        // Product exists but not available in the selected city
+        _uiState.update { it.copy(
+            isProcessing = false,
+            scannedProduct = null,
+            error = "המוצר לא זמין ב$city. נסה לבחור עיר אחרת או חפש מוצר אחר",
+            showCityChangeOption = true
         ) }
     }
 
@@ -181,7 +193,7 @@ class ScanViewModel @Inject constructor(
     }
 
     fun clearError() {
-        _uiState.update { it.copy(error = null) }
+        _uiState.update { it.copy(error = null, showCityChangeOption = false) }
     }
 
     private fun showError(message: String) {
@@ -211,5 +223,28 @@ data class ScanUiState(
     val lastScannedBarcode: String? = null,
     val scannedProduct: ScannedProduct? = null,
     val recentScans: List<RecentScan> = emptyList(),
-    val error: String? = null
+    val error: String? = null,
+    val showCityChangeOption: Boolean = false
+)
+
+// Data classes for scan screen
+data class RecentScan(
+    val barcode: String,
+    val productName: String,
+    val timestamp: Long
+)
+
+data class ScannedProduct(
+    val id: String,
+    val barcode: String,
+    val name: String,
+    val imageUrl: String? = null,
+    val priceRange: PriceRange? = null,
+    val availableInStores: Int = 0
+)
+
+data class PriceRange(
+    val min: Double,
+    val max: Double,
+    val avg: Double
 )
