@@ -57,10 +57,10 @@ class SearchViewModel @Inject constructor(
             return
         }
 
-        // Debounce search
+        // Debounce search WITHOUT immediately setting isSearching
         searchJob = viewModelScope.launch {
-            _uiState.update { it.copy(isSearching = true, showSuggestions = false) }
             delay(300) // Debounce delay
+            _uiState.update { it.copy(isSearching = true, showSuggestions = false) }
             performSearch(query)
         }
     }
