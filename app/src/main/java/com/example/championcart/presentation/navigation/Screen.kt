@@ -1,5 +1,6 @@
 package com.example.championcart.presentation.navigation
 
+import android.net.Uri
 import androidx.navigation.NamedNavArgument
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
@@ -13,7 +14,24 @@ sealed class Screen(
 
     // Main Screens
     object Home : Screen("home")
-    object Search : Screen("search")
+
+    object Search : Screen(
+        route = "search?query={query}",
+        arguments = listOf(
+            navArgument("query") {
+                type = NavType.StringType
+                defaultValue = ""
+                nullable = true
+            }
+        )
+    ) {
+        fun createRoute(query: String = "") = if (query.isNotEmpty()) {
+            "search?query=${Uri.encode(query)}"
+        } else {
+            "search"
+        }
+    }
+
     object Scan : Screen("scan")
     object Cart : Screen("cart")
     object Profile : Screen("profile")

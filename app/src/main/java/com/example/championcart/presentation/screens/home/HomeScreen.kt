@@ -1,34 +1,78 @@
 package com.example.championcart.presentation.screens.home
 
-import androidx.compose.animation.*
-import androidx.compose.animation.core.*
-import androidx.compose.foundation.*
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.*
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.rounded.FormatListBulleted
+import androidx.compose.material.icons.rounded.History
+import androidx.compose.material.icons.rounded.LocalOffer
+import androidx.compose.material.icons.rounded.LocationOn
+import androidx.compose.material.icons.rounded.Notifications
+import androidx.compose.material.icons.rounded.QrCodeScanner
+import androidx.compose.material.icons.rounded.ShoppingCart
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.championcart.presentation.components.common.*
-import com.example.championcart.ui.theme.*
-import com.example.championcart.domain.models.Product
-import com.example.championcart.presentation.navigation.Screen
+import com.example.championcart.presentation.components.common.CategoryCard
+import com.example.championcart.presentation.components.common.ChampionBadge
+import com.example.championcart.presentation.components.common.ChampionChip
+import com.example.championcart.presentation.components.common.ChampionSnackbar
+import com.example.championcart.presentation.components.common.ChampionTopBar
+import com.example.championcart.presentation.components.common.CitySelectionBottomSheet
+import com.example.championcart.presentation.components.common.EmptySearchState
+import com.example.championcart.presentation.components.common.GlassCard
+import com.example.championcart.presentation.components.common.LoadingIndicator
+import com.example.championcart.presentation.components.common.ProductCard
+import com.example.championcart.presentation.components.common.SearchBar
+import com.example.championcart.presentation.components.common.StoreCard
+import com.example.championcart.presentation.components.common.TextButton
+import com.example.championcart.ui.theme.BrandColors
+import com.example.championcart.ui.theme.Padding
+import com.example.championcart.ui.theme.PriceLevel
+import com.example.championcart.ui.theme.SemanticColors
+import com.example.championcart.ui.theme.Size
+import com.example.championcart.ui.theme.Spacing
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     onNavigateToProduct: (String) -> Unit,
     onNavigateToCart: () -> Unit,
-    onNavigateToSearch: () -> Unit,
+    onNavigateToSearch: (String) -> Unit,  // CHANGED: Now accepts String parameter
     onNavigateToProfile: () -> Unit,
     onNavigateToScan: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel()
@@ -119,8 +163,10 @@ fun HomeScreen(
                     searchQuery = searchQuery,
                     onSearchQueryChange = viewModel::onSearchQueryChange,
                     onSearch = {
-                        // Navigate to search screen instead of searching in-place
-                        onNavigateToSearch()
+                        // CHANGED: Navigate to search screen with query
+                        if (searchQuery.isNotEmpty()) {
+                            onNavigateToSearch(searchQuery)
+                        }
                     }
                 )
             }
@@ -156,7 +202,7 @@ fun HomeScreen(
                         searches = uiState.recentSearches,
                         onSearchClick = { search ->
                             viewModel.onRecentSearchClick(search)
-                            onNavigateToSearch()
+                            onNavigateToSearch(search)  // CHANGED: Pass the search query
                         }
                     )
                 }

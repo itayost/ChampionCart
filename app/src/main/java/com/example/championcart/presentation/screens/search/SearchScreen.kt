@@ -30,6 +30,7 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchScreen(
+    initialQuery: String = "",  // ADDED: New parameter for navigation query
     onNavigateBack: () -> Unit,
     onNavigateToProduct: (String) -> Unit,
     viewModel: SearchViewModel = hiltViewModel()
@@ -40,6 +41,14 @@ fun SearchScreen(
     val focusRequester = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
     val scope = rememberCoroutineScope()
+
+    // ADDED: Handle initial query from navigation
+    LaunchedEffect(initialQuery) {
+        if (initialQuery.isNotEmpty() && viewModel.searchQuery.value.isEmpty()) {
+            viewModel.onSearchQueryChange(initialQuery)
+            viewModel.onSearch()
+        }
+    }
 
     // Show snackbar messages
     LaunchedEffect(uiState.snackbarMessage) {
@@ -57,9 +66,11 @@ fun SearchScreen(
         }
     }
 
-    // Focus search bar on launch
+    // CHANGED: Focus search bar on launch only if no initial query
     LaunchedEffect(Unit) {
-        focusRequester.requestFocus()
+        if (initialQuery.isEmpty()) {
+            focusRequester.requestFocus()
+        }
     }
 
     Scaffold(

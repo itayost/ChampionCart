@@ -15,6 +15,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -35,8 +36,7 @@ import com.example.championcart.presentation.screens.splash.SplashScreen
 import com.example.championcart.presentation.screens.cart.CartScreen
 import com.example.championcart.presentation.screens.profile.ProfileScreen
 import com.example.championcart.presentation.screens.scan.ScanScreen
-import com.example.championcart.ui.theme.Size
-
+import com.example.championcart.ui.theme.Spacing
 
 /*
  * NOTE: For screens with bottom navigation, make sure to add bottom padding
@@ -55,17 +55,26 @@ fun ChampionCartNavHost(
     navController: NavHostController = rememberNavController(),
     tokenManager: TokenManager,
     preferencesManager: PreferencesManager,
-    cartManager: CartManager = CartManager() // This will be injected in ViewModels
+    cartManager: CartManager
 ) {
-    // Check authentication state
-    val isLoggedIn = remember { tokenManager.isLoggedIn() }
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+
+    // Get cart item count for bottom nav badge
+    val cartItems by cartManager.cartItems.collectAsState()
+    val cartItemCount = cartItems.sumOf { it.quantity }
+
+    // Determine start destination based on authentication state
+    val hasToken = remember { tokenManager.getToken() != null }
     val isFirstLaunch = remember { preferencesManager.isFirstLaunch() }
 
-    // Get current route
-    val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = navBackStackEntry?.destination?.route ?: ""
+    val startDestination = when {
+        isFirstLaunch -> Screen.Onboarding.route
+        hasToken -> Screen.Home.route
+        else -> Screen.Login.route
+    }
 
-    // Determine if we should show bottom navigation
+    // Determine if bottom nav should be shown
     val showBottomNav = currentRoute in listOf(
         Screen.Home.route,
         Screen.Search.route,
@@ -74,17 +83,10 @@ fun ChampionCartNavHost(
         Screen.Profile.route
     )
 
-    // Get cart item count from the singleton CartManager
-    // In real app, this would come from a shared ViewModel or repository
-    val cartItems by cartManager.cartItems.collectAsState()
-    val cartItemCount = cartItems.sumOf { it.quantity }
-
     Box(modifier = Modifier.fillMaxSize()) {
-        // Main content - takes full screen
         NavHost(
             navController = navController,
-            startDestination = Screen.Splash.route,
-            modifier = Modifier.fillMaxSize()
+            startDestination = Screen.Splash.route
         ) {
             // Splash Screen
             composable(route = Screen.Splash.route) {
@@ -104,7 +106,7 @@ fun ChampionCartNavHost(
                             popUpTo(Screen.Splash.route) { inclusive = true }
                         }
                     },
-                    isLoggedIn = isLoggedIn,
+                    isLoggedIn = hasToken,
                     isFirstLaunch = isFirstLaunch
                 )
             }
@@ -142,6 +144,7 @@ fun ChampionCartNavHost(
             composable(route = Screen.Onboarding.route) {
                 OnboardingScreen(
                     onComplete = {
+                        preferencesManager.setFirstLaunch(false)
                         navController.navigate(Screen.Home.route) {
                             popUpTo(Screen.Onboarding.route) { inclusive = true }
                         }
@@ -164,8 +167,8 @@ fun ChampionCartNavHost(
                     onNavigateToCart = {
                         navController.navigate(Screen.Cart.route)
                     },
-                    onNavigateToSearch = {
-                        navController.navigate(Screen.Search.route)
+                    onNavigateToSearch = { query ->
+                        navController.navigate(Screen.Search.createRoute(query))
                     },
                     onNavigateToProfile = {
                         navController.navigate(Screen.Profile.route)
@@ -176,8 +179,14 @@ fun ChampionCartNavHost(
                 )
             }
 
-            composable(route = Screen.Search.route) {
+            composable(
+                route = Screen.Search.route,
+                arguments = Screen.Search.arguments
+            ) { backStackEntry ->
+                val initialQuery = backStackEntry.arguments?.getString("query") ?: ""
+
                 SearchScreen(
+                    initialQuery = initialQuery,
                     onNavigateBack = {
                         navController.popBackStack()
                     },
@@ -215,38 +224,50 @@ fun ChampionCartNavHost(
                 )
             }
 
-            composable(Screen.Profile.route) {
+            composable(route = Screen.Profile.route) {
                 ProfileScreen(
-                    onNavigateToSavedCarts = {
-                        navController.navigate(Screen.SavedCarts.route)
-                    },
                     onNavigateToSettings = {
                         navController.navigate(Screen.Settings.route)
                     },
+                    onNavigateToSavedCarts = {
+                        navController.navigate(Screen.SavedCarts.route)
+                    },
                     onNavigateToLogin = {
                         navController.navigate(Screen.Login.route) {
-                            popUpTo(Screen.Profile.route) { inclusive = true }
+                            popUpTo(navController.graph.id) {
+                                inclusive = true
+                            }
                         }
                     }
                 )
             }
 
-            // Product Detail
+            // Product Detail Screen
             composable(
                 route = Screen.ProductDetail.route,
                 arguments = Screen.ProductDetail.arguments
             ) { backStackEntry ->
                 val productId = backStackEntry.arguments?.getString("productId") ?: ""
-                // TODO: Implement product detail screen
+                // TODO: Implement ProductDetailScreen
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("Product Detail: $productId")
+                    Column {
+                        Text(
+                            text = "Product Detail Screen",
+                            style = MaterialTheme.typography.headlineMedium
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Product ID: $productId",
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
                 }
             }
 
-            // Settings Screens
+            // Settings Screen
             composable(route = Screen.Settings.route) {
                 // TODO: Implement settings screen
                 Box(

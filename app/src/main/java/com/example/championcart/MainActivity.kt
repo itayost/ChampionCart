@@ -1,4 +1,3 @@
-// File: app/src/main/java/com/example/championcart/MainActivity.kt
 package com.example.championcart
 
 import android.os.Bundle
@@ -12,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.core.view.WindowCompat
+import com.example.championcart.data.local.CartManager
 import com.example.championcart.data.local.PreferencesManager
 import com.example.championcart.data.local.TokenManager
 import com.example.championcart.presentation.navigation.ChampionCartNavHost
@@ -29,6 +29,9 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var preferencesManager: PreferencesManager
 
+    @Inject
+    lateinit var cartManager: CartManager
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -44,7 +47,8 @@ class MainActivity : ComponentActivity() {
                     ) {
                         ChampionCartNavHost(
                             tokenManager = tokenManager,
-                            preferencesManager = preferencesManager
+                            preferencesManager = preferencesManager,
+                            cartManager = cartManager
                         )
                     }
                 }
