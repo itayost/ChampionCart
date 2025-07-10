@@ -113,22 +113,6 @@ fun RegisterScreen(
                     .padding(horizontal = Spacing.xl),
                 verticalArrangement = Arrangement.spacedBy(Spacing.l)
             ) {
-                // Full Name
-                ChampionTextField(
-                    value = uiState.fullName,
-                    onValueChange = viewModel::onFullNameChange,
-                    label = "שם מלא",
-                    placeholder = "ישראל ישראלי",
-                    leadingIcon = Icons.Rounded.Person,
-                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
-                        keyboardType = androidx.compose.ui.text.input.KeyboardType.Text,
-                        imeAction = ImeAction.Next
-                    ),
-                    isError = uiState.fullNameError != null,
-                    errorMessage = uiState.fullNameError,
-                    enabled = !uiState.isLoading
-                )
-
                 // Email
                 ChampionTextField(
                     value = uiState.email,
@@ -203,6 +187,8 @@ fun RegisterScreen(
                                     .padding(horizontal = 4.dp)
                                     .clickable { /* TODO: Show terms */ }
                             )
+                        }
+                        Row {
                             Text(
                                 text = "ו",
                                 style = MaterialTheme.typography.bodyMedium
