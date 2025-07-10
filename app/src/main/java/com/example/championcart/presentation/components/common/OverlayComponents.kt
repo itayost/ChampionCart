@@ -331,3 +331,126 @@ fun ProductCardSkeleton(
         }
     }
 }
+
+@Composable
+fun ChampionInputDialog(
+    visible: Boolean,
+    onDismiss: () -> Unit,
+    title: String,
+    description: String? = null,
+    icon: ImageVector? = null,
+    confirmButton: @Composable () -> Unit,
+    dismissButton: @Composable (() -> Unit)? = null,
+    content: @Composable () -> Unit
+) {
+    if (visible) {
+        AlertDialog(
+            onDismissRequest = onDismiss,
+            title = {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.m),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    icon?.let {
+                        Icon(
+                            imageVector = it,
+                            contentDescription = null,
+                            tint = BrandColors.ElectricMint,
+                            modifier = Modifier.size(Size.icon)
+                        )
+                    }
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.headlineSmall
+                    )
+                }
+            },
+            text = {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(Spacing.m)
+                ) {
+                    description?.let {
+                        Text(
+                            text = it,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    content()
+                }
+            },
+            confirmButton = confirmButton,
+            dismissButton = dismissButton,
+            shape = Shapes.cardLarge,
+            containerColor = MaterialTheme.colorScheme.surface,
+            tonalElevation = 8.dp
+        )
+    }
+}
+
+/**
+ * Convenience function for text input dialogs
+ */
+@Composable
+fun TextInputDialog(
+    visible: Boolean,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit,
+    title: String,
+    description: String? = null,
+    icon: ImageVector? = null,
+    label: String,
+    placeholder: String? = null,
+    initialValue: String = "",
+    validator: ((String) -> String?)? = null, // Returns error message or null if valid
+    confirmText: String = "אישור",
+    dismissText: String = "ביטול",
+    isLoading: Boolean = false
+) {
+    var value by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(initialValue) }
+    var error by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<String?>(null) }
+
+    ChampionInputDialog(
+        visible = visible,
+        onDismiss = onDismiss,
+        title = title,
+        description = description,
+        icon = icon,
+        confirmButton = {
+            LoadingButton(
+                text = confirmText,
+                isLoading = isLoading,
+                onClick = {
+                    val validationError = validator?.invoke(value)
+                    if (validationError != null) {
+                        error = validationError
+                    } else {
+                        onConfirm(value)
+                    }
+                },
+                modifier = Modifier.fillMaxWidth()
+            )
+        },
+        dismissButton = {
+            TextButton(
+                text = dismissText,
+                onClick = onDismiss,
+                enabled = !isLoading
+            )
+        }
+    ) {
+        ChampionTextField(
+            value = value,
+            onValueChange = {
+                value = it
+                error = null
+            },
+            label = label,
+            placeholder = placeholder,
+            isError = error != null,
+            errorMessage = error,
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !isLoading
+        )
+    }
+}

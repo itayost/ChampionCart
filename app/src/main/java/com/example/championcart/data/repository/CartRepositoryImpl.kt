@@ -160,10 +160,12 @@ class CartRepositoryImpl @Inject constructor(
             if (response.success) {
                 val cheapestStore = response.cheapestStore
 
-                // Create a map of all store totals
+                // Create a map of all store totals with proper display names
                 val storeTotals = mutableMapOf<String, Double>()
                 response.allStores.forEach { store ->
-                    storeTotals[store.chainDisplayName] = store.totalPrice
+                    // Use the same format as cheapestStore for consistency
+                    val storeKey = "${store.chainDisplayName} - ${store.branchName}"
+                    storeTotals[storeKey] = store.totalPrice
                 }
 
                 // Get missing items
@@ -176,12 +178,15 @@ class CartRepositoryImpl @Inject constructor(
 
                 val result = CheapestStoreResult(
                     cheapestStore = "${cheapestStore.chainDisplayName} - ${cheapestStore.branchName}",
+                    address = cheapestStore.branchAddress, // Now properly mapped!
                     totalPrice = cheapestStore.totalPrice,
                     storeTotals = storeTotals,
-                    missingItems = missingItems
+                    missingItems = missingItems,
+                    availableItems = cheapestStore.availableItems,
+                    totalMissingItems = cheapestStore.missingItems
                 )
 
-                Log.d(TAG, "Cheapest store: ${result.cheapestStore} - ₪${result.totalPrice}")
+                Log.d(TAG, "Cheapest store: ${result.cheapestStore} at ${result.address} - ₪${result.totalPrice}")
                 emit(Result.success(result))
             } else {
                 Log.e(TAG, "Calculate cheapest failed")
@@ -193,34 +198,4 @@ class CartRepositoryImpl @Inject constructor(
         }
     }
 
-    // Additional method to compare a saved cart
-    suspend fun compareSavedCart(cartId: String): Flow<Result<CheapestStoreResult>> = flow {
-        try {
-            Log.d(TAG, "Comparing saved cart with ID: $cartId")
-
-            val response = cartApi.compareSavedCart(cartId.toInt())
-
-            if (response.success) {
-                val comparison = response.comparison
-                val result = CheapestStoreResult(
-                    cheapestStore = "${comparison.cheapestStore.chainName} - ${comparison.cheapestStore.branchName}",
-                    totalPrice = comparison.cheapestStore.totalPrice,
-                    storeTotals = mapOf(
-                        comparison.cheapestStore.chainName to comparison.cheapestStore.totalPrice
-                    ),
-                    missingItems = if (comparison.cheapestStore.missingItems > 0) {
-                        listOf("${comparison.cheapestStore.missingItems} פריטים חסרים")
-                    } else {
-                        emptyList()
-                    }
-                )
-                emit(Result.success(result))
-            } else {
-                emit(Result.failure(Exception("Failed to compare cart")))
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Compare cart error", e)
-            emit(Result.failure(e))
-        }
-    }
 }
