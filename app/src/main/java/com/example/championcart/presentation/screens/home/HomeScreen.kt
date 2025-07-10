@@ -5,44 +5,38 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
-import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.championcart.presentation.components.common.*
 import com.example.championcart.ui.theme.*
-import com.example.championcart.domain.models.PriceLevel as DomainPriceLevel
-import kotlinx.coroutines.launch
-import java.time.LocalTime
+import com.example.championcart.domain.models.Product
+import com.example.championcart.presentation.navigation.Screen
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalAnimationApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     onNavigateToProduct: (String) -> Unit,
     onNavigateToCart: () -> Unit,
     onNavigateToSearch: () -> Unit,
     onNavigateToProfile: () -> Unit,
+    onNavigateToScan: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
-    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
-
-    // State for city bottom sheet
-    var showCityBottomSheet by remember { mutableStateOf(false) }
+    var showCitySelection by remember { mutableStateOf(false) }
 
     // Show snackbar messages
     LaunchedEffect(uiState.snackbarMessage) {
@@ -62,24 +56,30 @@ fun HomeScreen(
 
     Scaffold(
         topBar = {
-            ChampionCartTopBar(
-                title = if (uiState.isGuest) "אורח" else uiState.userName,
-                subtitle = getGreeting(),
-                showTimeBasedGradient = false,
-                actions = listOf(
-                    TopBarAction(
-                        icon = Icons.Rounded.LocationOn,
-                        contentDescription = "מיקום - ${uiState.selectedCity}",
-                        onClick = { showCityBottomSheet = true },
-                        tint = BrandColors.ElectricMint
-                    ),
-                    TopBarAction(
-                        icon = Icons.Rounded.AccountCircle,
-                        contentDescription = "פרופיל",
-                        onClick = onNavigateToProfile
-                    )
-                ),
-                scrollBehavior = scrollBehavior
+            ChampionTopBar(
+                title = "ChampionCart",
+                actions = {
+                    // Location button
+                    IconButton(
+                        onClick = { showCitySelection = true }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.LocationOn,
+                            contentDescription = "בחר עיר",
+                            tint = BrandColors.ElectricMint
+                        )
+                    }
+
+                    // Notifications button (optional)
+                    IconButton(
+                        onClick = { /* TODO: Navigate to notifications */ }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Notifications,
+                            contentDescription = "התראות"
+                        )
+                    }
+                }
             )
         },
         snackbarHost = {
@@ -115,9 +115,13 @@ fun HomeScreen(
                 HeroSection(
                     userName = uiState.userName,
                     totalSavings = uiState.totalSavings,
+                    selectedCity = uiState.selectedCity,
                     searchQuery = searchQuery,
                     onSearchQueryChange = viewModel::onSearchQueryChange,
-                    onSearch = viewModel::onSearch
+                    onSearch = {
+                        // Navigate to search screen instead of searching in-place
+                        onNavigateToSearch()
+                    }
                 )
             }
 
@@ -125,7 +129,7 @@ fun HomeScreen(
             item {
                 QuickActionsSection(
                     cartItemCount = uiState.cartItemCount,
-                    onScanClick = { /* TODO: Implement barcode scanning */ },
+                    onScanClick = onNavigateToScan,
                     onCartClick = onNavigateToCart,
                     onDealsClick = { /* TODO: Navigate to deals */ },
                     onListsClick = { /* TODO: Navigate to saved lists */ }
@@ -139,13 +143,9 @@ fun HomeScreen(
                         title = "חיפושים אחרונים",
                         action = {
                             TextButton(
-                                onClick = { /* Clear recent */ },
-                                colors = ButtonDefaults.textButtonColors(
-                                    contentColor = MaterialTheme.colorScheme.primary
-                                )
-                            ) {
-                                Text("נקה")
-                            }
+                                text = "נקה",
+                                onClick = { viewModel.onClearRecentSearches() }
+                            )
                         },
                         modifier = Modifier.padding(horizontal = Spacing.l)
                     )
@@ -154,12 +154,15 @@ fun HomeScreen(
                 item {
                     RecentSearchesSection(
                         searches = uiState.recentSearches,
-                        onSearchClick = viewModel::onRecentSearchClick
+                        onSearchClick = { search ->
+                            viewModel.onRecentSearchClick(search)
+                            onNavigateToSearch()
+                        }
                     )
                 }
             }
 
-            // Search Results
+            // Search Results - Using StoreCard as product display
             if (uiState.searchResults.isNotEmpty()) {
                 item {
                     SectionHeader(
@@ -176,16 +179,22 @@ fun HomeScreen(
                         visible = true,
                         enter = fadeIn() + slideInVertically()
                     ) {
-                        ProductListItem(
-                            product = product,
+                        // Using StoreCard to display product with best price info
+                        StoreCard(
+                            storeName = product.name,
+                            totalPrice = "₪${product.bestPrice}",
+                            itemCount = product.stores.size,
+                            distance = product.bestStore,
                             onClick = {
                                 viewModel.onProductClick(product)
                                 onNavigateToProduct(product.id)
                             },
-                            onAddToCart = { viewModel.onAddToCart(product) },
-                            modifier = Modifier.padding(horizontal = Spacing.l)
+                            modifier = Modifier.padding(horizontal = Spacing.l),
+                            isRecommended = true
                         )
                     }
+
+                    Spacer(modifier = Modifier.height(Spacing.s))
                 }
             }
 
@@ -206,7 +215,7 @@ fun HomeScreen(
                                 .height(200.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            CircularProgressIndicator()
+                            LoadingIndicator()
                         }
                     } else {
                         LazyRow(
@@ -228,7 +237,7 @@ fun HomeScreen(
                                         onNavigateToProduct(product.id)
                                     },
                                     onAddToCart = { viewModel.onAddToCart(product) },
-                                    modifier = Modifier.width(180.dp)
+                                    modifier = Modifier.width(160.dp)
                                 )
                             }
                         }
@@ -236,127 +245,100 @@ fun HomeScreen(
                 }
             }
 
-            // Stats Section
-            item {
-                StatsSection(
-                    totalSavings = uiState.totalSavings,
-                    productsTracked = uiState.featuredProducts.size,
-                    modifier = Modifier.padding(horizontal = Spacing.l)
-                )
+            // Empty State if needed
+            if (uiState.searchResults.isEmpty() &&
+                uiState.featuredProducts.isEmpty() &&
+                !uiState.isSearching &&
+                !uiState.isFeaturedLoading) {
+                item {
+                    EmptySearchState(
+                        query = "",
+                        modifier = Modifier.padding(horizontal = Spacing.l, vertical = Spacing.xxl)
+                    )
+                }
             }
-
-            // Bottom spacing
-            item { Spacer(modifier = Modifier.height(Spacing.xl)) }
         }
     }
 
     // City Selection Bottom Sheet
     CitySelectionBottomSheet(
-        visible = showCityBottomSheet,
+        visible = showCitySelection,
         selectedCity = uiState.selectedCity,
         cities = uiState.cities,
         onCitySelected = { city ->
             viewModel.onCitySelected(city)
+            showCitySelection = false
         },
         onRequestLocation = {
-            // TODO: Implement location permission request
-            scope.launch {
-                snackbarHostState.showSnackbar("זיהוי מיקום אוטומטי בקרוב...")
-            }
+            // TODO: Implement location permission and detection
+            showCitySelection = false
         },
-        onDismiss = { showCityBottomSheet = false }
+        onDismiss = { showCitySelection = false }
     )
 }
 
-// Utility function for time-based greeting
-private fun getGreeting(): String {
-    val hour = LocalTime.now().hour
-    return when (hour) {
-        in 5..11 -> "בוקר טוב"
-        in 12..16 -> "צהריים טובים"
-        in 17..20 -> "ערב טוב"
-        else -> "לילה טוב"
-    }
-}
-
-@OptIn(ExperimentalAnimationApi::class)
 @Composable
 private fun HeroSection(
     userName: String,
     totalSavings: Double,
+    selectedCity: String,
     searchQuery: String,
     onSearchQueryChange: (String) -> Unit,
     onSearch: () -> Unit
 ) {
-    Column(
+    GlassCard(
         modifier = Modifier
             .fillMaxWidth()
-            .glass(
-                shape = Shapes.bottomSheet,
-                elevation = 4.dp
-            )
-            .padding(Spacing.xl),
-        verticalArrangement = Arrangement.spacedBy(Spacing.l)
+            .padding(horizontal = Spacing.l, vertical = Spacing.m)
     ) {
-        // Savings Card
-        AnimatedContent(
-            targetState = totalSavings,
-            transitionSpec = {
-                slideInVertically { it } + fadeIn() with
-                        slideOutVertically { -it } + fadeOut()
+        Column(
+            modifier = Modifier.padding(Padding.l)
+        ) {
+            // Greeting and City
+            val greeting = when (java.time.LocalTime.now().hour) {
+                in 6..11 -> "בוקר טוב"
+                in 12..17 -> "צהריים טובים"
+                in 18..21 -> "ערב טוב"
+                else -> "לילה טוב"
             }
-        ) { savings ->
-            if (savings > 0) {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = Shapes.cardLarge,
-                    colors = CardDefaults.cardColors(
-                        containerColor = BrandColors.ElectricMint.copy(alpha = 0.1f)
-                    ),
-                    border = BorderStroke(
-                        width = 1.dp,
-                        color = BrandColors.ElectricMint.copy(alpha = 0.3f)
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "$greeting, $userName!",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold
                     )
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(Padding.l),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column {
-                            Text(
-                                text = "חסכת החודש",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Text(
-                                text = "₪${String.format("%.2f", savings)}",
-                                style = TextStyles.priceLarge,
-                                color = BrandColors.ElectricMint,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                        Icon(
-                            imageVector = Icons.Rounded.Savings,
-                            contentDescription = null,
-                            modifier = Modifier.size(48.dp),
-                            tint = BrandColors.ElectricMint
-                        )
-                    }
+                    Text(
+                        text = "מחפש מחירים ב$selectedCity",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                // Savings Badge
+                if (totalSavings > 0) {
+                    ChampionBadge(
+                        count = totalSavings.toInt()
+                    )
                 }
             }
-        }
 
-        // Search Bar
-        SearchBar(
-            query = searchQuery,
-            onQueryChange = onSearchQueryChange,
-            onSearch = onSearch,
-            placeholder = "חפש מוצרים...",
-            modifier = Modifier.fillMaxWidth()
-        )
+            Spacer(modifier = Modifier.height(Spacing.l))
+
+            // Search Bar
+            SearchBar(
+                query = searchQuery,
+                onQueryChange = onSearchQueryChange,
+                onSearch = onSearch,
+                placeholder = "חפש מוצרים...",
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
     }
 }
 
@@ -374,39 +356,34 @@ private fun QuickActionsSection(
             .padding(horizontal = Spacing.l),
         horizontalArrangement = Arrangement.spacedBy(Spacing.m)
     ) {
-        QuickActionCard(
+        CategoryCard(
+            name = "עגלה",
             icon = Icons.Rounded.ShoppingCart,
-            label = "עגלה",
-            backgroundColor = BrandColors.ElectricMint.copy(alpha = 0.1f),
-            iconColor = BrandColors.ElectricMint,
-            badge = if (cartItemCount > 0) cartItemCount else null,
+            color = BrandColors.ElectricMint,
             onClick = onCartClick,
             modifier = Modifier.weight(1f)
         )
 
-        QuickActionCard(
+        CategoryCard(
+            name = "סרוק",
             icon = Icons.Rounded.QrCodeScanner,
-            label = "סרוק",
-            backgroundColor = BrandColors.CosmicPurple.copy(alpha = 0.1f),
-            iconColor = BrandColors.CosmicPurple,
+            color = BrandColors.CosmicPurple,
             onClick = onScanClick,
             modifier = Modifier.weight(1f)
         )
 
-        QuickActionCard(
+        CategoryCard(
+            name = "רשימות",
             icon = Icons.Rounded.FormatListBulleted,
-            label = "רשימות",
-            backgroundColor = BrandColors.NeonCoral.copy(alpha = 0.1f),
-            iconColor = BrandColors.NeonCoral,
+            color = BrandColors.NeonCoral,
             onClick = onListsClick,
             modifier = Modifier.weight(1f)
         )
 
-        QuickActionCard(
+        CategoryCard(
+            name = "מבצעים",
             icon = Icons.Rounded.LocalOffer,
-            label = "מבצעים",
-            backgroundColor = SemanticColors.Warning.copy(alpha = 0.1f),
-            iconColor = SemanticColors.Warning,
+            color = SemanticColors.Warning,
             onClick = onDealsClick,
             modifier = Modifier.weight(1f)
         )
@@ -414,215 +391,42 @@ private fun QuickActionsSection(
 }
 
 @Composable
-private fun QuickActionCard(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    label: String,
-    backgroundColor: Color,
-    iconColor: Color,
-    badge: Int? = null,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        onClick = onClick,
-        modifier = modifier
-            .aspectRatio(1f),
-        shape = Shapes.card,
-        colors = CardDefaults.cardColors(
-            containerColor = backgroundColor
-        )
-    ) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Box {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = label,
-                        modifier = Modifier.size(32.dp),
-                        tint = iconColor
-                    )
-                    badge?.let {
-                        Badge(
-                            modifier = Modifier.align(Alignment.TopEnd),
-                            containerColor = SemanticColors.Error
-                        ) {
-                            Text(
-                                text = it.toString(),
-                                style = MaterialTheme.typography.labelSmall
-                            )
-                        }
-                    }
-                }
-                Spacer(modifier = Modifier.height(Spacing.xs))
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = iconColor
-                )
-            }
-        }
-    }
-}
-
-@Composable
 private fun RecentSearchesSection(
     searches: List<String>,
-    onSearchClick: (String) -> Unit
+    onSearchClick: (String) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     LazyRow(
-        horizontalArrangement = Arrangement.spacedBy(Spacing.m),
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(Spacing.s),
         contentPadding = PaddingValues(horizontal = Spacing.l)
     ) {
         items(searches) { search ->
-            Card(
+            ChampionChip(
+                text = search,
                 onClick = { onSearchClick(search) },
-                shape = Shapes.chip,
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
-                )
-            ) {
-                Row(
-                    modifier = Modifier.padding(
-                        horizontal = Spacing.m,
-                        vertical = Spacing.s
-                    ),
-                    horizontalArrangement = Arrangement.spacedBy(Spacing.s),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.History,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = search,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
-            }
+                leadingIcon = Icons.Rounded.History
+            )
         }
     }
 }
 
 @Composable
-private fun ProductListItem(
-    product: com.example.championcart.domain.models.Product,
-    onClick: () -> Unit,
-    onAddToCart: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        onClick = onClick,
-        modifier = modifier.fillMaxWidth(),
-        shape = Shapes.card
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(Padding.m),
-            horizontalArrangement = Arrangement.spacedBy(Spacing.m)
-        ) {
-            // Product Image Placeholder
-            Box(
-                modifier = Modifier
-                    .size(80.dp)
-                    .clip(Shapes.card)
-                    .background(MaterialTheme.colorScheme.surfaceVariant),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.ShoppingBag,
-                    contentDescription = null,
-                    modifier = Modifier.size(32.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            // Product Info
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(Spacing.xs)
-            ) {
-                Text(
-                    text = product.name,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Medium
-                )
-
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(Spacing.s),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    PriceLevelIndicator(
-                        priceLevel = when {
-                            product.bestPrice == product.stores.minOfOrNull { it.price } -> PriceLevel.Best
-                            product.bestPrice < product.stores.map { it.price }.average() -> PriceLevel.Mid
-                            else -> PriceLevel.High
-                        }
-                    )
-                    Text(
-                        text = "₪${product.bestPrice}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-
-                if (product.bestStore.isNotEmpty()) {
-                    Text(
-                        text = "הכי זול ב${product.bestStore}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = SemanticColors.Success
-                    )
-                }
-            }
-
-            // Add to Cart Button
-            IconButton(
-                onClick = onAddToCart,
-                modifier = Modifier.align(Alignment.CenterVertically)
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.AddShoppingCart,
-                    contentDescription = "הוסף לעגלה",
-                    tint = BrandColors.ElectricMint
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun StatsSection(
-    totalSavings: Double,
-    productsTracked: Int,
+private fun SectionHeader(
+    title: String,
+    action: (@Composable () -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(Spacing.m)
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        StatCard(
-            title = "חיסכון כולל",
-            value = "₪${String.format("%.0f", totalSavings)}",
-            icon = Icons.Rounded.Savings,
-            trend = if (totalSavings > 0) 12.5f else null,
-            modifier = Modifier.weight(1f)
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Medium
         )
-
-        StatCard(
-            title = "מוצרים במעקב",
-            value = productsTracked.toString(),
-            icon = Icons.Rounded.Visibility,
-            modifier = Modifier.weight(1f)
-        )
+        action?.invoke()
     }
 }
-
-// The HomeBottomBar component is no longer needed - removed

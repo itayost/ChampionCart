@@ -169,6 +169,9 @@ fun ChampionCartNavHost(
                     },
                     onNavigateToProfile = {
                         navController.navigate(Screen.Profile.route)
+                    },
+                    onNavigateToScan = {
+                        navController.navigate(Screen.Scan.route)
                     }
                 )
             }

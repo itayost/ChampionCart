@@ -48,14 +48,20 @@ class HomeViewModel @Inject constructor(
         val email = tokenManager.getUserEmail()
         val isGuest = tokenManager.isGuestMode()
 
+        // Load saved total savings from preferences
+        val savedTotalSavings = preferencesManager.getTotalSavings()
+
         _uiState.update { it.copy(
             userName = if (isGuest) "אורח" else email?.substringBefore("@") ?: "משתמש",
-            isGuest = isGuest
+            isGuest = isGuest,
+            totalSavings = savedTotalSavings
         ) }
     }
 
     private fun loadCities() {
         viewModelScope.launch {
+            _uiState.update { it.copy(isCitiesLoading = true) }
+
             getCitiesUseCase().collect { result ->
                 result.fold(
                     onSuccess = { cities ->
@@ -82,9 +88,8 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun loadRecentSearches() {
-        // Load from preferences
-        val recentSearches = preferencesManager.getRecentSearches()
-        _uiState.update { it.copy(recentSearches = recentSearches) }
+        val searches = preferencesManager.getRecentSearches()
+        _uiState.update { it.copy(recentSearches = searches) }
     }
 
     private fun loadFeaturedProducts() {
@@ -92,63 +97,73 @@ class HomeViewModel @Inject constructor(
             _uiState.update { it.copy(isFeaturedLoading = true) }
 
             // Search for popular items
-            val popularItems = listOf("חלב", "לחם", "ביצים", "עגבניות")
+            val popularItems = listOf("חלב", "לחם", "ביצים")
             val city = _uiState.value.selectedCity
+            val featuredList = mutableListOf<Product>()
 
             popularItems.forEach { item ->
                 searchProductsUseCase(item, city).collect { result ->
                     result.fold(
                         onSuccess = { products ->
                             if (products.isNotEmpty()) {
-                                _uiState.update { state ->
-                                    state.copy(
-                                        featuredProducts = state.featuredProducts + products.first(),
-                                        isFeaturedLoading = false
-                                    )
-                                }
+                                featuredList.add(products.first())
                             }
                         },
-                        onFailure = {
-                            _uiState.update { it.copy(isFeaturedLoading = false) }
-                        }
+                        onFailure = { /* Ignore individual failures */ }
                     )
+                }
+            }
+
+            _uiState.update { it.copy(
+                featuredProducts = featuredList,
+                isFeaturedLoading = false
+            ) }
+        }
+    }
+
+    private fun observeCartChanges() {
+        viewModelScope.launch {
+            cartManager.cartItems.collect { items ->
+                val itemCount = items.sumOf { it.quantity }
+                _uiState.update { it.copy(cartItemCount = itemCount) }
+
+                // Update potential savings if cart has items
+                if (items.isNotEmpty()) {
+                    updatePotentialSavings()
                 }
             }
         }
     }
 
-    private fun observeCartChanges() {
-        cartManager.cartItems.onEach {
-            updateCartInfo()
-        }.launchIn(viewModelScope)
-    }
-
     private fun updateCartInfo() {
-        val totalItems = cartManager.getItemCount()
-
-        _uiState.update { it.copy(cartItemCount = totalItems) }
-
-        // Calculate potential savings
-        if (totalItems > 0) {
-            calculateCartSavings()
-        }
+        val itemCount = cartManager.getItemCount()
+        _uiState.update { it.copy(cartItemCount = itemCount) }
     }
 
-    private fun calculateCartSavings() {
+    private fun updatePotentialSavings() {
         viewModelScope.launch {
             calculateCheapestStoreUseCase(_uiState.value.selectedCity).collect { result ->
                 result.fold(
                     onSuccess = { cheapestStore ->
-                        // Calculate potential savings by comparing cheapest with most expensive
-                        val maxPrice = cheapestStore.storeTotals.values.maxOrNull() ?: 0.0
-                        val minPrice = cheapestStore.totalPrice
-                        val savings = maxPrice - minPrice
+                        // Calculate potential savings
+                        val cartItems = cartManager.cartItems.value
+                        val currentTotal = cartItems.sumOf { item ->
+                            item.product.bestPrice * item.quantity
+                        }
 
-                        _uiState.update { it.copy(
-                            totalSavings = _uiState.value.totalSavings + savings
-                        ) }
+                        if (cheapestStore.storeTotals.isNotEmpty()) {
+                            val maxPrice = cheapestStore.storeTotals.values.maxOrNull() ?: currentTotal
+                            val savings = maxPrice - cheapestStore.totalPrice
+
+                            if (savings > 0) {
+                                // Add to running total
+                                val newTotal = _uiState.value.totalSavings + savings
+                                preferencesManager.addToTotalSavings(savings)
+                                _uiState.update { it.copy(totalSavings = newTotal) }
+                            }
+                        }
                     },
-                    onFailure = { /* Handle error */ }
+                    onFailure = { /* Ignore calculation errors */ }
                 )
             }
         }
@@ -165,9 +180,13 @@ class HomeViewModel @Inject constructor(
             preferencesManager.addRecentSearch(query)
             loadRecentSearches()
 
-            // Perform search
-            searchProducts(query)
+            // Navigation will be handled by the HomeScreen
         }
+    }
+
+    fun onClearRecentSearches() {
+        preferencesManager.clearRecentSearches()
+        _uiState.update { it.copy(recentSearches = emptyList()) }
     }
 
     fun onCitySelected(city: String) {
@@ -176,6 +195,11 @@ class HomeViewModel @Inject constructor(
 
         // Reload featured products for new city
         loadFeaturedProducts()
+
+        // Recalculate savings if cart has items
+        if (cartManager.getItemCount() > 0) {
+            updatePotentialSavings()
+        }
     }
 
     fun onProductClick(product: Product) {
@@ -194,7 +218,7 @@ class HomeViewModel @Inject constructor(
 
     fun onRecentSearchClick(search: String) {
         _searchQuery.value = search
-        searchProducts(search)
+        // Navigation to search screen will be handled by HomeScreen
     }
 
     fun clearSnackbarMessage() {
@@ -203,33 +227,6 @@ class HomeViewModel @Inject constructor(
 
     fun clearError() {
         _uiState.update { it.copy(error = null) }
-    }
-
-    private fun searchProducts(query: String) {
-        viewModelScope.launch {
-            _uiState.update { it.copy(
-                isSearching = true,
-                searchResults = emptyList(),
-                error = null
-            ) }
-
-            searchProductsUseCase(query, _uiState.value.selectedCity).collect { result ->
-                result.fold(
-                    onSuccess = { products ->
-                        _uiState.update { it.copy(
-                            searchResults = products,
-                            isSearching = false
-                        ) }
-                    },
-                    onFailure = { error ->
-                        _uiState.update { it.copy(
-                            isSearching = false,
-                            error = error.message ?: "שגיאה בחיפוש"
-                        ) }
-                    }
-                )
-            }
-        }
     }
 
     fun refreshData() {
