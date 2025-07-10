@@ -26,23 +26,22 @@ class AuthRepositoryImpl @Inject constructor(
             Log.d(TAG, "Attempting login for email: $email")
 
             val response = authApi.login(
-                LoginRequest(
-                    email = email,
-                    password = password
-                )
+                username = email,  // Server expects "username" field
+                password = password
             )
 
-            if (response.success && response.token != null) {
+            // Login successful if we got an access token
+            if (response.accessToken.isNotEmpty()) {
                 // Save token and user info
-                tokenManager.saveToken(response.token)
+                tokenManager.saveToken(response.accessToken)
                 tokenManager.saveUserEmail(email)
                 tokenManager.setGuestMode(false)
 
                 Log.d(TAG, "Login successful, token saved")
                 emit(Result.success(true))
             } else {
-                Log.e(TAG, "Login failed: ${response.message}")
-                emit(Result.failure(Exception(response.message ?: "Login failed")))
+                Log.e(TAG, "Login failed: No access token received")
+                emit(Result.failure(Exception("Login failed: No access token")))
             }
         } catch (e: Exception) {
             Log.e(TAG, "Login error", e)
@@ -66,21 +65,46 @@ class AuthRepositoryImpl @Inject constructor(
                 )
             )
 
-            if (response.success && response.token != null) {
-                // Save token and user info
-                tokenManager.saveToken(response.token)
-                tokenManager.saveUserEmail(email)
-                tokenManager.setGuestMode(false)
+            // Registration successful if we got a user_id
+            if (response.userId > 0) {
+                // After successful registration, we need to login to get the token
+                Log.d(TAG, "Registration successful, now logging in to get token")
 
-                Log.d(TAG, "Registration successful, token saved")
-                emit(Result.success(true))
+                try {
+                    // Call login to get the token
+                    val loginResponse = authApi.login(
+                        username = email,  // Server expects "username" field
+                        password = password
+                    )
+
+                    if (loginResponse.accessToken.isNotEmpty()) {
+                        // Save token and user info
+                        tokenManager.saveToken(loginResponse.accessToken)
+                        tokenManager.saveUserEmail(email)
+                        tokenManager.setGuestMode(false)
+
+                        Log.d(TAG, "Auto-login after registration successful")
+                        emit(Result.success(true))
+                    } else {
+                        Log.e(TAG, "Auto-login failed after registration: No token received")
+                        emit(Result.failure(Exception("Registration successful but login failed. Please login manually.")))
+                    }
+                } catch (loginError: Exception) {
+                    Log.e(TAG, "Auto-login error after registration", loginError)
+                    emit(Result.failure(Exception("Registration successful but login failed. Please login manually.")))
+                }
             } else {
-                Log.e(TAG, "Registration failed: ${response.message}")
-                emit(Result.failure(Exception(response.message ?: "Registration failed")))
+                Log.e(TAG, "Registration failed: Invalid response")
+                emit(Result.failure(Exception("Registration failed")))
             }
         } catch (e: Exception) {
             Log.e(TAG, "Registration error", e)
-            emit(Result.failure(e))
+            val errorMessage = when {
+                e.message?.contains("409") == true -> "User already exists"
+                e.message?.contains("400") == true -> "Invalid registration data"
+                else -> "Registration failed: ${e.message}"
+            }
+            emit(Result.failure(Exception(errorMessage)))
         }
     }
 

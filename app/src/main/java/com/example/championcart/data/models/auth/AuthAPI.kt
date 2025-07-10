@@ -39,3 +39,19 @@ data class UserResponse(
     @SerializedName("name")
     val name: String
 )
+
+data class RegisterResponse(
+    @SerializedName("user_id")
+    val userId: Int,
+    @SerializedName("email")
+    val email: String,
+    @SerializedName("created_at")
+    val createdAt: String
+)
+
+data class LoginResponse(
+    @SerializedName("access_token")
+    val accessToken: String,
+    @SerializedName("token_type")
+    val tokenType: String
+)
