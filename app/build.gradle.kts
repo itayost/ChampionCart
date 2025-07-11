@@ -1,3 +1,5 @@
+import org.gradle.kotlin.dsl.implementation
+
 plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.kotlinAndroid)
@@ -96,6 +98,9 @@ dependencies {
     // Animation
     implementation(libs.lottie.compose)
 
+    //Biometric
+    implementation(libs.androidx.biometric.ktx)
+
     // Testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.test.ext.junit)
@@ -105,4 +110,6 @@ dependencies {
 
     // Debug
     debugImplementation(libs.bundles.compose.debug)
+
+
 }

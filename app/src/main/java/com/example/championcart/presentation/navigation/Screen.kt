@@ -55,6 +55,10 @@ sealed class Screen(
     object Settings : Screen("settings")
     object SavedCarts : Screen("saved_carts")
 
+    // Info Screens
+    object TermsOfService : Screen("terms_of_service")
+    object PrivacyPolicy : Screen("privacy_policy")
+
     // Development
     object ComponentShowcase : Screen("component_showcase")
 }

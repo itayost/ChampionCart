@@ -3,6 +3,7 @@
 accompanist-permissions = "0.32.0"
 agp = "8.10.1"
 barcode-scanning = "17.3.0"
+biometric-ktx = "1.4.0-alpha02"
 camera-view = "1.4.2"
 kotlin = "2.0.21"
 core-ktx = "1.16.0"
@@ -42,6 +43,7 @@ espresso = "3.6.1"
 [libraries]
 # Core Android
 accompanist-permissions = { module = "com.google.accompanist:accompanist-permissions", version.ref = "accompanist-permissions" }
+androidx-biometric-ktx = { module = "androidx.biometric:biometric-ktx", version.ref = "biometric-ktx" }
 androidx-camera-camera2 = { module = "androidx.camera:camera-camera2", version.ref = "camera-view" }
 androidx-camera-lifecycle = { module = "androidx.camera:camera-lifecycle", version.ref = "camera-view" }
 androidx-camera-view = { module = "androidx.camera:camera-view", version.ref = "camera-view" }

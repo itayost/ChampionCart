@@ -37,18 +37,9 @@ import com.example.championcart.presentation.screens.cart.CartScreen
 import com.example.championcart.presentation.screens.profile.ProfileScreen
 import com.example.championcart.presentation.screens.scan.ScanScreen
 import com.example.championcart.ui.theme.Spacing
+import com.example.championcart.presentation.screens.info.TermsOfServiceScreen
+import com.example.championcart.presentation.screens.info.PrivacyPolicyScreen
 
-/*
- * NOTE: For screens with bottom navigation, make sure to add bottom padding
- * to prevent content from being hidden behind the nav bar.
- *
- * Use one of these approaches:
- * 1. In LazyColumn: contentPadding = PaddingValues(bottom = Size.bottomNavHeight)
- * 2. In regular layouts: Modifier.padding(bottom = Size.bottomNavHeight)
- * 3. Or use the predefined: Padding.screenWithBottomNav
- *
- * The HomeScreen and SearchScreen already handle this internally.
- */
 
 @Composable
 fun ChampionCartNavHost(
@@ -137,6 +128,12 @@ fun ChampionCartNavHost(
                         navController.navigate(Screen.Home.route) {
                             popUpTo(Screen.Register.route) { inclusive = true }
                         }
+                    },
+                    onNavigateToTermsOfService = {
+                        navController.navigate(Screen.TermsOfService.route)
+                    },
+                    onNavigateToPrivacyPolicy = {
+                        navController.navigate(Screen.PrivacyPolicy.route)
                     }
                 )
             }
@@ -232,6 +229,12 @@ fun ChampionCartNavHost(
                     onNavigateToSavedCarts = {
                         navController.navigate(Screen.SavedCarts.route)
                     },
+                    onNavigateToTermsOfService = {
+                        navController.navigate(Screen.TermsOfService.route)
+                    },
+                    onNavigateToPrivacyPolicy = {
+                        navController.navigate(Screen.PrivacyPolicy.route)
+                    },
                     onNavigateToLogin = {
                         navController.navigate(Screen.Login.route) {
                             popUpTo(navController.graph.id) {
@@ -286,6 +289,19 @@ fun ChampionCartNavHost(
                 ) {
                     Text("Saved Carts Screen - Coming Soon!")
                 }
+            }
+
+            // Info Screens
+            composable(route = Screen.TermsOfService.route) {
+                TermsOfServiceScreen(
+                    navController = navController
+                )
+            }
+
+            composable(route = Screen.PrivacyPolicy.route) {
+                PrivacyPolicyScreen(
+                    navController = navController
+                )
             }
 
             // Development

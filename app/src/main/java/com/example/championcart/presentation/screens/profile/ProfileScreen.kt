@@ -26,6 +26,8 @@ import com.example.championcart.ui.theme.*
 fun ProfileScreen(
     onNavigateToSettings: () -> Unit,
     onNavigateToSavedCarts: () -> Unit,
+    onNavigateToTermsOfService: () -> Unit,
+    onNavigateToPrivacyPolicy: () -> Unit,
     onNavigateToLogin: () -> Unit,
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
@@ -90,6 +92,12 @@ fun ProfileScreen(
                     isGuest = uiState.isGuest,
                     onLogout = { showLogoutDialog = true },
                     onLogin = onNavigateToLogin
+                )
+
+                // Legal Section - ADD THIS
+                LegalSection(
+                    onNavigateToTermsOfService = onNavigateToTermsOfService,
+                    onNavigateToPrivacyPolicy = onNavigateToPrivacyPolicy
                 )
 
                 // Bottom spacing for navigation bar
@@ -370,5 +378,54 @@ private fun AccountActionsCard(
                     icon = Icons.Rounded.Login
                 )
             }
+    }
+}
+
+@Composable
+private fun LegalSection(
+    onNavigateToTermsOfService: () -> Unit,
+    onNavigateToPrivacyPolicy: () -> Unit
+) {
+    GlassCard(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier.padding(Padding.l)
+        ) {
+            Text(
+                text = "משפטי",
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(bottom = Spacing.m)
+            )
+
+            ChampionListItem(
+                title = "תנאי שירות",
+                leadingIcon = Icons.Rounded.Description,
+                onClick = onNavigateToTermsOfService,
+                trailingContent = {
+                    Icon(
+                        imageVector = Icons.Rounded.ChevronRight,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            )
+
+            ChampionDivider()
+
+            ChampionListItem(
+                title = "מדיניות פרטיות",
+                leadingIcon = Icons.Rounded.PrivacyTip,
+                onClick = onNavigateToPrivacyPolicy,
+                trailingContent = {
+                    Icon(
+                        imageVector = Icons.Rounded.ChevronRight,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            )
+        }
     }
 }

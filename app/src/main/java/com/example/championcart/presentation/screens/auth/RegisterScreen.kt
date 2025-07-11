@@ -27,6 +27,8 @@ import com.example.championcart.ui.theme.*
 fun RegisterScreen(
     onNavigateToLogin: () -> Unit,
     onNavigateToHome: () -> Unit,
+    onNavigateToTermsOfService: () -> Unit,
+    onNavigateToPrivacyPolicy: () -> Unit,
     viewModel: RegisterViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -185,7 +187,7 @@ fun RegisterScreen(
                                 fontWeight = FontWeight.Bold,
                                 modifier = Modifier
                                     .padding(horizontal = 4.dp)
-                                    .clickable { /* TODO: Show terms */ }
+                                    .clickable { onNavigateToTermsOfService() }
                             )
                         }
                         Row {
@@ -200,7 +202,7 @@ fun RegisterScreen(
                                 fontWeight = FontWeight.Bold,
                                 modifier = Modifier
                                     .padding(start = 4.dp)
-                                    .clickable { /* TODO: Show privacy */ }
+                                    .clickable { onNavigateToPrivacyPolicy() }
                             )
                         }
 
