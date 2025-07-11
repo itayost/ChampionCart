@@ -72,19 +72,27 @@ import com.example.championcart.ui.theme.Padding
 import com.example.championcart.ui.theme.SemanticColors
 import com.example.championcart.ui.theme.Size
 import com.example.championcart.ui.theme.Spacing
+import android.content.Context
+import androidx.compose.ui.platform.LocalContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CartScreen(
     onNavigateBack: () -> Unit,
     onNavigateToSearch: () -> Unit,
-    onNavigateToStore: (String) -> Unit,
+    onNavigateToStore: (String, String) -> Unit,
     viewModel: CartViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val listState = rememberLazyListState()
     val hapticFeedback = LocalHapticFeedback.current
+
+    val selectedCity = remember {
+        context.getSharedPreferences("champion_cart_prefs", Context.MODE_PRIVATE)
+            .getString("selected_city", "תל אביב") ?: "תל אביב"
+    }
 
     var showSaveDialog by remember { mutableStateOf(false) }
     var showClearConfirmation by remember { mutableStateOf(false) }
@@ -335,8 +343,9 @@ fun CartScreen(
             cartTotal = uiState.totalPrice,
             onDismiss = { showCheapestStoreSheet = false },
             onNavigateToStore = { storeName ->
-                showCheapestStoreSheet = false
-                onNavigateToStore(storeName)
+                // Get the address from the result
+                val address = uiState.cheapestStoreResult?.address ?: "$storeName, $selectedCity"
+                onNavigateToStore(storeName, address)
             },
             onRecalculate = {
                 viewModel.calculateCheapestStore()

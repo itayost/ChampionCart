@@ -145,7 +145,9 @@ fun CheapestStoreBottomSheet(
                     ) {
                         PrimaryButton(
                             text = "נווט לחנות",
-                            onClick = { onNavigateToStore(result.cheapestStore) },
+                            onClick = {
+                                onNavigateToStore(result.cheapestStore)
+                            },
                             modifier = Modifier.weight(1f),
                             icon = Icons.Rounded.Navigation
                         )

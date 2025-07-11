@@ -39,6 +39,7 @@ import com.example.championcart.presentation.screens.scan.ScanScreen
 import com.example.championcart.ui.theme.Spacing
 import com.example.championcart.presentation.screens.info.TermsOfServiceScreen
 import com.example.championcart.presentation.screens.info.PrivacyPolicyScreen
+import com.example.championcart.utils.NavigationUtils.openMapForNavigation
 
 
 @Composable
@@ -213,10 +214,10 @@ fun ChampionCartNavHost(
                     onNavigateToSearch = {
                         navController.navigate(Screen.Search.route)
                     },
-                    onNavigateToStore = { storeName ->
-                        // TODO: Navigate to store details or map screen
-                        // For now, just log or show a toast
-                        android.util.Log.d("Navigation", "Navigate to store: $storeName")
+                    onNavigateToStore = { storeName, address ->
+                        // Now we receive both store name and address
+                        val context = navController.context
+                        openMapForNavigation(context, address, storeName)
                     }
                 )
             }
