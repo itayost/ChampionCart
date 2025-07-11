@@ -1,11 +1,11 @@
 package com.example.championcart.presentation.screens.profile
 
-import androidx.compose.animation.*
-import androidx.compose.foundation.*
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.Logout
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -14,59 +14,30 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.championcart.presentation.components.common.*
 import com.example.championcart.ui.theme.*
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
-    onNavigateToSavedCarts: () -> Unit,
     onNavigateToSettings: () -> Unit,
+    onNavigateToSavedCarts: () -> Unit,
     onNavigateToLogin: () -> Unit,
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
-
-    // Dialogs
-    var showLogoutDialog by remember { mutableStateOf(false) }
     var showCitySheet by remember { mutableStateOf(false) }
-
-    // Show messages
-    LaunchedEffect(uiState.message) {
-        uiState.message?.let { message ->
-            snackbarHostState.showSnackbar(message)
-            viewModel.clearMessage()
-        }
-    }
+    var showLogoutDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
             ChampionTopBar(
                 title = "הפרופיל שלי",
-                actions = {
-                    IconButton(onClick = onNavigateToSettings) {
-                        Icon(
-                            imageVector = Icons.Rounded.Settings,
-                            contentDescription = "הגדרות"
-                        )
-                    }
-                }
-            )
-        },
-        snackbarHost = {
-            SnackbarHost(
-                hostState = snackbarHostState,
-                snackbar = { data ->
-                    ChampionSnackbar(snackbarData = data)
-                }
+                scrollBehavior = null
             )
         }
     ) { paddingValues ->
@@ -117,7 +88,8 @@ fun ProfileScreen(
                 // Account Actions
                 AccountActionsCard(
                     isGuest = uiState.isGuest,
-                    onLogout = { showLogoutDialog = true }
+                    onLogout = { showLogoutDialog = true },
+                    onLogin = onNavigateToLogin
                 )
 
                 // Bottom spacing for navigation bar
@@ -213,12 +185,12 @@ private fun ProfileHeaderCard(
             Text(
                 text = if (isGuest) "משתמש אורח" else email,
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
+                color = MaterialTheme.colorScheme.onSurface
             )
 
-            if (!isGuest && memberSince.isNotEmpty()) {
+            if (!isGuest) {
                 Text(
-                    text = "חבר מאז $memberSince",
+                    text = memberSince,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -234,22 +206,71 @@ private fun QuickStatsCard(
     totalSavings: String,
     selectedCity: String
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(Spacing.m)
+    GlassCard(
+        modifier = Modifier.fillMaxWidth()
     ) {
-        StatCard(
-            title = "עגלות שמורות",
-            value = savedCartsCount.toString(),
-            icon = Icons.Rounded.ShoppingCart,
-            modifier = Modifier.weight(1f)
-        )
+        Column(
+            modifier = Modifier.padding(Padding.l),
+            verticalArrangement = Arrangement.spacedBy(Spacing.m)
+        ) {
+            Text(
+                text = "סטטיסטיקות מהירות",
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurface
+            )
 
-        StatCard(
-            title = "חיסכון כולל",
-            value = totalSavings,
-            icon = Icons.Rounded.Savings,
-            modifier = Modifier.weight(1f)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                StatItem(
+                    icon = Icons.Rounded.ShoppingCart,
+                    value = savedCartsCount.toString(),
+                    label = "עגלות שמורות"
+                )
+
+                StatItem(
+                    icon = Icons.Rounded.ShoppingBag,
+                    value = currentCartItems.toString(),
+                    label = "פריטים בעגלה"
+                )
+
+                StatItem(
+                    icon = Icons.Rounded.Savings,
+                    value = totalSavings,
+                    label = "חיסכון כולל"
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun StatItem(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    value: String,
+    label: String
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(Spacing.xs)
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(24.dp),
+            tint = MaterialTheme.colorScheme.primary
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
         )
     }
 }
@@ -260,40 +281,18 @@ private fun MainActionsCard(
     savedCartsCount: Int,
     isGuest: Boolean
 ) {
-    GlassCard(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier.padding(Padding.l),
-            verticalArrangement = Arrangement.spacedBy(Spacing.xs)
+    if (!isGuest) {
+        GlassCard(
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Text(
-                text = "הפעולות שלי",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
-            )
-
-            ChampionDivider(modifier = Modifier.padding(vertical = Spacing.s))
-
-            ChampionListItem(
-                title = "עגלות שמורות",
-                subtitle = if (savedCartsCount > 0) "$savedCartsCount עגלות" else "אין עגלות שמורות",
-                leadingIcon = Icons.Rounded.BookmarkBorder,
-                onClick = if (!isGuest) onNavigateToSavedCarts else null,
-                trailingContent = if (!isGuest && savedCartsCount > 0) {
-                    {
-                        ChampionBadge(count = savedCartsCount)
-                    }
-                } else null
-            )
-
-            if (isGuest) {
-                Spacer(modifier = Modifier.height(Spacing.s))
-                Text(
-                    text = "התחבר כדי לשמור עגלות",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = Spacing.m)
+            Column(
+                modifier = Modifier.padding(Padding.l)
+            ) {
+                ChampionListItem(
+                    title = "העגלות השמורות שלי",
+                    subtitle = "$savedCartsCount עגלות שמורות",
+                    leadingIcon = Icons.Rounded.BookmarkBorder,
+                    onClick = onNavigateToSavedCarts
                 )
             }
         }
@@ -311,26 +310,22 @@ private fun PreferencesCard(
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(
-            modifier = Modifier.padding(Padding.l),
-            verticalArrangement = Arrangement.spacedBy(Spacing.xs)
+            modifier = Modifier.padding(Padding.l)
         ) {
             Text(
                 text = "העדפות",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(bottom = Spacing.m)
             )
-
-            ChampionDivider(modifier = Modifier.padding(vertical = Spacing.s))
 
             // City Selection
-            ChampionListItem(
-                title = "עיר",
-                subtitle = selectedCity,
-                leadingIcon = Icons.Rounded.LocationOn,
-                onClick = onCityClick
+            SecondaryButton(
+                text = "עיר: $selectedCity",
+                onClick = onCityClick,
+                modifier = Modifier.fillMaxWidth(),
+                icon = Icons.Rounded.LocationOn
             )
-
-            ChampionDivider()
 
             // Notifications Toggle
             ChampionListItem(
@@ -354,29 +349,26 @@ private fun PreferencesCard(
 @Composable
 private fun AccountActionsCard(
     isGuest: Boolean,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    onLogin: () -> Unit
 ) {
-    GlassCard(
-        modifier = Modifier.fillMaxWidth()
-    ) {
         Column(
             modifier = Modifier.padding(Padding.l)
         ) {
             if (!isGuest) {
-                ChampionListItem(
-                    title = "התנתק",
-                    leadingIcon = Icons.Rounded.Logout,
-                    onClick = onLogout
+                TextButton(
+                    text = "התנתק",
+                    onClick = onLogout,
+                    modifier = Modifier.fillMaxWidth(),
+                    color = SemanticColors.Error
                 )
             } else {
-                Text(
-                    text = "משתמש אורח",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth()
+                PrimaryButton(
+                    text = "התחבר",
+                    onClick = onLogin,
+                    modifier = Modifier.fillMaxWidth(),
+                    icon = Icons.Rounded.Login
                 )
             }
-        }
     }
 }
