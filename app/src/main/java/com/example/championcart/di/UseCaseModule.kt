@@ -2,7 +2,7 @@ package com.example.championcart.di
 
 import com.example.championcart.domain.repository.*
 import com.example.championcart.domain.usecase.auth.LoginUseCase
-import com.example.championcart.domain.usecase.cart.CalculateCheapestStoreUseCase
+import com.example.championcart.domain.usecase.cart.*
 import com.example.championcart.domain.usecase.city.GetCitiesUseCase
 import com.example.championcart.domain.usecase.product.SearchProductsUseCase
 import dagger.Module
@@ -37,6 +37,30 @@ object UseCaseModule {
         cartRepository: CartRepository
     ): CalculateCheapestStoreUseCase {
         return CalculateCheapestStoreUseCase(cartRepository)
+    }
+
+    @Provides
+    @ViewModelScoped
+    fun provideSaveCartUseCase(
+        cartRepository: CartRepository
+    ): SaveCartUseCase {
+        return SaveCartUseCase(cartRepository)
+    }
+
+    @Provides
+    @ViewModelScoped
+    fun provideGetSavedCartsUseCase(
+        cartRepository: CartRepository
+    ): GetSavedCartsUseCase {
+        return GetSavedCartsUseCase(cartRepository)
+    }
+
+    @Provides
+    @ViewModelScoped
+    fun provideLoadSavedCartUseCase(
+        cartRepository: CartRepository
+    ): LoadSavedCartUseCase {
+        return LoadSavedCartUseCase(cartRepository)
     }
 
     @Provides

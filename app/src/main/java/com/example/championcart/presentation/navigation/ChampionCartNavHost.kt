@@ -225,9 +225,6 @@ fun ChampionCartNavHost(
 
             composable(route = Screen.Profile.route) {
                 ProfileScreen(
-                    onNavigateToSavedCarts = {
-                        navController.navigate(Screen.SavedCarts.route)
-                    },
                     onNavigateToTermsOfService = {
                         navController.navigate(Screen.TermsOfService.route)
                     },

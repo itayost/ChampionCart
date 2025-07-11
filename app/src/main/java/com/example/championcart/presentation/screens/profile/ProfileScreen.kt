@@ -14,17 +14,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.championcart.presentation.components.common.*
+import com.example.championcart.presentation.components.profile.SavedCartsBottomSheet
 import com.example.championcart.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
-    onNavigateToSavedCarts: () -> Unit,
     onNavigateToTermsOfService: () -> Unit,
     onNavigateToPrivacyPolicy: () -> Unit,
     onNavigateToLogin: () -> Unit,
@@ -33,6 +34,15 @@ fun ProfileScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showCitySheet by remember { mutableStateOf(false) }
     var showLogoutDialog by remember { mutableStateOf(false) }
+    var showSavedCartsSheet by remember { mutableStateOf(false) }
+
+    // Show snackbar for messages
+    LaunchedEffect(uiState.message) {
+        uiState.message?.let {
+            // You might want to show a snackbar here
+            viewModel.clearMessage()
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -71,9 +81,12 @@ fun ProfileScreen(
                     selectedCity = uiState.selectedCity
                 )
 
-                // Main Actions
+                // Main Actions - Updated to show bottom sheet
                 MainActionsCard(
-                    onNavigateToSavedCarts = onNavigateToSavedCarts,
+                    onShowSavedCarts = {
+                        viewModel.onSavedCartsRequested()
+                        showSavedCartsSheet = true
+                    },
                     savedCartsCount = uiState.savedCartsCount,
                     isGuest = uiState.isGuest
                 )
@@ -86,17 +99,17 @@ fun ProfileScreen(
                     onNotificationsToggle = viewModel::toggleNotifications
                 )
 
+                // Legal Section
+                LegalSection(
+                    onNavigateToTermsOfService = onNavigateToTermsOfService,
+                    onNavigateToPrivacyPolicy = onNavigateToPrivacyPolicy
+                )
+
                 // Account Actions
                 AccountActionsCard(
                     isGuest = uiState.isGuest,
                     onLogout = { showLogoutDialog = true },
                     onLogin = onNavigateToLogin
-                )
-
-                // Legal Section - ADD THIS
-                LegalSection(
-                    onNavigateToTermsOfService = onNavigateToTermsOfService,
-                    onNavigateToPrivacyPolicy = onNavigateToPrivacyPolicy
                 )
 
                 // Bottom spacing for navigation bar
@@ -128,6 +141,27 @@ fun ProfileScreen(
                 showCitySheet = false
             },
             onDismiss = { showCitySheet = false }
+        )
+    }
+
+    // Saved Carts Bottom Sheet
+    if (showSavedCartsSheet) {
+        SavedCartsBottomSheet(
+            visible = true,
+            savedCarts = uiState.savedCarts,
+            isLoading = uiState.isLoadingSavedCarts,
+            onDismiss = { showSavedCartsSheet = false },
+            onLoadCart = { cart ->
+                viewModel.loadSavedCart(cart)
+                showSavedCartsSheet = false
+            },
+            onDeleteCart = { cart ->
+                viewModel.deleteSavedCart(cart)
+            },
+            onCompareCart = { cart ->
+                viewModel.compareSavedCart(cart)
+                showSavedCartsSheet = false
+            }
         )
     }
 
@@ -221,7 +255,7 @@ private fun QuickStatsCard(
             verticalArrangement = Arrangement.spacedBy(Spacing.m)
         ) {
             Text(
-                text = "סטטיסטיקות מהירות",
+                text = "סטטיסטיקה מהירה",
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.onSurface
             )
@@ -231,21 +265,19 @@ private fun QuickStatsCard(
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 StatItem(
-                    icon = Icons.Rounded.ShoppingCart,
+                    label = "עגלות שמורות",
                     value = savedCartsCount.toString(),
-                    label = "עגלות שמורות"
+                    icon = Icons.Rounded.BookmarkBorder
                 )
-
                 StatItem(
-                    icon = Icons.Rounded.ShoppingBag,
+                    label = "פריטים בעגלה",
                     value = currentCartItems.toString(),
-                    label = "פריטים בעגלה"
+                    icon = Icons.Rounded.ShoppingCart
                 )
-
                 StatItem(
-                    icon = Icons.Rounded.Savings,
+                    label = "חיסכון כולל",
                     value = totalSavings,
-                    label = "חיסכון כולל"
+                    icon = Icons.Rounded.Savings
                 )
             }
         }
@@ -254,9 +286,9 @@ private fun QuickStatsCard(
 
 @Composable
 private fun StatItem(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
     value: String,
-    label: String
+    icon: androidx.compose.ui.graphics.vector.ImageVector
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -266,25 +298,24 @@ private fun StatItem(
             imageVector = icon,
             contentDescription = null,
             modifier = Modifier.size(24.dp),
-            tint = MaterialTheme.colorScheme.primary
+            tint = BrandColors.ElectricMint
         )
         Text(
             text = value,
-            style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.onSurface
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold
         )
         Text(
             text = label,
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
 
 @Composable
 private fun MainActionsCard(
-    onNavigateToSavedCarts: () -> Unit,
+    onShowSavedCarts: () -> Unit,
     savedCartsCount: Int,
     isGuest: Boolean
 ) {
@@ -299,7 +330,7 @@ private fun MainActionsCard(
                     title = "העגלות השמורות שלי",
                     subtitle = "$savedCartsCount עגלות שמורות",
                     leadingIcon = Icons.Rounded.BookmarkBorder,
-                    onClick = onNavigateToSavedCarts
+                    onClick = onShowSavedCarts
                 )
             }
         }
@@ -362,22 +393,23 @@ private fun AccountActionsCard(
         Column(
             modifier = Modifier.padding(Padding.l)
         ) {
-            if (!isGuest) {
-                TextButton(
-                    text = "התנתק",
-                    onClick = onLogout,
-                    modifier = Modifier.fillMaxWidth(),
-                    color = SemanticColors.Error
-                )
-            } else {
+            if (isGuest) {
                 PrimaryButton(
                     text = "התחבר",
                     onClick = onLogin,
                     modifier = Modifier.fillMaxWidth(),
                     icon = Icons.Rounded.Login
                 )
+            } else {
+                TextButton(
+                    text = "התנתק",
+                    onClick = onLogout,
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.error
+
+                )
             }
-    }
+        }
 }
 
 @Composable
@@ -385,46 +417,22 @@ private fun LegalSection(
     onNavigateToTermsOfService: () -> Unit,
     onNavigateToPrivacyPolicy: () -> Unit
 ) {
-    GlassCard(
-        modifier = Modifier.fillMaxWidth()
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(Spacing.xs)
     ) {
-        Column(
-            modifier = Modifier.padding(Padding.l)
+        TextButton(
+            onClick = onNavigateToTermsOfService,
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Text(
-                text = "משפטי",
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(bottom = Spacing.m)
-            )
+            Text("תנאי שימוש")
+        }
 
-            ChampionListItem(
-                title = "תנאי שירות",
-                leadingIcon = Icons.Rounded.Description,
-                onClick = onNavigateToTermsOfService,
-                trailingContent = {
-                    Icon(
-                        imageVector = Icons.Rounded.ChevronRight,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            )
-
-            ChampionDivider()
-
-            ChampionListItem(
-                title = "מדיניות פרטיות",
-                leadingIcon = Icons.Rounded.PrivacyTip,
-                onClick = onNavigateToPrivacyPolicy,
-                trailingContent = {
-                    Icon(
-                        imageVector = Icons.Rounded.ChevronRight,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            )
+        TextButton(
+            onClick = onNavigateToPrivacyPolicy,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("מדיניות פרטיות")
         }
     }
 }

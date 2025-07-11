@@ -3,6 +3,7 @@ package com.example.championcart.data.repository
 import android.util.Log
 import com.example.championcart.data.api.CartApi
 import com.example.championcart.data.api.PriceApi
+import com.example.championcart.data.api.ProductApi
 import com.example.championcart.data.local.CartManager
 import com.example.championcart.data.local.PreferencesManager
 import com.example.championcart.data.mappers.toDomainModel
@@ -10,6 +11,7 @@ import com.example.championcart.data.models.cart.*
 import com.example.championcart.domain.models.CheapestStoreResult
 import com.example.championcart.domain.models.SavedCart
 import com.example.championcart.domain.repository.CartRepository
+import com.example.championcart.domain.repository.PriceRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import javax.inject.Inject
@@ -19,6 +21,8 @@ import javax.inject.Singleton
 class CartRepositoryImpl @Inject constructor(
     private val cartApi: CartApi,
     private val priceApi: PriceApi,
+    private val productApi: ProductApi,
+    private val priceRepository: PriceRepository,
     private val cartManager: CartManager,
     private val preferencesManager: PreferencesManager
 ) : CartRepository {
@@ -71,7 +75,7 @@ class CartRepositoryImpl @Inject constructor(
                     id = cart.cartId.toString(),
                     name = cart.cartName,
                     itemCount = cart.itemCount,
-                    totalItems = cart.itemCount,
+                    totalItems = cart.itemCount, // API doesn't provide total quantity in list, only item count
                     createdAt = cart.createdAt
                 )
             }
@@ -93,27 +97,44 @@ class CartRepositoryImpl @Inject constructor(
             if (response.success) {
                 val cartDetails = response.cart
 
+                // Clear current cart
                 cartManager.clearCart()
+
+                // Update the city to match the saved cart's city
+                preferencesManager.setSelectedCity(cartDetails.city)
+                Log.d(TAG, "Updated city to: ${cartDetails.city}")
+
+                // Load each item from the saved cart using barcode
+                var successCount = 0
+                var failCount = 0
 
                 cartDetails.items.forEach { cartItem ->
                     try {
-                        val productResponse = priceApi.searchProductPrices(
-                            city = cartDetails.city,
-                            itemName = cartItem.name
+                        // Use barcode to get product details
+                        Log.d(TAG, "Loading product by barcode: ${cartItem.barcode}")
+
+                        val productResponse = productApi.getProductByBarcode(
+                            barcode = cartItem.barcode,
+                            city = cartDetails.city
                         )
 
-                        if (productResponse.success && productResponse.data != null && productResponse.data.isNotEmpty()) {
-                            val product = productResponse.data.first().toDomainModel()
+                        if (productResponse.available && productResponse.allPrices.isNotEmpty()) {
+                            // Convert to domain model and add to cart
+                            val product = productResponse.toDomainModel()
                             cartManager.addToCart(product, cartItem.quantity)
+                            successCount++
+                            Log.d(TAG, "Added product to cart: ${product.name} x${cartItem.quantity}")
                         } else {
-                            Log.w(TAG, "Product not found: ${cartItem.name}")
+                            failCount++
+                            Log.w(TAG, "Product not available in city: ${cartItem.name} (barcode: ${cartItem.barcode})")
                         }
                     } catch (e: Exception) {
-                        Log.e(TAG, "Error loading product: ${cartItem.name}", e)
+                        failCount++
+                        Log.e(TAG, "Error loading product by barcode: ${cartItem.barcode}", e)
                     }
                 }
 
-                Log.d(TAG, "Cart loaded successfully")
+                Log.d(TAG, "Cart loaded: $successCount items loaded successfully, $failCount failed")
                 emit(Result.success(Unit))
             } else {
                 Log.e(TAG, "Failed to get cart details")
@@ -197,5 +218,4 @@ class CartRepositoryImpl @Inject constructor(
             emit(Result.failure(e))
         }
     }
-
 }
