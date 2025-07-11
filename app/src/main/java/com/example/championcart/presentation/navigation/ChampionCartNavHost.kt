@@ -2,6 +2,7 @@ package com.example.championcart.presentation.navigation
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -39,6 +40,7 @@ import com.example.championcart.presentation.screens.scan.ScanScreen
 import com.example.championcart.ui.theme.Spacing
 import com.example.championcart.presentation.screens.info.TermsOfServiceScreen
 import com.example.championcart.presentation.screens.info.PrivacyPolicyScreen
+import com.example.championcart.presentation.screens.product.ProductDetailScreen
 import com.example.championcart.utils.NavigationUtils.openMapForNavigation
 
 
@@ -70,7 +72,6 @@ fun ChampionCartNavHost(
     val showBottomNav = currentRoute in listOf(
         Screen.Home.route,
         Screen.Search.route,
-        Screen.Scan.route,
         Screen.Cart.route,
         Screen.Profile.route
     )
@@ -224,9 +225,6 @@ fun ChampionCartNavHost(
 
             composable(route = Screen.Profile.route) {
                 ProfileScreen(
-                    onNavigateToSettings = {
-                        navController.navigate(Screen.Settings.route)
-                    },
                     onNavigateToSavedCarts = {
                         navController.navigate(Screen.SavedCarts.route)
                     },
@@ -252,23 +250,25 @@ fun ChampionCartNavHost(
                 arguments = Screen.ProductDetail.arguments
             ) { backStackEntry ->
                 val productId = backStackEntry.arguments?.getString("productId") ?: ""
-                // TODO: Implement ProductDetailScreen
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column {
-                        Text(
-                            text = "Product Detail Screen",
-                            style = MaterialTheme.typography.headlineMedium
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "Product ID: $productId",
-                            style = MaterialTheme.typography.bodyLarge
-                        )
+
+                ProductDetailScreen(
+                    productId = productId,
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    },
+                    onNavigateToStore = { storeName ->
+                        // You can implement store navigation if needed
+                        // For now, we'll just show a toast or do nothing
+                    },
+                    onNavigateToScan = {
+                        navController.navigate(Screen.Scan.route)
+                    },
+                    innerPadding = if (showBottomNav) {
+                        PaddingValues(bottom = 80.dp) // Account for bottom nav height
+                    } else {
+                        PaddingValues()
                     }
-                }
+                )
             }
 
             // Settings Screen

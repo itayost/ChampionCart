@@ -24,7 +24,6 @@ import com.example.championcart.ui.theme.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
-    onNavigateToSettings: () -> Unit,
     onNavigateToSavedCarts: () -> Unit,
     onNavigateToTermsOfService: () -> Unit,
     onNavigateToPrivacyPolicy: () -> Unit,

@@ -272,7 +272,6 @@ fun PriceCard(
     price: String,
     priceLevel: PriceLevel,
     distance: String? = null,
-    onNavigate: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -325,20 +324,6 @@ fun PriceCard(
                             PriceLevel.High -> PriceColors.High
                         }
                     )
-                }
-
-                onNavigate?.let {
-                    IconButton(
-                        onClick = it,
-                        modifier = Modifier.size(36.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.Navigation,
-                            contentDescription = "נווט לחנות",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
                 }
             }
         }

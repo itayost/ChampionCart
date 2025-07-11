@@ -391,7 +391,6 @@ private fun CardComponents() {
             price = "₪12.90",
             priceLevel = PriceLevel.Best,
             distance = "0.8",
-            onNavigate = {}
         )
 
         PriceCard(
