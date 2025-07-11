@@ -69,12 +69,12 @@ fun ChampionCartNavHost(
     }
 
     // Determine if bottom nav should be shown
-    val showBottomNav = currentRoute in listOf(
-        Screen.Home.route,
-        Screen.Search.route,
-        Screen.Cart.route,
-        Screen.Profile.route
-    )
+    val showBottomNav = currentRoute?.let { route ->
+        route == Screen.Home.route ||
+                route.startsWith("search") || // This will match both "search" and "search?query=..."
+                route == Screen.Cart.route ||
+                route == Screen.Profile.route
+    } ?: false
 
     Box(modifier = Modifier.fillMaxSize()) {
         NavHost(
@@ -323,18 +323,18 @@ fun ChampionCartNavHost(
                     .fillMaxWidth()
             ) {
                 ChampionNavBar(
-                    selectedRoute = when (currentRoute) {
-                        Screen.Home.route -> NavigationRoute.HOME
-                        Screen.Search.route -> NavigationRoute.SEARCH
-                        Screen.Scan.route -> NavigationRoute.SCAN
-                        Screen.Cart.route -> NavigationRoute.CART
-                        Screen.Profile.route -> NavigationRoute.PROFILE
+                    selectedRoute = when {
+                        currentRoute == Screen.Home.route -> NavigationRoute.HOME
+                        currentRoute?.startsWith("search") == true -> NavigationRoute.SEARCH // FIXED
+                        currentRoute == Screen.Scan.route -> NavigationRoute.SCAN
+                        currentRoute == Screen.Cart.route -> NavigationRoute.CART
+                        currentRoute == Screen.Profile.route -> NavigationRoute.PROFILE
                         else -> NavigationRoute.HOME
                     },
                     onNavigate = { route ->
                         val screen = when (route) {
                             NavigationRoute.HOME -> Screen.Home.route
-                            NavigationRoute.SEARCH -> Screen.Search.route
+                            NavigationRoute.SEARCH -> Screen.Search.createRoute() // FIXED: Use createRoute()
                             NavigationRoute.SCAN -> Screen.Scan.route
                             NavigationRoute.CART -> Screen.Cart.route
                             NavigationRoute.PROFILE -> Screen.Profile.route

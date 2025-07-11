@@ -100,14 +100,6 @@ fun SearchScreen(
                             contentDescription = "חזור"
                         )
                     }
-                },
-                actions = {
-                    IconButton(onClick = { /* TODO: Implement filters */ }) {
-                        Icon(
-                            imageVector = Icons.Rounded.FilterList,
-                            contentDescription = "סנן"
-                        )
-                    }
                 }
             )
         },

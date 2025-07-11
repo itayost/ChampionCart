@@ -7,14 +7,18 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.example.championcart.presentation.components.branding.ChampionCartLogo
+import com.example.championcart.presentation.components.branding.LogoSize
+import com.example.championcart.presentation.components.branding.LogoVariant
 import com.example.championcart.ui.theme.*
 
 /**
- * Loading indicators for ChampionCart
+ * Loading indicators for ChampionCart with enhanced branding
  */
 
 @Composable
@@ -39,8 +43,21 @@ fun LoadingIndicator(
 @Composable
 fun LoadingScreen(
     message: String? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    showLogo: Boolean = true
 ) {
+    // Animation for logo breathing effect
+    val infiniteTransition = rememberInfiniteTransition(label = "loading")
+    val logoScale by infiniteTransition.animateFloat(
+        initialValue = 0.95f,
+        targetValue = 1.05f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1500, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "logoScale"
+    )
+
     Box(
         modifier = modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
@@ -49,7 +66,21 @@ fun LoadingScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            LoadingIndicator()
+            if (showLogo) {
+                // ChampionCart logo with breathing animation
+                ChampionCartLogo(
+                    variant = LogoVariant.Icon,
+                    size = LogoSize.Large,
+                    modifier = Modifier.scale(logoScale)
+                )
+
+                Spacer(modifier = Modifier.height(Spacing.xl))
+            }
+
+            // Loading indicator positioned relative to logo
+            LoadingIndicator(
+                size = if (showLogo) 32.dp else 48.dp
+            )
 
             message?.let {
                 Spacer(modifier = Modifier.height(Spacing.l))
@@ -125,6 +156,144 @@ fun ShimmerEffect(
                         alpha = alpha.value
                     )
                 )
+        )
+    }
+}
+
+/**
+ * Enhanced loading state for search results or product loading
+ */
+@Composable
+fun BrandedLoadingCard(
+    message: String = "מחפש את המחירים הטובים ביותר...",
+    modifier: Modifier = Modifier
+) {
+    val infiniteTransition = rememberInfiniteTransition(label = "branded_loading")
+
+    // Pulsing animation for the logo
+    val logoPulse by infiniteTransition.animateFloat(
+        initialValue = 0.8f,
+        targetValue = 1.0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1200, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "logoPulse"
+    )
+
+    GlassCard(
+        modifier = modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(Spacing.xl),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            // Mini logo with pulse animation
+            ChampionCartLogo(
+                variant = LogoVariant.Icon,
+                size = LogoSize.Medium,
+                modifier = Modifier.scale(logoPulse)
+            )
+
+            Spacer(modifier = Modifier.height(Spacing.l))
+
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(Spacing.l))
+
+            LoadingIndicator(size = 24.dp, strokeWidth = 2.dp)
+        }
+    }
+}
+
+/**
+ * Minimal loading indicator for small spaces
+ */
+@Composable
+fun MiniLoadingIndicator(
+    modifier: Modifier = Modifier,
+    size: Dp = 16.dp
+) {
+    CircularProgressIndicator(
+        modifier = modifier.size(size),
+        color = BrandColors.ElectricMint,
+        strokeWidth = 2.dp,
+        strokeCap = StrokeCap.Round
+    )
+}
+
+/**
+ * Loading state for empty screens with branding
+ */
+@Composable
+fun EmptyStateLoading(
+    title: String = "טוען...",
+    subtitle: String = "מכין עבורך את הטוב ביותר",
+    modifier: Modifier = Modifier
+) {
+    val infiniteTransition = rememberInfiniteTransition(label = "empty_loading")
+
+    val logoRotation by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(3000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "logoRotation"
+    )
+
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(Spacing.xxl),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        // Large logo with subtle rotation
+        Box(
+            modifier = Modifier.size(LogoSize.XLarge.iconSize),
+            contentAlignment = Alignment.Center
+        ) {
+            ChampionCartLogo(
+                variant = LogoVariant.Icon,
+                size = LogoSize.XLarge
+            )
+
+            // Rotating loading ring around logo
+            CircularProgressIndicator(
+                modifier = Modifier
+                    .size(LogoSize.XLarge.iconSize + 16.dp),
+                color = BrandColors.ElectricMint.copy(alpha = 0.3f),
+                strokeWidth = 2.dp,
+                strokeCap = StrokeCap.Round
+            )
+        }
+
+        Spacer(modifier = Modifier.height(Spacing.xl))
+
+        Text(
+            text = title,
+            style = MaterialTheme.typography.headlineSmall,
+            color = MaterialTheme.colorScheme.onSurface,
+            textAlign = TextAlign.Center
+        )
+
+        Spacer(modifier = Modifier.height(Spacing.s))
+
+        Text(
+            text = subtitle,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
         )
     }
 }

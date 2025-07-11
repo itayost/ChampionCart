@@ -1,6 +1,7 @@
 package com.example.championcart.presentation.screens.splash
 
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -11,9 +12,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.championcart.R
 import com.example.championcart.presentation.components.common.*
 import com.example.championcart.ui.theme.*
 import kotlinx.coroutines.delay
@@ -83,9 +86,9 @@ fun SplashScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                // Animated Logo using Card (similar to AuthHeader)
+                // New Logo using the custom drawable
                 Card(
-                    modifier = Modifier.size(100.dp),
+                    modifier = Modifier.size(120.dp),
                     shape = Shapes.cardLarge,
                     colors = CardDefaults.cardColors(
                         containerColor = BrandColors.ElectricMint
@@ -109,11 +112,11 @@ fun SplashScreen(
                             ),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            imageVector = Icons.Rounded.ShoppingCart,
-                            contentDescription = null,
-                            modifier = Modifier.size(60.dp),
-                            tint = MaterialTheme.colorScheme.surface
+                        // Use the new logo drawable instead of Material Icon
+                        Image(
+                            painter = painterResource(id = R.drawable.logo_championcart),
+                            contentDescription = "ChampionCart Logo",
+                            modifier = Modifier.size(100.dp)
                         )
                     }
                 }
