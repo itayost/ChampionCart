@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.*
+import androidx.compose.material.icons.rounded.History
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -497,21 +498,10 @@ private fun RecentSearchesSection(
             horizontalArrangement = Arrangement.spacedBy(Spacing.s)
         ) {
             items(searches) { search ->
-                AssistChip(
+                ChampionChip(
+                    text = search,
                     onClick = { onSearchClick(search) },
-                    label = {
-                        Text(
-                            text = search,
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                    },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Rounded.History,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp)
-                        )
-                    }
+                    leadingIcon = Icons.Rounded.History
                 )
             }
         }

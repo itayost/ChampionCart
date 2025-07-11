@@ -55,6 +55,6 @@ class TokenManager @Inject constructor(
     }
 
     fun isLoggedIn(): Boolean {
-        return getToken() != null || isGuestMode()
+        return getToken() != null || !isGuestMode()
     }
 }

@@ -122,13 +122,6 @@ class CartViewModel @Inject constructor(
     }
 
     fun saveCart(name: String) {
-        if (!tokenManager.isLoggedIn()) {
-            _uiState.update {
-                it.copy(message = "יש להתחבר כדי לשמור עגלות")
-            }
-            return
-        }
-
         if (name.isBlank()) {
             _uiState.update {
                 it.copy(message = "יש להזין שם לעגלה")
@@ -171,7 +164,33 @@ class CartViewModel @Inject constructor(
         }
     }
 
+    fun canSaveCart(): Boolean {
+        // Check if user is logged in
+        if (!tokenManager.isLoggedIn()) {
+            _uiState.update {
+                it.copy(message = "יש להתחבר כדי לשמור עגלות")
+            }
+            return false
+        }
+
+        // Check if cart is empty
+        if (_uiState.value.cartItems.isEmpty()) {
+            _uiState.update {
+                it.copy(message = "לא ניתן לשמור עגלה ריקה")
+            }
+            return false
+        }
+
+        return true
+    }
+
     fun clearMessage() {
         _uiState.update { it.copy(message = null) }
+    }
+
+    fun isLoggedIn(): Boolean {
+        val isLoggedIn = tokenManager.isLoggedIn()
+        println("CartViewModel: tokenManager.isLoggedIn() = $isLoggedIn")
+        return isLoggedIn
     }
 }

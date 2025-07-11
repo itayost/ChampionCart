@@ -219,6 +219,9 @@ fun ChampionCartNavHost(
                         // Now we receive both store name and address
                         val context = navController.context
                         openMapForNavigation(context, address, storeName)
+                    },
+                    onNavigateToLogin = {
+                        navController.navigate(Screen.Login.route)
                     }
                 )
             }

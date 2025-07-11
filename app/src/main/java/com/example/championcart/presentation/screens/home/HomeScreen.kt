@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.FormatListBulleted
 import androidx.compose.material.icons.rounded.FormatListBulleted
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.LocalOffer
@@ -168,17 +169,6 @@ fun HomeScreen(
                             onNavigateToSearch(searchQuery)
                         }
                     }
-                )
-            }
-
-            // Quick Actions
-            item {
-                QuickActionsSection(
-                    cartItemCount = uiState.cartItemCount,
-                    onScanClick = onNavigateToScan,
-                    onCartClick = onNavigateToCart,
-                    onDealsClick = { /* TODO: Navigate to deals */ },
-                    onListsClick = { /* TODO: Navigate to saved lists */ }
                 )
             }
 
@@ -388,53 +378,7 @@ private fun HeroSection(
     }
 }
 
-@Composable
-private fun QuickActionsSection(
-    cartItemCount: Int,
-    onScanClick: () -> Unit,
-    onCartClick: () -> Unit,
-    onDealsClick: () -> Unit,
-    onListsClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = Spacing.l),
-        horizontalArrangement = Arrangement.spacedBy(Spacing.m)
-    ) {
-        CategoryCard(
-            name = "עגלה",
-            icon = Icons.Rounded.ShoppingCart,
-            color = BrandColors.ElectricMint,
-            onClick = onCartClick,
-            modifier = Modifier.weight(1f)
-        )
 
-        CategoryCard(
-            name = "סרוק",
-            icon = Icons.Rounded.QrCodeScanner,
-            color = BrandColors.CosmicPurple,
-            onClick = onScanClick,
-            modifier = Modifier.weight(1f)
-        )
-
-        CategoryCard(
-            name = "רשימות",
-            icon = Icons.Rounded.FormatListBulleted,
-            color = BrandColors.NeonCoral,
-            onClick = onListsClick,
-            modifier = Modifier.weight(1f)
-        )
-
-        CategoryCard(
-            name = "מבצעים",
-            icon = Icons.Rounded.LocalOffer,
-            color = SemanticColors.Warning,
-            onClick = onDealsClick,
-            modifier = Modifier.weight(1f)
-        )
-    }
-}
 
 @Composable
 private fun RecentSearchesSection(

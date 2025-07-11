@@ -73,7 +73,10 @@ import com.example.championcart.ui.theme.SemanticColors
 import com.example.championcart.ui.theme.Size
 import com.example.championcart.ui.theme.Spacing
 import android.content.Context
+import androidx.compose.material.icons.automirrored.rounded.Login
+import androidx.compose.material.icons.rounded.Login
 import androidx.compose.ui.platform.LocalContext
+import com.example.championcart.ui.theme.BrandColors
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -81,10 +84,12 @@ fun CartScreen(
     onNavigateBack: () -> Unit,
     onNavigateToSearch: () -> Unit,
     onNavigateToStore: (String, String) -> Unit,
+    onNavigateToLogin: () -> Unit,
     viewModel: CartViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val isGuest = !viewModel.isLoggedIn()
     val snackbarHostState = remember { SnackbarHostState() }
     val listState = rememberLazyListState()
     val hapticFeedback = LocalHapticFeedback.current
@@ -100,7 +105,9 @@ fun CartScreen(
 
     LaunchedEffect(uiState.message) {
         uiState.message?.let { message ->
-            snackbarHostState.showSnackbar(message)
+            snackbarHostState.showSnackbar(
+                message = message,
+            )
             viewModel.clearMessage()
         }
     }
@@ -133,7 +140,13 @@ fun CartScreen(
                         TopBarAction(
                             icon = Icons.Rounded.Save,
                             contentDescription = "שמור עגלה",
-                            onClick = { showSaveDialog = true }
+                            onClick = {
+                                hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                                // Validate before showing dialog
+                                if (viewModel.canSaveCart()) {
+                                    showSaveDialog = true
+                                }
+                            }
                         ),
                         TopBarAction(
                             icon = Icons.Rounded.Delete,
@@ -149,44 +162,70 @@ fun CartScreen(
                     visible = uiState.cartItems.isNotEmpty(),
                     enter = fadeIn() + slideInVertically { it },
                     exit = fadeOut() + slideOutVertically { it },
-                    modifier = Modifier.padding(bottom = Size.bottomNavHeight) // Add bottom nav height padding
+                    modifier = Modifier.padding(bottom = Size.bottomNavHeight)
                 ) {
-                    ExtendedFloatingActionButton(
-                        onClick = {
-                            if (!uiState.isCalculating) {
+                    if (isGuest) {
+                        // Show login prompt FAB for guests
+                        ExtendedFloatingActionButton(
+                            onClick = {
                                 hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                                showCheapestStoreSheet = true
-                                viewModel.calculateCheapestStore()
-                            }
-                        },
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier.animateContentSize()
-                    ) {
-                        if (uiState.isCalculating) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(24.dp),
-                                color = MaterialTheme.colorScheme.onPrimary,
-                                strokeWidth = 2.dp
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "מחשב...",
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.Medium
-                            )
-                        } else {
+                                onNavigateToLogin()
+                            },
+                            containerColor = BrandColors.ElectricMint,
+                            contentColor = Color.White,
+                            modifier = Modifier.animateContentSize()
+                        ) {
                             Icon(
-                                imageVector = Icons.Rounded.LocalOffer,
+                                imageVector = Icons.Rounded.Login,
                                 contentDescription = null,
                                 modifier = Modifier.size(24.dp)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "מצא חנות זולה",
+                                text = "התחבר לחיסכון",
                                 style = MaterialTheme.typography.labelLarge,
                                 fontWeight = FontWeight.Medium
                             )
+                        }
+                    } else {
+                        // Show regular FAB for logged-in users
+                        ExtendedFloatingActionButton(
+                            onClick = {
+                                if (!uiState.isCalculating) {
+                                    hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    showCheapestStoreSheet = true
+                                    viewModel.calculateCheapestStore()
+                                }
+                            },
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.animateContentSize()
+                        ) {
+                            if (uiState.isCalculating) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(24.dp),
+                                    color = MaterialTheme.colorScheme.onPrimary,
+                                    strokeWidth = 2.dp
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "מחשב...",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Rounded.LocalOffer,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "מצא חנות זולה",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
                         }
                     }
                 }
@@ -257,6 +296,12 @@ fun CartScreen(
                                     itemCount = uiState.cartItems.sumOf { it.quantity },
                                     totalPrice = uiState.totalPrice,
                                     potentialSavings = uiState.potentialSavings ?: 0.0,
+                                    isGuest = isGuest,
+                                    onLoginClick = {
+                                        // Navigate to login screen
+                                        // You'll need to add this navigation parameter to CartScreen
+                                        onNavigateToLogin()
+                                    },
                                     modifier = Modifier.padding(Padding.l)
                                 )
                             }
@@ -316,7 +361,7 @@ fun CartScreen(
             onDismiss = { showSaveDialog = false },
             onSave = { cartName ->
                 viewModel.saveCart(cartName)
-                // The ViewModel should handle closing the dialog after successful save
+                showSaveDialog = false  // Close dialog after initiating save
             },
             isLoading = uiState.isSaving
         )
