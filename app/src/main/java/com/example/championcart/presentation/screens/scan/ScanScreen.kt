@@ -116,7 +116,7 @@ fun ScanScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(top = paddingValues.calculateTopPadding()) // Only apply top padding from scaffold
+                .padding(paddingValues)
                 .background(Color.Black)
         ) {
             when {

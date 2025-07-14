@@ -213,7 +213,7 @@ fun ChampionCartNavHost(
                         navController.popBackStack()
                     },
                     onNavigateToSearch = {
-                        navController.navigate(Screen.Search.route)
+                        navController.navigate(Screen.Search.createRoute())
                     },
                     onNavigateToStore = { storeName, address ->
                         // Now we receive both store name and address
