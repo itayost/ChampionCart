@@ -10,6 +10,7 @@ import com.example.championcart.data.mappers.toDomainModel
 import com.example.championcart.data.models.cart.*
 import com.example.championcart.domain.models.CheapestStoreResult
 import com.example.championcart.domain.models.SavedCart
+import com.example.championcart.domain.models.StoreDetail
 import com.example.championcart.domain.repository.CartRepository
 import com.example.championcart.domain.repository.PriceRepository
 import kotlinx.coroutines.flow.Flow
@@ -197,14 +198,27 @@ class CartRepositoryImpl @Inject constructor(
                         missingItems.add(item.name)
                     }
 
+                val storeDetails = response.allStores.map { store ->
+                    StoreDetail(
+                        storeName = "${store.chainDisplayName} - ${store.branchName}",
+                        branchName = store.branchName,
+                        chainName = store.chainDisplayName,
+                        totalPrice = store.totalPrice,
+                        availableItems = store.availableItems,
+                        missingItems = store.missingItems,
+                        address = store.branchAddress
+                    )
+                }
+
                 val result = CheapestStoreResult(
                     cheapestStore = "${cheapestStore.chainDisplayName} - ${cheapestStore.branchName}",
-                    address = cheapestStore.branchAddress, // Now properly mapped!
+                    address = cheapestStore.branchAddress,
                     totalPrice = cheapestStore.totalPrice,
                     storeTotals = storeTotals,
                     missingItems = missingItems,
                     availableItems = cheapestStore.availableItems,
-                    totalMissingItems = cheapestStore.missingItems
+                    totalMissingItems = cheapestStore.missingItems,
+                    storeDetails = storeDetails // NEW: Include store details
                 )
 
                 Log.d(TAG, "Cheapest store: ${result.cheapestStore} at ${result.address} - ₪${result.totalPrice}")

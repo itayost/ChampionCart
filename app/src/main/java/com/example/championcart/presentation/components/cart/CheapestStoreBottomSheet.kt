@@ -3,7 +3,6 @@ package com.example.championcart.presentation.components.cart
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -12,10 +11,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CheckCircle
-import androidx.compose.material.icons.rounded.EmojiEvents
+import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material.icons.rounded.Navigation
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Store
@@ -28,19 +26,31 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.championcart.domain.models.CheapestStoreResult
 import com.example.championcart.presentation.components.common.ChampionBottomSheet
 import com.example.championcart.presentation.components.common.GlassCard
 import com.example.championcart.presentation.components.common.InfoCard
 import com.example.championcart.presentation.components.common.LoadingScreen
 import com.example.championcart.presentation.components.common.PrimaryButton
-import com.example.championcart.presentation.components.common.SecondaryButton
 import com.example.championcart.ui.theme.BrandColors
 import com.example.championcart.ui.theme.PriceColors
 import com.example.championcart.ui.theme.SemanticColors
 import com.example.championcart.ui.theme.Spacing
+
+// Enhanced data class to hold store details with missing items info
+data class StoreComparisonData(
+    val storeName: String,
+    val price: Double,
+    val missingItemsCount: Int,
+    val availableItemsCount: Int
+)
 
 @Composable
 fun CheapestStoreBottomSheet(
@@ -50,7 +60,9 @@ fun CheapestStoreBottomSheet(
     cartTotal: Double,
     onDismiss: () -> Unit,
     onNavigateToStore: (String) -> Unit,
-    onRecalculate: () -> Unit
+    onRecalculate: () -> Unit,
+    // New parameter to pass detailed store data from the API
+    storeDetails: List<StoreComparisonData>? = null
 ) {
     ChampionBottomSheet(
         visible = visible,
@@ -104,6 +116,45 @@ fun CheapestStoreBottomSheet(
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
+
+                                // Show available/missing items for winner store
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(Spacing.s),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    // Available items
+                                    if (result.availableItems != null) {
+                                        Text(
+                                            text = "${result.availableItems} מוצרים זמינים",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = SemanticColors.Success,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                    }
+
+                                    // Missing items warning
+                                    val missingCount = result.totalMissingItems ?: result.missingItems.size
+                                    if (missingCount > 0) {
+                                        Row(
+                                            horizontalArrangement = Arrangement.Start,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Rounded.Warning,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(14.dp),
+                                                tint = SemanticColors.Warning
+                                            )
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text(
+                                                text = "$missingCount חסרים",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = SemanticColors.Warning,
+                                                fontWeight = FontWeight.Medium
+                                            )
+                                        }
+                                    }
+                                }
                             }
 
                             // Price
@@ -123,17 +174,25 @@ fun CheapestStoreBottomSheet(
                                         Text(
                                             text = "חיסכון של ₪${String.format("%.2f", savings)}",
                                             style = MaterialTheme.typography.bodySmall,
-                                            color = SemanticColors.Success
+                                            color = SemanticColors.Success,
+                                            textAlign = TextAlign.End
                                         )
                                     }
                                 }
                             }
                         }
                     }
-                    // Missing items warning
+
+                    // Missing items detail (if any)
                     if (result.missingItems.isNotEmpty()) {
                         InfoCard(
-                            message = "${result.missingItems.size} מוצרים לא נמצאו בחנות הזולה",
+                            message = buildString {
+                                append("המוצרים הבאים לא נמצאו: ")
+                                append(result.missingItems.take(3).joinToString(", "))
+                                if (result.missingItems.size > 3) {
+                                    append(" ועוד ${result.missingItems.size - 3}")
+                                }
+                            },
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
@@ -153,28 +212,48 @@ fun CheapestStoreBottomSheet(
                         )
                     }
 
-                    // Store comparison
+                    // Store comparison with missing items info
                     if (result.storeTotals.size > 1) {
                         Column(
                             verticalArrangement = Arrangement.spacedBy(Spacing.s)
                         ) {
                             Text(
-                                text = "השוואת מחירים",
+                                text = "השוואת חנויות",
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Medium
                             )
 
-                            result.storeTotals.entries
-                                .sortedBy { it.value }
-                                .take(4) // Show top 4 stores
-                                .forEach { (store, price) ->
-                                    StoreComparisonRow(
-                                        storeName = store,
-                                        price = price,
-                                        isCheapest = store == result.cheapestStore,
-                                        difference = price - result.totalPrice
-                                    )
-                                }
+                            // If we have detailed store data, use it. Otherwise, fall back to simple comparison
+                            if (!storeDetails.isNullOrEmpty()) {
+                                storeDetails
+                                    .sortedBy { it.price }
+                                    .take(5)
+                                    .forEach { store ->
+                                        StoreComparisonRow(
+                                            storeName = store.storeName,
+                                            price = store.price,
+                                            isCheapest = store.storeName == result.cheapestStore,
+                                            difference = store.price - result.totalPrice,
+                                            missingItemsCount = store.missingItemsCount,
+                                            availableItemsCount = store.availableItemsCount
+                                        )
+                                    }
+                            } else {
+                                // Fallback to simple comparison without missing items info
+                                result.storeTotals.entries
+                                    .sortedBy { it.value }
+                                    .take(5)
+                                    .forEach { (store, price) ->
+                                        StoreComparisonRow(
+                                            storeName = store,
+                                            price = price,
+                                            isCheapest = store == result.cheapestStore,
+                                            difference = price - result.totalPrice,
+                                            missingItemsCount = 0,
+                                            availableItemsCount = 0
+                                        )
+                                    }
+                            }
                         }
                     }
                 }
@@ -218,7 +297,9 @@ private fun StoreComparisonRow(
     storeName: String,
     price: Double,
     isCheapest: Boolean,
-    difference: Double
+    difference: Double,
+    missingItemsCount: Int = 0,
+    availableItemsCount: Int = 0
 ) {
     val backgroundColor by animateColorAsState(
         targetValue = if (isCheapest) {
@@ -234,7 +315,7 @@ private fun StoreComparisonRow(
             .fillMaxWidth()
             .clip(MaterialTheme.shapes.small)
             .background(backgroundColor)
-            .padding(Spacing.m),
+            .padding(Spacing.l), // Increased padding for more height
         horizontalArrangement = Arrangement.spacedBy(Spacing.m),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -242,47 +323,118 @@ private fun StoreComparisonRow(
         Icon(
             imageVector = Icons.Rounded.Store,
             contentDescription = null,
-            modifier = Modifier.size(20.dp),
+            modifier = Modifier
+                .size(24.dp) // Slightly larger icon
+                .align(Alignment.Top), // Align to top when content is taller
             tint = if (isCheapest) BrandColors.ElectricMint else MaterialTheme.colorScheme.onSurfaceVariant
         )
 
-        // Store name
-        Text(
-            text = storeName,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = if (isCheapest) FontWeight.Bold else FontWeight.Normal,
-            modifier = Modifier.weight(1f)
-        )
-
-        // Price difference
-        if (difference > 0) {
+        // Store name and availability info
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
             Text(
-                text = "+₪${String.format("%.2f", difference)}",
-                style = MaterialTheme.typography.bodySmall,
-                color = PriceColors.High
+                text = storeName,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = if (isCheapest) FontWeight.Bold else FontWeight.Normal,
+                maxLines = 2, // Allow 2 lines for long store names
+                overflow = TextOverflow.Ellipsis,
+                lineHeight = 20.sp // Comfortable line height
             )
+
+            // Show availability info if we have the data
+            if (availableItemsCount > 0 || missingItemsCount > 0) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.s),
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(top = 2.dp) // Small spacing from store name
+                ) {
+                    // Available items
+                    if (availableItemsCount > 0) {
+                        Row(
+                            horizontalArrangement = Arrangement.Start,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.CheckCircle,
+                                contentDescription = null,
+                                modifier = Modifier.size(14.dp),
+                                tint = SemanticColors.Success
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "$availableItemsCount זמינים",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = SemanticColors.Success,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+
+                    // Missing items warning
+                    if (missingItemsCount > 0) {
+                        Row(
+                            horizontalArrangement = Arrangement.Start,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.Warning,
+                                contentDescription = null,
+                                modifier = Modifier.size(14.dp),
+                                tint = SemanticColors.Warning
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "$missingItemsCount חסרים",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = SemanticColors.Warning,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+                }
+            }
         }
 
-        // Price
-        Text(
-            text = "₪${String.format("%.2f", price)}",
-            style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.Medium,
-            color = when {
-                isCheapest -> PriceColors.Best
-                difference < 10 -> PriceColors.Mid
-                else -> MaterialTheme.colorScheme.onSurface
-            }
-        )
-
-        // Checkmark for cheapest
-        if (isCheapest) {
-            Icon(
-                imageVector = Icons.Rounded.CheckCircle,
-                contentDescription = "הזול ביותר",
-                modifier = Modifier.size(20.dp),
-                tint = SemanticColors.Success
+        // Price info column
+        Column(
+            horizontalAlignment = Alignment.End,
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+            modifier = Modifier.align(Alignment.Top) // Align to top when content is taller
+        ) {
+            // Price with larger font for better readability
+            Text(
+                text = "₪${String.format("%.2f", price)}",
+                style = MaterialTheme.typography.titleMedium, // Larger than bodyLarge
+                fontWeight = FontWeight.SemiBold,
+                color = when {
+                    isCheapest -> PriceColors.Best
+                    difference < 10 -> PriceColors.Mid
+                    else -> MaterialTheme.colorScheme.onSurface
+                }
             )
+
+            // Price difference
+            if (difference > 0) {
+                Text(
+                    text = "+₪${String.format("%.2f", difference)}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = PriceColors.High
+                )
+            }
+
+            // Checkmark for cheapest (only if all items available)
+            if (isCheapest && missingItemsCount == 0) {
+                Icon(
+                    imageVector = Icons.Rounded.CheckCircle,
+                    contentDescription = "הזול ביותר",
+                    modifier = Modifier
+                        .size(20.dp)
+                        .padding(top = 4.dp),
+                    tint = SemanticColors.Success
+                )
+            }
         }
     }
 }

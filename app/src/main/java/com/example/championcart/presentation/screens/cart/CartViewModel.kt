@@ -8,6 +8,7 @@ import com.example.championcart.domain.models.CartItem
 import com.example.championcart.domain.models.CheapestStoreResult
 import com.example.championcart.domain.usecase.cart.CalculateCheapestStoreUseCase
 import com.example.championcart.domain.usecase.cart.SaveCartUseCase
+import com.example.championcart.presentation.components.cart.StoreComparisonData
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -17,6 +18,7 @@ data class CartUiState(
     val cartItems: List<CartItem> = emptyList(),
     val totalPrice: Double = 0.0,
     val cheapestStoreResult: CheapestStoreResult? = null,
+    val storeComparisonData: List<StoreComparisonData>? = null, // NEW: Store details with missing items
     val potentialSavings: Double? = null,
     val isLoading: Boolean = false,
     val isCalculating: Boolean = false,
@@ -57,16 +59,27 @@ class CartViewModel @Inject constructor(
         cartManager.updateQuantity(productId, quantity)
 
         // Clear cheapest store result as cart changed
-        _uiState.update { it.copy(cheapestStoreResult = null, potentialSavings = null) }
+        _uiState.update {
+            it.copy(
+                cheapestStoreResult = null,
+                storeComparisonData = null,
+                potentialSavings = null
+            )
+        }
     }
 
     fun removeFromCart(productId: String) {
         cartManager.removeFromCart(productId)
 
         // Clear cheapest store result as cart changed
-        _uiState.update { it.copy(cheapestStoreResult = null, potentialSavings = null) }
-
-        _uiState.update { it.copy(message = "המוצר הוסר מהעגלה") }
+        _uiState.update {
+            it.copy(
+                cheapestStoreResult = null,
+                storeComparisonData = null,
+                potentialSavings = null,
+                message = "המוצר הוסר מהעגלה"
+            )
+        }
     }
 
     fun clearCart() {
@@ -74,6 +87,7 @@ class CartViewModel @Inject constructor(
         _uiState.update {
             it.copy(
                 cheapestStoreResult = null,
+                storeComparisonData = null,
                 potentialSavings = null,
                 message = "העגלה נוקתה"
             )
@@ -99,10 +113,20 @@ class CartViewModel @Inject constructor(
                             val currentTotal = _uiState.value.totalPrice
                             val savings = currentTotal - cheapestResult.totalPrice
 
+                            val storeData = cheapestResult.storeDetails?.map { store ->
+                                StoreComparisonData(
+                                    storeName = store.storeName,
+                                    price = store.totalPrice,
+                                    missingItemsCount = store.missingItems,
+                                    availableItemsCount = store.availableItems
+                                )
+                            } ?: emptyList()
+
                             _uiState.update {
                                 it.copy(
                                     isCalculating = false,
                                     cheapestStoreResult = cheapestResult,
+                                    storeComparisonData = storeData,
                                     potentialSavings = if (savings > 0) savings else 0.0,
                                     message = "נמצאה החנות הזולה ביותר: ${cheapestResult.cheapestStore}"
                                 )

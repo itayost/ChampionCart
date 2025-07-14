@@ -73,6 +73,7 @@ import com.example.championcart.ui.theme.SemanticColors
 import com.example.championcart.ui.theme.Size
 import com.example.championcart.ui.theme.Spacing
 import android.content.Context
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.Login
 import androidx.compose.material.icons.rounded.Login
 import androidx.compose.ui.platform.LocalContext
@@ -131,7 +132,7 @@ fun CartScreen(
                     navigationIcon = {
                         IconButton(onClick = onNavigateBack) {
                             Icon(
-                                imageVector = Icons.Rounded.ArrowBack,
+                                imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
                                 contentDescription = "חזור"
                             )
                         }
@@ -394,7 +395,8 @@ fun CartScreen(
             },
             onRecalculate = {
                 viewModel.calculateCheapestStore()
-            }
+            },
+            storeDetails = uiState.storeComparisonData
         )
     }
 }
