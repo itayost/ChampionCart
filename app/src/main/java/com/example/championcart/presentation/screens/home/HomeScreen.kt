@@ -73,7 +73,7 @@ import com.example.championcart.ui.theme.Spacing
 fun HomeScreen(
     onNavigateToProduct: (String) -> Unit,
     onNavigateToCart: () -> Unit,
-    onNavigateToSearch: (String) -> Unit,  // CHANGED: Now accepts String parameter
+    onNavigateToSearch: (String) -> Unit,  // Now accepts String parameter for search query
     onNavigateToProfile: () -> Unit,
     onNavigateToScan: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel()
@@ -91,28 +91,36 @@ fun HomeScreen(
         }
     }
 
-    // Show errors
-    LaunchedEffect(uiState.error) {
-        uiState.error?.let { error ->
-            snackbarHostState.showSnackbar(error)
-            viewModel.clearError()
-        }
-    }
-
     Scaffold(
         topBar = {
             ChampionTopBar(
                 title = "ChampionCart",
                 actions = {
-                    // Location button
-                    IconButton(
-                        onClick = { showCitySelection = true }
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.LocationOn,
-                            contentDescription = "בחר עיר",
-                            tint = BrandColors.ElectricMint
-                        )
+                    // City selector
+                    ChampionChip(
+                        text = uiState.selectedCity,
+                        onClick = { showCitySelection = true },
+                        leadingIcon = Icons.Rounded.LocationOn,
+                        selected = true
+                    )
+
+                    Spacer(modifier = Modifier.width(Spacing.s))
+
+                    // Cart icon with badge
+                    Box {
+                        IconButton(onClick = onNavigateToCart) {
+                            Icon(
+                                imageVector = Icons.Rounded.ShoppingCart,
+                                contentDescription = "עגלת קניות"
+                            )
+                        }
+
+                        if (uiState.cartItemCount > 0) {
+                            ChampionBadge(
+                                count = uiState.cartItemCount,
+                                modifier = Modifier.align(Alignment.TopEnd)
+                            )
+                        }
                     }
                 }
             )
@@ -125,35 +133,22 @@ fun HomeScreen(
                 }
             )
         }
-    ) { paddingValues ->
+    ) { innerPadding ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.surface,
-                            MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)
-                        )
-                    )
-                ),
-            contentPadding = PaddingValues(
-                top = paddingValues.calculateTopPadding(),
-                bottom = paddingValues.calculateBottomPadding() + Size.bottomNavHeight + Spacing.xl,
-                start = 0.dp,
-                end = 0.dp
-            ),
+                .padding(innerPadding),
             verticalArrangement = Arrangement.spacedBy(Spacing.l)
         ) {
-            // Hero Section with Greeting
+            // Hero Section with Search
             item {
                 HeroSection(
-                    userName = uiState.userName,
+                    userName = if (uiState.isGuest) "אורח" else uiState.userName,
                     selectedCity = uiState.selectedCity,
                     searchQuery = searchQuery,
-                    onSearchQueryChange = viewModel::onSearchQueryChange,
+                    onSearchQueryChange = { viewModel.onSearchQueryChange(it) },
                     onSearch = {
-                        // CHANGED: Navigate to search screen with query
+                        // Navigate to search screen with query
                         if (searchQuery.isNotEmpty()) {
                             onNavigateToSearch(searchQuery)
                         }
@@ -181,50 +176,14 @@ fun HomeScreen(
                         searches = uiState.recentSearches,
                         onSearchClick = { search ->
                             viewModel.onRecentSearchClick(search)
-                            onNavigateToSearch(search)  // CHANGED: Pass the search query
+                            onNavigateToSearch(search)  // Pass the search query
                         }
                     )
                 }
             }
 
-            // Search Results - Using StoreCard as product display
-            if (uiState.searchResults.isNotEmpty()) {
-                item {
-                    SectionHeader(
-                        title = "תוצאות חיפוש",
-                        modifier = Modifier.padding(horizontal = Spacing.l)
-                    )
-                }
-
-                items(
-                    items = uiState.searchResults,
-                    key = { it.id }
-                ) { product ->
-                    AnimatedVisibility(
-                        visible = true,
-                        enter = fadeIn() + slideInVertically()
-                    ) {
-                        // Using StoreCard to display product with best price info
-                        StoreCard(
-                            storeName = product.name,
-                            totalPrice = "₪${product.bestPrice}",
-                            itemCount = product.stores.size,
-                            distance = product.bestStore,
-                            onClick = {
-                                viewModel.onProductClick(product)
-                                onNavigateToProduct(product.id)
-                            },
-                            modifier = Modifier.padding(horizontal = Spacing.l),
-                            isRecommended = true
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(Spacing.s))
-                }
-            }
-
-            // Featured Products
-            if (uiState.featuredProducts.isNotEmpty() && uiState.searchResults.isEmpty()) {
+            // Featured Products (show only when not searching)
+            if (uiState.featuredProducts.isNotEmpty()) {
                 item {
                     SectionHeader(
                         title = "מוצרים פופולריים",
@@ -267,19 +226,6 @@ fun HomeScreen(
                             }
                         }
                     }
-                }
-            }
-
-            // Empty State if needed
-            if (uiState.searchResults.isEmpty() &&
-                uiState.featuredProducts.isEmpty() &&
-                !uiState.isSearching &&
-                !uiState.isFeaturedLoading) {
-                item {
-                    EmptySearchState(
-                        query = "",
-                        modifier = Modifier.padding(horizontal = Spacing.l, vertical = Spacing.xxl)
-                    )
                 }
             }
         }
@@ -358,8 +304,6 @@ private fun HeroSection(
         }
     }
 }
-
-
 
 @Composable
 private fun RecentSearchesSection(
