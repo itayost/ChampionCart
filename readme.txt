@@ -1,94 +1,118 @@
 # ChampionCart 🛒
 
-A modern Android grocery price comparison app built for the Israeli market. ChampionCart helps users find the best prices across major supermarket chains, create smart shopping lists, and track their savings with an intuitive, Hebrew-first user experience.
+> A modern Android grocery price comparison app for the Israeli market
 
-## ✨ Features
+ChampionCart helps users find the best prices across major supermarket chains, create smart shopping lists, and track their savings with an intuitive, Hebrew-first user experience.
 
-### 🔐 Authentication & User Management
-- **JWT-based Authentication** with secure token management
-- **Guest Mode** for users who prefer not to register
-- **User Registration/Login** with email validation
-- **Onboarding Flow** for first-time users
+## Features
 
-### 🏠 Smart Home Experience
-- **City Selection** for localized price comparison
-- **Featured Deals** and promotions
-- **Quick Stats** showing cart totals and savings
-- **Product Categories** for easy browsing
+### Core Functionality
+- 🔐 **JWT Authentication** with guest mode support
+- 🏠 **Smart Home Dashboard** with city selection and featured deals
+- 🔍 **Real-time Product Search** across multiple supermarket chains
+- 📱 **Barcode Scanner** using CameraX and ML Kit
+- 🛒 **Intelligent Shopping Cart** with best store calculator
+- 💰 **Price Comparison** with visual indicators
+- 🌙 **Hebrew/RTL Support** throughout the entire app
 
-### 🔍 Advanced Product Search
-- **Real-time Search** across multiple supermarket chains
-- **Hebrew Language Support** with RTL layout
-- **Price Comparison** with visual indicators (Best/Mid/High prices)
-- **Barcode Scanning** using CameraX and ML Kit
-- **Product Details** with store-specific pricing
-
-### 🛒 Intelligent Shopping Cart
-- **Local Cart Management** with persistent storage
-- **Quantity Management** with intuitive controls
-- **Best Store Calculator** to minimize total cost
-- **Save Carts** for registered users
-- **Share Cart Information** via maps integration
-
-### 📱 Modern UI/UX
+### User Experience
 - **Material Design 3** with custom "Electric Harmony" theme
-- **Dark/Light Mode** support
-- **Responsive Design** for different screen sizes
-- **Smooth Animations** with spring physics
-- **RTL Layout Support** for Hebrew text
-- **Glassmorphic Design Elements**
+- **Dark/Light Mode** automatic switching
+- **Responsive Design** for tablets and phones
+- **Smooth Animations** with accessibility support
+- **Offline Cart Management** with cloud sync
 
-## 🏗️ Technical Architecture
+## Screenshots
 
-### Tech Stack
-- **Language**: Kotlin
-- **UI Framework**: Jetpack Compose with Material3
-- **Architecture**: MVVM + Clean Architecture
-- **Dependency Injection**: Hilt
-- **Networking**: Retrofit + OkHttp
-- **Local Storage**: SharedPreferences (TokenManager, CartManager, PreferencesManager)
-- **Navigation**: Navigation Compose
-- **Camera**: CameraX + ML Kit Barcode Scanning
-- **Image Loading**: Coil
-- **Animations**: Lottie + Compose animations
+*Add your app screenshots here*
 
-### Project Structure
+## Tech Stack
+
+| Category | Technology |
+|----------|------------|
+| **Language** | Kotlin |
+| **UI Framework** | Jetpack Compose + Material3 |
+| **Architecture** | MVVM + Clean Architecture |
+| **Dependency Injection** | Hilt |
+| **Networking** | Retrofit + OkHttp |
+| **Local Storage** | SharedPreferences |
+| **Navigation** | Navigation Compose |
+| **Camera** | CameraX + ML Kit |
+| **Image Loading** | Coil |
+| **Animations** | Lottie + Compose |
+
+## Project Structure
+
 ```
 app/src/main/java/com/example/championcart/
 ├── data/
-│   ├── api/          # Retrofit API interfaces
-│   ├── local/        # Local storage managers
-│   ├── mappers/      # Data mapping functions
-│   ├── models/       # API data models
-│   └── repository/   # Repository implementations
+│   ├── api/              # Retrofit API interfaces
+│   ├── local/            # Local storage managers
+│   ├── mappers/          # Data mapping functions
+│   ├── models/           # API data models
+│   └── repository/       # Repository implementations
 ├── domain/
-│   ├── models/       # Domain models
-│   ├── repository/   # Repository interfaces
-│   └── usecase/      # Business logic use cases
+│   ├── models/           # Domain models
+│   ├── repository/       # Repository interfaces
+│   └── usecase/          # Business logic
 ├── presentation/
-│   ├── components/   # Reusable UI components
-│   ├── navigation/   # Navigation setup
-│   └── screens/      # Screen composables & ViewModels
-├── ui/theme/         # Design system & styling
-├── di/               # Dependency injection modules
-└── utils/            # Utility functions
+│   ├── components/       # Reusable UI components
+│   ├── navigation/       # Navigation setup
+│   └── screens/          # Screen composables & ViewModels
+├── ui/theme/             # Design system & styling
+├── di/                   # Dependency injection
+└── utils/                # Utility functions
 ```
 
-## 🔌 API Integration
+## Getting Started
 
-### Backend Endpoints
-The app integrates with multiple backend services:
+### Prerequisites
 
-- **Authentication**: `/api/auth/register`, `/api/auth/login`
-- **Product Search**: `/api/products/search`, `/api/products/barcode/{barcode}`
-- **Price Comparison**: `/api/prices/by-item/{city}/{item_name}`
-- **Cart Management**: `/api/carts/save`, `/api/carts/saved`
-- **Cities**: `/api/cities`
-- **Cheapest Cart**: `/api/cheapest-cart`
+- Android Studio Hedgehog (2023.1.1) or later
+- Android SDK 26+ (minimum) / 35 (target)
+- Kotlin 2.0.21
+- Java 17
 
-### Data Models
+### Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/yourusername/ChampionCart.git
+   cd ChampionCart
+   ```
+
+2. **Open in Android Studio**
+   - Import the project
+   - Wait for Gradle sync to complete
+
+3. **Build and run**
+   ```bash
+   ./gradlew assembleDebug
+   ```
+
+### Configuration
+
+The app integrates with backend APIs for price data. Key endpoints include:
+
+- Authentication: `/api/auth/register`, `/api/auth/login`
+- Product Search: `/api/products/search`
+- Price Comparison: `/api/prices/by-item/{city}/{item_name}`
+- Cart Management: `/api/carts/save`
+
+## Architecture
+
+### MVVM + Clean Architecture
+
+The app follows Clean Architecture principles with clear separation of concerns:
+
 ```kotlin
-// Core domain models
+// Repository Pattern
+interface ProductRepository {
+    suspend fun searchProducts(query: String, city: String): List<Product>
+    suspend fun getProductByBarcode(barcode: String, city: String): Product?
+}
+
+// Domain Models
 data class Product(
     val id: String,
     val barcode: String?,
@@ -96,145 +120,138 @@ data class Product(
     val category: String,
     val bestPrice: Double,
     val bestStore: String,
-    val stores: List<StorePrice>,
-    val imageUrl: String?
-)
-
-data class StorePrice(
-    val storeName: String,
-    val price: Double,
-    val priceLevel: PriceLevel,
-    val unit: String?,
-    val lastUpdated: String?
+    val stores: List<StorePrice>
 )
 ```
 
-## 🎨 Design System
+### State Management
 
-### "Electric Harmony" Color Palette
-- **Primary**: Electric Mint (#00D9A3) - Main actions and CTAs
-- **Secondary**: Cosmic Purple (#7B3FF2) - Premium features  
-- **Tertiary**: Neon Coral (#FF6B9D) - Deals and urgent items
-- **Semantic Colors**: Success Green, Warning Amber, Error Red
-- **Price Indicators**: Visual color coding for best/mid/high prices
+ViewModels use StateFlow for reactive UI updates:
+
+```kotlin
+@HiltViewModel
+class SearchViewModel @Inject constructor(
+    private val productRepository: ProductRepository
+) : ViewModel() {
+    
+    private val _uiState = MutableStateFlow(SearchUiState())
+    val uiState: StateFlow<SearchUiState> = _uiState.asStateFlow()
+    
+    fun searchProducts(query: String) {
+        // Implementation
+    }
+}
+```
+
+## Design System
+
+### Color Palette
+
+| Color | Hex | Usage |
+|-------|-----|-------|
+| Electric Mint | `#00D9A3` | Primary actions, CTAs |
+| Cosmic Purple | `#7B3FF2` | Secondary, Premium features |
+| Neon Coral | `#FF6B9D` | Deals, Urgent actions |
+| Success Green | `#00E676` | Best prices, Success states |
+| Warning Amber | `#FFB300` | Mid-range prices |
+| Error Red | `#FF5252` | High prices, Errors |
 
 ### Typography
+
 - **Display**: Space Grotesk Bold (Latin) / Heebo Black (Hebrew)
-- **Headlines**: Inter Variable (weight 300-800)
+- **Headlines**: Inter Variable (300-800 weight)
 - **Body**: Inter Variable / Rubik (Hebrew)
-- **Prices**: JetBrains Mono Variable (tabular numbers)
+- **Prices**: JetBrains Mono (tabular numbers)
 
-### Key Features
-- **RTL Layout Support** for Hebrew
-- **Responsive Design** adapting to screen sizes
-- **Glassmorphic Effects** for modern aesthetics
-- **Material 3 Animations** with reduced motion support
-- **Accessibility** built-in with proper contrast ratios
+## Key Features
 
-## 🚀 Getting Started
+### 1. Barcode Scanner
+Real-time barcode scanning with camera integration:
+- CameraX for camera management
+- ML Kit for barcode recognition
+- Automatic product lookup
+- Flash toggle support
 
-### Prerequisites
-- Android Studio Hedgehog (2023.1.1) or later
-- Android SDK 26+ (minimum) / 35 (target)
-- Kotlin 2.0.21
-- Java 17
+### 2. Price Comparison
+Visual price comparison across stores:
+- Color-coded price levels (Best/Mid/High)
+- Real-time price updates
+- Store-specific information
+- Savings calculation
 
-### Installation
-1. Clone the repository:
-```bash
-git clone https://github.com/yourusername/ChampionCart.git
-cd ChampionCart
+### 3. Smart Shopping Cart
+Intelligent cart management:
+- Local persistence with cloud sync
+- Best store recommendation
+- Quantity management
+- Total cost optimization
+
+### 4. Hebrew Support
+Complete RTL language support:
+- Right-to-left layout
+- Hebrew typography
+- Cultural adaptations
+- Bilingual interface
+
+## API Integration
+
+### Core Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/auth/login` | POST | User authentication |
+| `/api/products/search` | GET | Search products by name |
+| `/api/products/barcode/{barcode}` | GET | Get product by barcode |
+| `/api/prices/by-item/{city}/{item}` | GET | Compare prices by city |
+| `/api/carts/save` | POST | Save shopping cart |
+| `/api/cities` | GET | Available cities |
+
+### Sample Response
+
+```json
+{
+  "item_name": "חלב תנובה 3%",
+  "category": "חלב ומוצרי חלב",
+  "prices": [
+    {
+      "store_name": "שופרסל",
+      "price": 5.90,
+      "unit": "1L"
+    },
+    {
+      "store_name": "רמי לוי",
+      "price": 5.20,
+      "unit": "1L"
+    }
+  ]
+}
 ```
 
-2. Open the project in Android Studio
-
-3. Sync the project with Gradle files
-
-4. Configure network settings in `app/src/main/res/xml/network_security_config.xml` if needed
-
-5. Build and run the app:
-```bash
-./gradlew assembleDebug
-```
-
-### Configuration
-The app requires network connectivity to access the price comparison APIs. Make sure to:
-- Set up proper base URLs for your backend services
-- Configure authentication endpoints
-- Test with real API endpoints or mock services
-
-## 📱 Screen Navigation
-
-### Main Flow
-1. **Splash Screen** - App initialization and auth check
-2. **Onboarding** - First-time user introduction (if needed)
-3. **Authentication** - Login/Register or continue as guest
-4. **Home Screen** - Main dashboard with city selection and features
-5. **Search** - Product search and price comparison
-6. **Cart** - Shopping list management and store optimization
-7. **Profile** - User settings and saved carts
-
-### Secondary Screens
-- **Scan** - Barcode scanning for products
-- **Product Detail** - Detailed product information
-- **Terms of Service** - Legal information
-- **Privacy Policy** - Privacy guidelines
-
-## 🔧 Key Components
-
-### Local Data Management
-- **TokenManager**: Secure JWT token storage and validation
-- **CartManager**: Shopping cart state management with persistence
-- **PreferencesManager**: User preferences and app settings
-
-### Repository Pattern
-Clean separation between data sources and business logic:
-- **AuthRepository**: User authentication
-- **ProductRepository**: Product search and details
-- **PriceRepository**: Price comparison across stores
-- **CartRepository**: Shopping cart operations
-
-### ViewModels
-MVVM architecture with reactive state management:
-- Lifecycle-aware components
-- StateFlow for UI state
-- Coroutines for async operations
-- Error handling and loading states
-
-## 🌐 Internationalization
-
-### Hebrew Support
-- **RTL Layout**: Fully supports right-to-left text direction
-- **Hebrew Typography**: Optimized fonts for Hebrew text
-- **Cultural Adaptation**: Israeli market-specific features
-- **Bilingual Support**: Hebrew primary, English secondary
-
-## 🔒 Security Features
-
-- **JWT Token Management**: Secure authentication with automatic refresh
-- **Network Security**: HTTPS enforcement and certificate pinning
-- **Local Storage**: Encrypted sensitive data storage
-- **Guest Mode**: Privacy-focused usage without registration
-
-## 🧪 Testing
-
-### Test Structure
-- **Unit Tests**: Domain logic and repository tests
-- **UI Tests**: Compose UI testing with Espresso
-- **Integration Tests**: API integration testing
+## Testing
 
 ### Running Tests
+
 ```bash
 # Unit tests
 ./gradlew test
 
 # UI tests
 ./gradlew connectedAndroidTest
+
+# Generate test coverage
+./gradlew jacocoTestReport
 ```
 
-## 📦 Dependencies
+### Test Structure
+
+- **Unit Tests**: Repository and ViewModel logic
+- **UI Tests**: Compose UI components
+- **Integration Tests**: API integration
+
+## Dependencies
 
 ### Core Dependencies
+
 ```kotlin
 // Compose
 implementation("androidx.compose.ui:ui:$compose_version")
@@ -258,60 +275,76 @@ implementation("androidx.camera:camera-camera2:1.4.2")
 implementation("com.google.mlkit:barcode-scanning:17.3.0")
 ```
 
-## 🚧 Development Guidelines
+## Development Guidelines
 
 ### Code Style
-- **Kotlin Coding Conventions**: Follow official Kotlin style guide
-- **Compose Best Practices**: Use state hoisting and unidirectional data flow
-- **Clean Architecture**: Maintain clear separation of concerns
-- **MVVM Pattern**: Keep ViewModels focused on UI state management
+- Follow [Kotlin Coding Conventions](https://kotlinlang.org/docs/coding-conventions.html)
+- Use meaningful variable and function names
+- Write self-documenting code with minimal comments
+- Maintain consistent formatting with ktlint
 
-### Architecture Decisions
-- **Single Activity**: Navigation Compose with single MainActivity
-- **Repository Pattern**: Centralized data access layer
-- **StateFlow**: Reactive state management
-- **Dependency Injection**: Hilt for dependency management
+### Architecture Rules
+- Keep ViewModels focused on UI state
+- Use Repository pattern for data access
+- Implement proper error handling
+- Follow unidirectional data flow
 
-## 🔮 Future Roadmap
+### UI/UX Guidelines
+- Support RTL layouts for all new components
+- Use Material 3 design tokens
+- Implement proper accessibility features
+- Test with reduced motion settings
 
-### Phase 2 Features
-- [ ] **Price Alerts**: Notifications when products go on sale
-- [ ] **Store Locator**: Maps integration with store locations
-- [ ] **Advanced Analytics**: Personal savings tracking
-- [ ] **Social Features**: Share shopping lists with family
-- [ ] **Offline Support**: Cached data for offline usage
+## Roadmap
 
-### Phase 3 Enhancements
-- [ ] **AI Recommendations**: Smart product suggestions
-- [ ] **Voice Search**: Voice-activated product search
-- [ ] **Widget Support**: Home screen widgets for quick access
-- [ ] **Wear OS App**: Companion app for smartwatches
-- [ ] **Multi-language**: Full internationalization support
+### Phase 2 (Next Release)
+- [ ] Price alerts and notifications
+- [ ] Store locator with maps
+- [ ] Advanced savings analytics
+- [ ] Social sharing features
+- [ ] Offline data caching
 
-## 🤝 Contributing
+### Phase 3 (Future)
+- [ ] AI-powered recommendations
+- [ ] Voice search integration
+- [ ] Wear OS companion app
+- [ ] Multi-language support
+- [ ] Widget support
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+## Contributing
 
-### Development Setup
-- Follow the existing code style and architecture patterns
-- Write tests for new features
-- Update documentation for significant changes
-- Ensure RTL layout compatibility for new UI components
+We welcome contributions! Please follow these steps:
 
-## 📄 License
+1. **Fork** the repository
+2. **Create** a feature branch (`git checkout -b feature/amazing-feature`)
+3. **Commit** your changes (`git commit -m 'Add amazing feature'`)
+4. **Push** to the branch (`git push origin feature/amazing-feature`)
+5. **Open** a Pull Request
+
+### Contribution Guidelines
+
+- Ensure all tests pass
+- Follow the existing code style
+- Update documentation for new features
+- Test RTL layout compatibility
+- Include proper error handling
+
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
+## Support
 
-- **Material Design 3**: Google's design system
-- **Jetpack Compose**: Modern Android UI toolkit
-- **ML Kit**: Google's machine learning APIs
-- **Israeli Grocery Chains**: Data providers for price comparison
+- **Issues**: [GitHub Issues](https://github.com/yourusername/ChampionCart/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/yourusername/ChampionCart/discussions)
+- **Email**: support@championcart.app
+
+## Acknowledgments
+
+- [Material Design 3](https://m3.material.io/) - Design system
+- [Jetpack Compose](https://developer.android.com/jetpack/compose) - UI toolkit
+- [ML Kit](https://developers.google.com/ml-kit) - Machine learning APIs
+- Israeli grocery chains for price data
 
 ---
 
