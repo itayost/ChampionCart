@@ -1,5 +1,6 @@
 package com.example.championcart.presentation.screens.home
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.championcart.data.local.CartManager
@@ -24,7 +25,13 @@ class HomeViewModel @Inject constructor(
     private val cartManager: CartManager
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(HomeUiState())
+    companion object {
+        private const val TAG = "HomeViewModel"
+    }
+
+    private val _uiState = MutableStateFlow(HomeUiState(
+        selectedCity = preferencesManager.getSelectedCity()
+    ))
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
     // Search query state
@@ -65,11 +72,9 @@ class HomeViewModel @Inject constructor(
             getCitiesUseCase().collect { result ->
                 result.fold(
                     onSuccess = { cities ->
-                        val currentCity = preferencesManager.getSelectedCity()
                         _uiState.update {
                             it.copy(
                                 cities = cities,
-                                selectedCity = currentCity,
                                 isCitiesLoading = false
                             )
                         }
@@ -99,6 +104,12 @@ class HomeViewModel @Inject constructor(
             // Search for popular items
             val popularItems = listOf("חלב", "לחם", "ביצים")
             val city = _uiState.value.selectedCity
+
+            Log.d(TAG, "Loading featured products for city: '$city'")
+            if (city.isEmpty()) {
+                Log.w(TAG, "City is empty, featured products may not load correctly")
+            }
+
             val featuredList = mutableListOf<Product>()
 
             popularItems.forEach { item ->
@@ -106,14 +117,20 @@ class HomeViewModel @Inject constructor(
                     result.fold(
                         onSuccess = { products ->
                             if (products.isNotEmpty()) {
-                                featuredList.add(products.first())
+                                val product = products.first()
+                                featuredList.add(product)
+                                // Debug logging
+                                Log.d(TAG, "Featured product added: name='${product.name}', price=${product.bestPrice}")
                             }
                         },
-                        onFailure = { /* Ignore individual failures */ }
+                        onFailure = { error ->
+                            Log.e(TAG, "Failed to load featured products for '$item'", error)
+                        }
                     )
                 }
             }
 
+            Log.d(TAG, "Total featured products: ${featuredList.size}")
             _uiState.update { it.copy(
                 featuredProducts = featuredList,
                 isFeaturedLoading = false
@@ -242,7 +259,7 @@ data class HomeUiState(
 
     // City selection
     val cities: List<String> = emptyList(),
-    val selectedCity: String = "תל אביב",
+    val selectedCity: String = "",  // Will be set from preferences
     val isCitiesLoading: Boolean = false,
 
     // Search
