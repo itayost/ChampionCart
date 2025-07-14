@@ -114,16 +114,6 @@ fun HomeScreen(
                             tint = BrandColors.ElectricMint
                         )
                     }
-
-                    // Notifications button (optional)
-                    IconButton(
-                        onClick = { /* TODO: Navigate to notifications */ }
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.Notifications,
-                            contentDescription = "התראות"
-                        )
-                    }
                 }
             )
         },
@@ -159,7 +149,6 @@ fun HomeScreen(
             item {
                 HeroSection(
                     userName = uiState.userName,
-                    totalSavings = uiState.totalSavings,
                     selectedCity = uiState.selectedCity,
                     searchQuery = searchQuery,
                     onSearchQueryChange = viewModel::onSearchQueryChange,
@@ -316,7 +305,6 @@ fun HomeScreen(
 @Composable
 private fun HeroSection(
     userName: String,
-    totalSavings: Double,
     selectedCity: String,
     searchQuery: String,
     onSearchQueryChange: (String) -> Unit,
@@ -353,13 +341,6 @@ private fun HeroSection(
                         text = "מחפש מחירים ב$selectedCity",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-
-                // Savings Badge
-                if (totalSavings > 0) {
-                    ChampionBadge(
-                        count = totalSavings.toInt()
                     )
                 }
             }
