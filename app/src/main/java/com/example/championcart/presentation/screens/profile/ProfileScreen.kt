@@ -15,7 +15,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -32,14 +31,18 @@ fun ProfileScreen(
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
     var showCitySheet by remember { mutableStateOf(false) }
     var showLogoutDialog by remember { mutableStateOf(false) }
     var showSavedCartsSheet by remember { mutableStateOf(false) }
 
     // Show snackbar for messages
     LaunchedEffect(uiState.message) {
-        uiState.message?.let {
-            // You might want to show a snackbar here
+        uiState.message?.let { message ->
+            snackbarHostState.showSnackbar(
+                message = message,
+                duration = SnackbarDuration.Short
+            )
             viewModel.clearMessage()
         }
     }
@@ -49,6 +52,14 @@ fun ProfileScreen(
             ChampionTopBar(
                 title = "הפרופיל שלי",
                 scrollBehavior = null
+            )
+        },
+        snackbarHost = {
+            SnackbarHost(
+                hostState = snackbarHostState,
+                snackbar = { data ->
+                    ChampionSnackbar(snackbarData = data)
+                }
             )
         }
     ) { paddingValues ->
@@ -157,10 +168,6 @@ fun ProfileScreen(
             },
             onDeleteCart = { cart ->
                 viewModel.deleteSavedCart(cart)
-            },
-            onCompareCart = { cart ->
-                viewModel.compareSavedCart(cart)
-                showSavedCartsSheet = false
             }
         )
     }
@@ -374,26 +381,25 @@ private fun AccountActionsCard(
     onLogout: () -> Unit,
     onLogin: () -> Unit
 ) {
-        Column(
-            modifier = Modifier.padding(Padding.l)
-        ) {
-            if (isGuest) {
-                PrimaryButton(
-                    text = "התחבר",
-                    onClick = onLogin,
-                    modifier = Modifier.fillMaxWidth(),
-                    icon = Icons.Rounded.Login
-                )
-            } else {
-                TextButton(
-                    text = "התנתק",
-                    onClick = onLogout,
-                    modifier = Modifier.fillMaxWidth(),
-                    color = MaterialTheme.colorScheme.error
-
-                )
-            }
+    Column(
+        modifier = Modifier.padding(Padding.l)
+    ) {
+        if (isGuest) {
+            PrimaryButton(
+                text = "התחבר",
+                onClick = onLogin,
+                modifier = Modifier.fillMaxWidth(),
+                icon = Icons.Rounded.Login
+            )
+        } else {
+            TextButton(
+                text = "התנתק",
+                onClick = onLogout,
+                modifier = Modifier.fillMaxWidth(),
+                color = MaterialTheme.colorScheme.error
+            )
         }
+    }
 }
 
 @Composable

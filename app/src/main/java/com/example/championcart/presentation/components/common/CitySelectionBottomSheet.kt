@@ -13,8 +13,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.example.championcart.ui.theme.*
 
@@ -48,16 +50,19 @@ fun CitySelectionBottomSheet(
             containerColor = MaterialTheme.colorScheme.surface,
             contentColor = MaterialTheme.colorScheme.onSurface
         ) {
-            CityOptionsContent(
-                selectedCity = selectedCity,
-                onUseLocation = {
-                    onRequestLocation()
-                    onDismiss()
-                },
-                onChooseCity = {
-                    showCitiesList = true
-                }
-            )
+            // Apply RTL layout
+            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                CityOptionsContent(
+                    selectedCity = selectedCity,
+                    onUseLocation = {
+                        onRequestLocation()
+                        onDismiss()
+                    },
+                    onChooseCity = {
+                        showCitiesList = true
+                    }
+                )
+            }
         }
     }
 
@@ -76,18 +81,21 @@ fun CitySelectionBottomSheet(
             containerColor = MaterialTheme.colorScheme.surface,
             contentColor = MaterialTheme.colorScheme.onSurface
         ) {
-            CitiesListContent(
-                cities = cities,
-                selectedCity = selectedCity,
-                onCitySelected = { city ->
-                    onCitySelected(city)
-                    showCitiesList = false
-                    onDismiss() // Close both sheets
-                },
-                onBack = {
-                    showCitiesList = false
-                }
-            )
+            // Apply RTL layout
+            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                CitiesListContent(
+                    cities = cities,
+                    selectedCity = selectedCity,
+                    onCitySelected = { city ->
+                        onCitySelected(city)
+                        showCitiesList = false
+                        onDismiss() // Close both sheets
+                    },
+                    onBack = {
+                        showCitiesList = false
+                    }
+                )
+            }
         }
     }
 }
@@ -193,7 +201,7 @@ private fun CityOptionsContent(
                 onClick = onChooseCity,
                 trailingContent = {
                     Icon(
-                        imageVector = Icons.Rounded.ChevronRight,
+                        imageVector = Icons.Rounded.ChevronLeft, // Changed from ChevronRight for RTL
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -228,7 +236,7 @@ private fun CitiesListContent(
                 modifier = Modifier.size(48.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Rounded.ArrowBack,
+                    imageVector = Icons.Rounded.ArrowForward, // Changed from ArrowBack for RTL
                     contentDescription = "חזור",
                     tint = MaterialTheme.colorScheme.onSurface
                 )
@@ -241,9 +249,10 @@ private fun CitiesListContent(
                 modifier = Modifier.weight(1f),
                 textAlign = TextAlign.Center
             )
-
-            // Spacer for balance
+            // Spacer for balance (moved to start for RTL)
             Spacer(modifier = Modifier.size(48.dp))
+
+
         }
 
         ChampionDivider()

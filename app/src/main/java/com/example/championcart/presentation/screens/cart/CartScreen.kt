@@ -152,7 +152,11 @@ fun CartScreen(
                         TopBarAction(
                             icon = Icons.Rounded.Delete,
                             contentDescription = "נקה עגלה",
-                            onClick = { showClearConfirmation = true },
+                            onClick = {
+                                if (uiState.cartItems.isNotEmpty()) {
+                                    showClearConfirmation = true
+                                }
+                            },
                             tint = if (uiState.cartItems.isNotEmpty()) SemanticColors.Error else null
                         )
                     )

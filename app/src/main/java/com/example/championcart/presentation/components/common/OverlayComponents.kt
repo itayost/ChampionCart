@@ -15,7 +15,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -23,7 +25,7 @@ import com.example.championcart.ui.theme.*
 import kotlinx.coroutines.launch
 
 /**
- * Overlay components for ChampionCart
+ * Overlay components for ChampionCart with proper RTL support
  */
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -99,37 +101,67 @@ fun ChampionDialog(
     dismissButton: @Composable (() -> Unit)? = null
 ) {
     if (visible) {
+        val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
+
         AlertDialog(
             onDismissRequest = onDismiss,
             title = {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(Spacing.m),
-                    verticalAlignment = Alignment.CenterVertically
+                // Apply RTL to just the title row
+                CompositionLocalProvider(
+                    LocalLayoutDirection provides if (isRtl) LayoutDirection.Rtl else LayoutDirection.Ltr
                 ) {
-                    icon?.let {
-                        Icon(
-                            imageVector = it,
-                            contentDescription = null,
-                            tint = BrandColors.ElectricMint,
-                            modifier = Modifier.size(Size.icon)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Start,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        icon?.let {
+                            Icon(
+                                imageVector = it,
+                                contentDescription = null,
+                                tint = BrandColors.ElectricMint,
+                                modifier = Modifier.size(Size.icon)
+                            )
+                            Spacer(modifier = Modifier.width(Spacing.m))
+                        }
+
+                        Text(
+                            text = title,
+                            style = MaterialTheme.typography.headlineSmall,
+                            textAlign = if (isRtl) TextAlign.Start else TextAlign.Start
                         )
                     }
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.headlineSmall
-                    )
                 }
             },
             text = text?.let {
                 {
-                    Text(
-                        text = it,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
+                    CompositionLocalProvider(
+                        LocalLayoutDirection provides if (isRtl) LayoutDirection.Rtl else LayoutDirection.Ltr
+                    ) {
+                        Text(
+                            text = it,
+                            style = MaterialTheme.typography.bodyMedium,
+                            textAlign = TextAlign.Start,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
                 }
             },
-            confirmButton = confirmButton,
-            dismissButton = dismissButton,
+            confirmButton = {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.s),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    // In RTL, buttons should be reversed (primary on left)
+                    if (isRtl) {
+                        confirmButton()
+                        dismissButton?.invoke()
+                    } else {
+                        dismissButton?.invoke()
+                        confirmButton()
+                    }
+                }
+            },
             shape = Shapes.cardLarge,
             containerColor = MaterialTheme.colorScheme.surface,
             tonalElevation = 8.dp
@@ -161,13 +193,14 @@ fun ConfirmationDialog(
                     onConfirm()
                     onDismiss()
                 },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.width(120.dp)
             )
         },
         dismissButton = {
             TextButton(
                 text = dismissText,
-                onClick = onDismiss
+                onClick = onDismiss,
+                modifier = Modifier.width(120.dp)
             )
         }
     )
@@ -180,6 +213,8 @@ fun PopupMenu(
     items: List<PopupMenuItem>,
     modifier: Modifier = Modifier
 ) {
+    val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
+
     DropdownMenu(
         expanded = expanded,
         onDismissRequest = onDismissRequest,
@@ -189,29 +224,36 @@ fun PopupMenu(
                 elevation = 8.dp
             )
     ) {
-        items.forEach { item ->
-            DropdownMenuItem(
-                text = {
-                    Text(
-                        text = item.label,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                },
-                onClick = {
-                    item.onClick()
-                    onDismissRequest()
-                },
-                leadingIcon = item.icon?.let {
-                    {
-                        Icon(
-                            imageVector = it,
-                            contentDescription = null,
-                            modifier = Modifier.size(20.dp)
+        // Apply RTL to menu items
+        CompositionLocalProvider(
+            LocalLayoutDirection provides if (isRtl) LayoutDirection.Rtl else LayoutDirection.Ltr
+        ) {
+            items.forEach { item ->
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            text = item.label,
+                            style = MaterialTheme.typography.bodyMedium,
+                            textAlign = TextAlign.Start,
+                            modifier = Modifier.fillMaxWidth()
                         )
-                    }
-                },
-                enabled = item.enabled
-            )
+                    },
+                    onClick = {
+                        item.onClick()
+                        onDismissRequest()
+                    },
+                    leadingIcon = item.icon?.let {
+                        {
+                            Icon(
+                                imageVector = it,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    },
+                    enabled = item.enabled
+                )
+            }
         }
     }
 }
@@ -344,43 +386,73 @@ fun ChampionInputDialog(
     content: @Composable () -> Unit
 ) {
     if (visible) {
+        val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
+
         AlertDialog(
             onDismissRequest = onDismiss,
             title = {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(Spacing.m),
-                    verticalAlignment = Alignment.CenterVertically
+                // Apply RTL to just the title row
+                CompositionLocalProvider(
+                    LocalLayoutDirection provides if (isRtl) LayoutDirection.Rtl else LayoutDirection.Ltr
                 ) {
-                    icon?.let {
-                        Icon(
-                            imageVector = it,
-                            contentDescription = null,
-                            tint = BrandColors.ElectricMint,
-                            modifier = Modifier.size(Size.icon)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Start,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        icon?.let {
+                            Icon(
+                                imageVector = it,
+                                contentDescription = null,
+                                tint = BrandColors.ElectricMint,
+                                modifier = Modifier.size(Size.icon)
+                            )
+                            Spacer(modifier = Modifier.width(Spacing.m))
+                        }
+
+                        Text(
+                            text = title,
+                            style = MaterialTheme.typography.headlineSmall,
+                            textAlign = if (isRtl) TextAlign.Start else TextAlign.Start
                         )
                     }
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.headlineSmall
-                    )
                 }
             },
             text = {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(Spacing.m)
+                CompositionLocalProvider(
+                    LocalLayoutDirection provides if (isRtl) LayoutDirection.Rtl else LayoutDirection.Ltr
                 ) {
-                    description?.let {
-                        Text(
-                            text = it,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(Spacing.m)
+                    ) {
+                        description?.let {
+                            Text(
+                                text = it,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Start,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                        content()
                     }
-                    content()
                 }
             },
-            confirmButton = confirmButton,
-            dismissButton = dismissButton,
+            confirmButton = {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.s),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    // In RTL, buttons should be reversed (primary on left)
+                    if (isRtl) {
+                        confirmButton()
+                        dismissButton?.invoke()
+                    } else {
+                        dismissButton?.invoke()
+                        confirmButton()
+                    }
+                }
+            },
             shape = Shapes.cardLarge,
             containerColor = MaterialTheme.colorScheme.surface,
             tonalElevation = 8.dp
@@ -407,8 +479,12 @@ fun TextInputDialog(
     dismissText: String = "ביטול",
     isLoading: Boolean = false
 ) {
-    var value by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(initialValue) }
-    var error by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<String?>(null) }
+    var value by remember { mutableStateOf(initialValue) }
+    var error by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(initialValue) {
+        value = initialValue
+    }
 
     ChampionInputDialog(
         visible = visible,
@@ -428,14 +504,15 @@ fun TextInputDialog(
                         onConfirm(value)
                     }
                 },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.width(120.dp)
             )
         },
         dismissButton = {
             TextButton(
                 text = dismissText,
                 onClick = onDismiss,
-                enabled = !isLoading
+                enabled = !isLoading,
+                modifier = Modifier.width(120.dp)
             )
         }
     ) {

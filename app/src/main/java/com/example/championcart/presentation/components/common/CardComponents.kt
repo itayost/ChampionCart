@@ -156,7 +156,7 @@ fun ProductCard(
                         .padding(horizontal = Spacing.s, vertical = Spacing.xs)
                 ) {
                     Text(
-                        text = "מחיר הזול",
+                        text = "המחיר הזול",
                         style = TextStyles.badge,
                         color = PriceColors.Best
                     )

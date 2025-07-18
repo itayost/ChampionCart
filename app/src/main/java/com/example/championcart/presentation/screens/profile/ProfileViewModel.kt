@@ -113,7 +113,7 @@ class ProfileViewModel @Inject constructor(
                         _uiState.update { it.copy(
                             savedCarts = emptyList(),
                             isLoadingSavedCarts = false,
-                            message = "שגיאה בטעינת העגלות השמורות"
+                            message = "לא הצלחנו לטעון את העגלות השמורות. נסה שוב מאוחר יותר."
                         ) }
                     }
                 )
@@ -135,15 +135,26 @@ class ProfileViewModel @Inject constructor(
             loadSavedCartUseCase(cart.id).collect { result ->
                 result.fold(
                     onSuccess = {
+                        // Get the current cart items count from CartManager after loading
+                        val itemCount = cartManager.cartItems.value.sumOf { it.quantity }
                         _uiState.update { it.copy(
                             isLoading = false,
-                            message = "העגלה '${cart.name}' נטענה בהצלחה"
+                            message = "העגלה '${cart.name}' נטענה בהצלחה! נוספו $itemCount פריטים לעגלה."
                         ) }
                     },
                     onFailure = { error ->
+                        val errorMessage = when {
+                            error.message?.contains("network", ignoreCase = true) == true ->
+                                "בעיית חיבור לאינטרנט. בדוק את החיבור ונסה שוב."
+                            error.message?.contains("404") == true ->
+                                "העגלה לא נמצאה. ייתכן שהיא נמחקה."
+                            else ->
+                                "לא הצלחנו לטעון את העגלה '${cart.name}'. נסה שוב מאוחר יותר."
+                        }
+
                         _uiState.update { it.copy(
                             isLoading = false,
-                            message = "שגיאה בטעינת העגלה"
+                            message = errorMessage
                         ) }
                     }
                 )
@@ -159,7 +170,7 @@ class ProfileViewModel @Inject constructor(
                 state.copy(
                     savedCarts = state.savedCarts.filter { it.id != cart.id },
                     savedCartsCount = state.savedCartsCount - 1,
-                    message = "העגלה נמחקה"
+                    message = "העגלה '${cart.name}' נמחקה בהצלחה."
                 )
             }
         }
@@ -167,7 +178,7 @@ class ProfileViewModel @Inject constructor(
 
     fun compareSavedCart(cart: SavedCart) {
         viewModelScope.launch {
-            _uiState.update { it.copy(message = "השוואת מחירים לעגלה '${cart.name}'...") }
+            _uiState.update { it.copy(message = "מחשב השוואת מחירים לעגלה '${cart.name}'...") }
             // TODO: Implement cart comparison logic
             // This would load the cart and navigate to price comparison screen
         }

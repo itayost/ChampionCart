@@ -106,22 +106,6 @@ fun HomeScreen(
 
                     Spacer(modifier = Modifier.width(Spacing.s))
 
-                    // Cart icon with badge
-                    Box {
-                        IconButton(onClick = onNavigateToCart) {
-                            Icon(
-                                imageVector = Icons.Rounded.ShoppingCart,
-                                contentDescription = "עגלת קניות"
-                            )
-                        }
-
-                        if (uiState.cartItemCount > 0) {
-                            ChampionBadge(
-                                count = uiState.cartItemCount,
-                                modifier = Modifier.align(Alignment.TopEnd)
-                            )
-                        }
-                    }
                 }
             )
         },
