@@ -6,7 +6,7 @@ object ApiConfig {
 
     // Development URLs
     const val LOCAL_EMULATOR_URL = "http://10.0.2.2:8000/" // Android emulator
-    const val LOCAL_DEVICE_URL = "http://192.168.50.78:8000/" // Update with your IP
+    const val LOCAL_DEVICE_URL = "http://192.168.50.143:8000/" // Update with your IP
 
     // Current active URL
     const val BASE_URL = LOCAL_DEVICE_URL // Change this based on your setup

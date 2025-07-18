@@ -364,22 +364,6 @@ private fun PreferencesCard(
                 modifier = Modifier.fillMaxWidth(),
                 icon = Icons.Rounded.LocationOn
             )
-
-            // Notifications Toggle
-            ChampionListItem(
-                title = "התראות",
-                subtitle = if (notificationsEnabled) "מופעל" else "כבוי",
-                leadingIcon = Icons.Rounded.Notifications,
-                trailingContent = {
-                    Switch(
-                        checked = notificationsEnabled,
-                        onCheckedChange = onNotificationsToggle,
-                        colors = SwitchDefaults.colors(
-                            checkedTrackColor = BrandColors.ElectricMint
-                        )
-                    )
-                }
-            )
         }
     }
 }
