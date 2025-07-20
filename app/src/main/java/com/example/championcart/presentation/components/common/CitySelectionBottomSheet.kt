@@ -1,5 +1,6 @@
 package com.example.championcart.presentation.components.common
 
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -13,19 +14,24 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.example.championcart.ui.theme.*
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.isGranted
+import com.google.accompanist.permissions.rememberPermissionState
+import com.google.accompanist.permissions.shouldShowRationale
 
 /**
  * City selection with two bottom sheets:
  * 1. Options sheet - shows current city, location option, and choose city
  * 2. Cities list sheet - full screen list of all cities
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
 @Composable
 fun CitySelectionBottomSheet(
     visible: Boolean,
@@ -33,18 +39,54 @@ fun CitySelectionBottomSheet(
     cities: List<String>,
     onCitySelected: (String) -> Unit,
     onRequestLocation: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    isDetectingLocation: Boolean = false,
+    locationError: String? = null,
+    locationDetectionSuccess: Boolean = false
 ) {
     var showCitiesList by remember { mutableStateOf(false) }
+    var showLocationPermissionDialog by remember { mutableStateOf(false) }
+    var showSuccessAnimation by remember { mutableStateOf(false) }
+
+    // Location permission state
+    val locationPermissionState = rememberPermissionState(
+        permission = android.Manifest.permission.ACCESS_FINE_LOCATION
+    )
+
+    // Handle location permission request
+    val handleLocationRequest = {
+        when {
+            locationPermissionState.status.isGranted -> {
+                onRequestLocation()
+            }
+            locationPermissionState.status.shouldShowRationale -> {
+                showLocationPermissionDialog = true
+            }
+            else -> {
+                showLocationPermissionDialog = true
+            }
+        }
+    }
+
+    // Show success animation when city is detected
+    LaunchedEffect(locationDetectionSuccess) {
+        if (locationDetectionSuccess) {
+            showSuccessAnimation = true
+        }
+    }
 
     // Options Bottom Sheet
-    if (visible && !showCitiesList) {
+    if (visible && !showCitiesList && !showSuccessAnimation) {
         val optionsSheetState = rememberModalBottomSheetState(
             skipPartiallyExpanded = true
         )
 
         ModalBottomSheet(
-            onDismissRequest = onDismiss,
+            onDismissRequest = {
+                if (!isDetectingLocation) {
+                    onDismiss()
+                }
+            },
             sheetState = optionsSheetState,
             shape = Shapes.bottomSheet,
             containerColor = MaterialTheme.colorScheme.surface,
@@ -52,16 +94,25 @@ fun CitySelectionBottomSheet(
         ) {
             // Apply RTL layout
             CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
-                CityOptionsContent(
-                    selectedCity = selectedCity,
-                    onUseLocation = {
-                        onRequestLocation()
-                        onDismiss()
-                    },
-                    onChooseCity = {
-                        showCitiesList = true
+                Box {
+                    CityOptionsContent(
+                        selectedCity = selectedCity,
+                        onUseLocation = handleLocationRequest,
+                        onChooseCity = {
+                            showCitiesList = true
+                        },
+                        locationError = locationError,
+                        isDetectingLocation = isDetectingLocation
+                    )
+
+                    // Loading overlay during detection
+                    if (isDetectingLocation) {
+                        LoadingOverlay(
+                            visible = true,
+                            message = "מזהה את המיקום שלך..."
+                        )
                     }
-                )
+                }
             }
         }
     }
@@ -98,13 +149,37 @@ fun CitySelectionBottomSheet(
             }
         }
     }
+
+    // Location Permission Dialog
+    LocationPermissionDialog(
+        visible = showLocationPermissionDialog,
+        onGrantPermission = {
+            showLocationPermissionDialog = false
+            locationPermissionState.launchPermissionRequest()
+        },
+        onDenyPermission = {
+            showLocationPermissionDialog = false
+        }
+    )
+
+    // Success Animation
+    LocationDetectedAnimation(
+        visible = showSuccessAnimation,
+        detectedCity = selectedCity,
+        onAnimationComplete = {
+            showSuccessAnimation = false
+            onDismiss()
+        }
+    )
 }
 
 @Composable
 private fun CityOptionsContent(
     selectedCity: String,
     onUseLocation: () -> Unit,
-    onChooseCity: () -> Unit
+    onChooseCity: () -> Unit,
+    locationError: String? = null,
+    isDetectingLocation: Boolean = false
 ) {
     Column(
         modifier = Modifier
@@ -183,6 +258,45 @@ private fun CityOptionsContent(
             }
 
             Spacer(modifier = Modifier.height(Spacing.l))
+
+            // Show error if location detection failed
+            locationError?.let { error ->
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = Spacing.l),
+                    shape = Shapes.card,
+                    colors = CardDefaults.cardColors(
+                        containerColor = SemanticColors.Error.copy(alpha = 0.1f)
+                    ),
+                    border = BorderStroke(
+                        width = 1.dp,
+                        color = SemanticColors.Error.copy(alpha = 0.3f)
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(all = Spacing.m),
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.s),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.ErrorOutline,
+                            contentDescription = null,
+                            tint = SemanticColors.Error,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Text(
+                            text = error,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = SemanticColors.Error,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(Spacing.m))
+            }
 
             // Use location option
             ChampionListItem(

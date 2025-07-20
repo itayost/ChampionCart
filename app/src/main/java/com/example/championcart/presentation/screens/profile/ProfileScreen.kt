@@ -148,8 +148,7 @@ fun ProfileScreen(
                 showCitySheet = false
             },
             onRequestLocation = {
-                // TODO: Implement location detection
-                showCitySheet = false
+                viewModel.detectCityFromLocation()
             },
             onDismiss = { showCitySheet = false }
         )

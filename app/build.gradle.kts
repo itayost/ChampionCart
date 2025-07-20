@@ -91,6 +91,9 @@ dependencies {
     // ML Kit Barcode Scanning
     implementation(libs.barcode.scanning)
 
+    //Google Play Services Location
+    implementation(libs.play.services.location)
+
     // Permissions
     implementation(libs.accompanist.permissions)
 

@@ -9,6 +9,10 @@ import com.example.championcart.domain.models.SavedCart
 import com.example.championcart.domain.usecase.cart.GetSavedCartsUseCase
 import com.example.championcart.domain.usecase.cart.LoadSavedCartUseCase
 import com.example.championcart.domain.usecase.city.GetCitiesUseCase
+import com.example.championcart.domain.usecase.location.CityNotAvailableException
+import com.example.championcart.domain.usecase.location.GetCityFromLocationUseCase
+import com.example.championcart.domain.usecase.location.LocationException
+import com.example.championcart.domain.usecase.location.LocationPermissionException
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -23,7 +27,8 @@ class ProfileViewModel @Inject constructor(
     private val cartManager: CartManager,
     private val getSavedCartsUseCase: GetSavedCartsUseCase,
     private val loadSavedCartUseCase: LoadSavedCartUseCase,
-    private val getCitiesUseCase: GetCitiesUseCase
+    private val getCitiesUseCase: GetCitiesUseCase,
+    private val getCityFromLocationUseCase: GetCityFromLocationUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ProfileUiState())
@@ -244,6 +249,50 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
+    fun detectCityFromLocation() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(
+                isDetectingLocation = true,
+                locationError = null
+            ) }
+
+            getCityFromLocationUseCase().collect { result ->
+                result.fold(
+                    onSuccess = { detectedCity ->
+                        _uiState.update { it.copy(
+                            isDetectingLocation = false,
+                            selectedCity = detectedCity,
+                            locationDetectionSuccess = true,
+                            message = "העיר זוהתה: $detectedCity"
+                        ) }
+
+                        // Save to preferences
+                        preferencesManager.setSelectedCity(detectedCity)
+                    },
+                    onFailure = { error ->
+                        val errorMessage = when (error) {
+                            is LocationPermissionException -> error.message
+                            is CityNotAvailableException -> error.message
+                            is LocationException -> error.message
+                            else -> "לא הצלחנו לזהות את המיקום"
+                        }
+
+                        _uiState.update { it.copy(
+                            isDetectingLocation = false,
+                            locationError = errorMessage,
+                            locationDetectionSuccess = false,
+                            message = errorMessage
+                        ) }
+                    }
+                )
+            }
+        }
+    }
+
+    fun clearLocationError() {
+        _uiState.update { it.copy(locationError = null) }
+    }
+
     fun clearMessage() {
         _uiState.update { it.copy(message = null) }
     }
@@ -268,6 +317,11 @@ data class ProfileUiState(
     val selectedCity: String = "תל אביב",
     val availableCities: List<String> = emptyList(),
     val notificationsEnabled: Boolean = true,
+
+    // Location detection
+    val isDetectingLocation: Boolean = false,
+    val locationError: String? = null,
+    val locationDetectionSuccess: Boolean = false,
 
     // UI states
     val isLoading: Boolean = false,

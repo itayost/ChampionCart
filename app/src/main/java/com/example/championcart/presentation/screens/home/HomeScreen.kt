@@ -225,8 +225,7 @@ fun HomeScreen(
             showCitySelection = false
         },
         onRequestLocation = {
-            // TODO: Implement location permission and detection
-            showCitySelection = false
+            viewModel.requestLocationBasedCity()
         },
         onDismiss = { showCitySelection = false }
     )

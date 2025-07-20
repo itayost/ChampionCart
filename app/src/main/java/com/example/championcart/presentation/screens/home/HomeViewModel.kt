@@ -9,6 +9,10 @@ import com.example.championcart.data.local.TokenManager
 import com.example.championcart.domain.models.Product
 import com.example.championcart.domain.usecase.cart.CalculateCheapestStoreUseCase
 import com.example.championcart.domain.usecase.city.GetCitiesUseCase
+import com.example.championcart.domain.usecase.location.CityNotAvailableException
+import com.example.championcart.domain.usecase.location.GetCityFromLocationUseCase
+import com.example.championcart.domain.usecase.location.LocationException
+import com.example.championcart.domain.usecase.location.LocationPermissionException
 import com.example.championcart.domain.usecase.product.SearchProductsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
@@ -20,6 +24,7 @@ class HomeViewModel @Inject constructor(
     private val searchProductsUseCase: SearchProductsUseCase,
     private val getCitiesUseCase: GetCitiesUseCase,
     private val calculateCheapestStoreUseCase: CalculateCheapestStoreUseCase,
+    private val getCityFromLocationUseCase: GetCityFromLocationUseCase,
     private val tokenManager: TokenManager,
     private val preferencesManager: PreferencesManager,
     private val cartManager: CartManager
@@ -184,6 +189,8 @@ class HomeViewModel @Inject constructor(
                 )
             }
         }
+
+
     }
 
     fun onSearchQueryChange(query: String) {
@@ -217,6 +224,63 @@ class HomeViewModel @Inject constructor(
         if (cartManager.getItemCount() > 0) {
             updatePotentialSavings()
         }
+    }
+
+    fun requestLocationBasedCity() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(
+                isDetectingLocation = true,
+                locationError = null
+            ) }
+
+            getCityFromLocationUseCase().collect { result ->
+                result.fold(
+                    onSuccess = { detectedCity ->
+                        Log.d(TAG, "Successfully detected city: $detectedCity")
+                        _uiState.update { it.copy(
+                            isDetectingLocation = false,
+                            selectedCity = detectedCity,
+                            locationDetectionSuccess = true
+                        ) }
+
+                        // Save to preferences
+                        preferencesManager.setSelectedCity(detectedCity)
+
+                        // Reload featured products for new city
+                        loadFeaturedProducts()
+
+                        // Show success message
+                        _uiState.update { it.copy(
+                            snackbarMessage = "המיקום זוהה בהצלחה: $detectedCity"
+                        ) }
+                    },
+                    onFailure = { error ->
+                        Log.e(TAG, "Failed to detect city from location", error)
+
+                        val errorMessage = when (error) {
+                            is LocationPermissionException -> error.message
+                            is CityNotAvailableException -> error.message
+                            is LocationException -> error.message
+                            else -> "לא הצלחנו לזהות את המיקום שלך"
+                        }
+
+                        _uiState.update { it.copy(
+                            isDetectingLocation = false,
+                            locationError = errorMessage,
+                            locationDetectionSuccess = false
+                        ) }
+                    }
+                )
+            }
+        }
+    }
+
+    fun clearLocationError() {
+        _uiState.update { it.copy(locationError = null) }
+    }
+
+    fun clearLocationSuccess() {
+        _uiState.update { it.copy(locationDetectionSuccess = false) }
     }
 
     fun onProductClick(product: Product) {
@@ -261,6 +325,11 @@ data class HomeUiState(
     val cities: List<String> = emptyList(),
     val selectedCity: String = "",  // Will be set from preferences
     val isCitiesLoading: Boolean = false,
+
+    // Location detection
+    val isDetectingLocation: Boolean = false,
+    val locationError: String? = null,
+    val locationDetectionSuccess: Boolean = false,
 
     // Search
     val searchResults: List<Product> = emptyList(),
