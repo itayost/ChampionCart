@@ -15,34 +15,34 @@ class CityRepositoryImpl @Inject constructor(
 
     companion object {
         private const val TAG = "CityRepository"
+
+        // Default cities fallback
+        private val DEFAULT_CITIES = listOf(
+            "תל אביב",
+            "ירושלים",
+            "חיפה",
+            "ראשון לציון",
+            "פתח תקווה",
+            "אשדוד",
+            "נתניה",
+            "באר שבע",
+            "בני ברק",
+            "רמת גן"
+        )
     }
 
     override suspend fun getCities(): Flow<Result<List<String>>> = flow {
-        try {
+        val cities = try {
             Log.d(TAG, "Fetching cities list")
-
-            val cities = cityApi.getCities()
-
-            Log.d(TAG, "Found ${cities.size} cities")
-            emit(Result.success(cities))
-
+            val citiesList = cityApi.getCities()
+            Log.d(TAG, "Found ${citiesList.size} cities")
+            citiesList
         } catch (e: Exception) {
-            Log.e(TAG, "Get cities error (Ask Gemini)", e)
-            // Return default cities if API fails
-            emit(Result.success(
-                listOf(
-                    "תל אביב",
-                    "ירושלים",
-                    "חיפה",
-                    "ראשון לציון",
-                    "פתח תקווה",
-                    "אשדוד",
-                    "נתניה",
-                    "באר שבע",
-                    "בני ברק",
-                    "רמת גן"
-                )
-            ))
+            Log.e(TAG, "Get cities error, using default cities", e)
+            DEFAULT_CITIES
         }
+
+        // Single emit outside try-catch
+        emit(Result.success(cities))
     }
 }

@@ -109,7 +109,7 @@ fun CitySelectionBottomSheet(
                     if (isDetectingLocation) {
                         LoadingOverlay(
                             visible = true,
-                            message = "מזהה את המיקום שלך..."
+                            message = "מזהה את המיקום שלך"
                         )
                     }
                 }

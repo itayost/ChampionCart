@@ -165,7 +165,7 @@ fun ShimmerEffect(
  */
 @Composable
 fun BrandedLoadingCard(
-    message: String = "מחפש את המחירים הטובים ביותר...",
+    message: String = "מחפש את המחירים הטובים ביותר",
     modifier: Modifier = Modifier
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "branded_loading")
@@ -235,7 +235,7 @@ fun MiniLoadingIndicator(
  */
 @Composable
 fun EmptyStateLoading(
-    title: String = "טוען...",
+    title: String = "טוען",
     subtitle: String = "מכין עבורך את הטוב ביותר",
     modifier: Modifier = Modifier
 ) {

@@ -105,7 +105,10 @@ fun ProfileScreen(
                 // Preferences Section
                 PreferencesCard(
                     selectedCity = uiState.selectedCity,
-                    onCityClick = { showCitySheet = true },
+                    onCityClick = {
+                        viewModel.clearLocationSuccess()
+                        showCitySheet = true },
+
                     notificationsEnabled = uiState.notificationsEnabled,
                     onNotificationsToggle = viewModel::toggleNotifications
                 )
@@ -131,7 +134,7 @@ fun ProfileScreen(
             if (uiState.isLoading) {
                 LoadingOverlay(
                     visible = true,
-                    message = "טוען..."
+                    message = "טוען"
                 )
             }
         }
@@ -150,7 +153,13 @@ fun ProfileScreen(
             onRequestLocation = {
                 viewModel.detectCityFromLocation()
             },
-            onDismiss = { showCitySheet = false }
+            onDismiss = {
+                showCitySheet = false
+                viewModel.clearLocationError()
+            },
+            isDetectingLocation = uiState.isDetectingLocation,
+            locationError = uiState.locationError,
+            locationDetectionSuccess = uiState.locationDetectionSuccess
         )
     }
 

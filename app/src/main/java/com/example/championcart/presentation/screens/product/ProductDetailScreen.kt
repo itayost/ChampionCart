@@ -245,15 +245,6 @@ private fun ProductHeader(
             selected = false,
             onClick = {}
         )
-
-        // Cart Status
-        if (isInCart) {
-            Spacer(modifier = Modifier.height(Spacing.m))
-            InfoCard(
-                message = "בעגלה: $cartQuantity יחידות",
-                icon = Icons.Rounded.ShoppingCart
-            )
-        }
     }
 }
 

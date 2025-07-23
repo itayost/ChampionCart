@@ -235,6 +235,10 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
+    fun clearLocationSuccess() {
+        _uiState.update { it.copy(locationDetectionSuccess = false) }
+    }
+
     private fun observeCartChanges() {
         viewModelScope.launch {
             cartManager.cartItems.collect { items ->

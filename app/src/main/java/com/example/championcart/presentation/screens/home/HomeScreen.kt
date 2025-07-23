@@ -227,7 +227,14 @@ fun HomeScreen(
         onRequestLocation = {
             viewModel.requestLocationBasedCity()
         },
-        onDismiss = { showCitySelection = false }
+        onDismiss = {
+            showCitySelection = false
+            viewModel.clearLocationError()
+            viewModel.clearLocationSuccess()
+        },
+        isDetectingLocation = uiState.isDetectingLocation,
+        locationError = uiState.locationError,
+        locationDetectionSuccess = uiState.locationDetectionSuccess
     )
 }
 

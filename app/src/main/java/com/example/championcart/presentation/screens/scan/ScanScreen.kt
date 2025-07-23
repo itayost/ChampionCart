@@ -622,7 +622,7 @@ private fun ProductDetailsSheet(
 
                         Column(horizontalAlignment = Alignment.End) {
                             Text(
-                                text = "זמין ב-",
+                                text = "זמין ב",
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
