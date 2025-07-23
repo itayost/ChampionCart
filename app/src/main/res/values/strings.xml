@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- App Name -->
-    <string name="app_name">ChampionCart</string>
+    <string name="app_name">סל ניצחון</string>
 
     <!-- Navigation Labels -->
     <string name="nav_home">בית</string>
@@ -11,7 +11,7 @@
     <string name="nav_profile">איזור אישי</string>
 
     <!-- Screen Titles -->
-    <string name="title_home">ChampionCart</string>
+    <string name="title_home">סל ניצחון</string>
     <string name="title_search">חיפוש מוצרים</string>
     <string name="title_cart">העגלה שלי</string>
     <string name="title_profile">הפרופיל שלי</string>

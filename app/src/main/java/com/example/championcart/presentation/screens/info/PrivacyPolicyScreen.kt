@@ -119,7 +119,7 @@ fun PrivacyPolicyScreen(
                         )
                         Spacer(modifier = Modifier.height(Spacing.m))
                         Text(
-                            text = "מדיניות פרטיות זו מסבירה כיצד ChampionCart (\"אנחנו\", \"שלנו\") אוספת, משתמשת ומגנה על המידע האישי שלך כאשר אתה משתמש באפליקציה שלנו.",
+                            text = "מדיניות פרטיות זו מסבירה כיצד סל ניצחון (\"אנחנו\", \"שלנו\") אוספת, משתמשת ומגנה על המידע האישי שלך כאשר אתה משתמש באפליקציה שלנו.",
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurface
                         )

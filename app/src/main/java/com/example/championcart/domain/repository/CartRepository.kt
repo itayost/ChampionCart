@@ -9,4 +9,6 @@ interface CartRepository {
     suspend fun getSavedCarts(): Flow<Result<List<SavedCart>>>
     suspend fun loadSavedCart(cartId: String): Flow<Result<Unit>>
     suspend fun calculateCheapestStore(city: String? = null): Flow<Result<CheapestStoreResult>>
+
+    suspend fun deleteCart(cartId: String): Flow<Result<Unit>>
 }

@@ -125,7 +125,7 @@ fun SplashScreen(
 
                 // App Name
                 Text(
-                    text = "ChampionCart",
+                    text = "סל ניצחון",
                     style = MaterialTheme.typography.headlineLarge.copy(
                         fontWeight = FontWeight.Black
                     ),

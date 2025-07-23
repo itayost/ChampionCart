@@ -111,14 +111,14 @@ fun TermsOfServiceScreen(
                         modifier = Modifier.padding(Spacing.l)
                     ) {
                         Text(
-                            text = "ברוכים הבאים ל-ChampionCart",
+                            text = "ברוכים הבאים לסל ניצחון",
                             style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
                         )
                         Spacer(modifier = Modifier.height(Spacing.m))
                         Text(
-                            text = "תנאי השירות הבאים (\"התנאים\") מסדירים את השימוש שלך באפליקציית ChampionCart (\"האפליקציה\"). על ידי שימוש באפליקציה, אתה מסכים לתנאים אלה.",
+                            text = "תנאי השירות הבאים (\"התנאים\") מסדירים את השימוש שלך באפליקציית סל ניצחון (\"האפליקציה\"). על ידי שימוש באפליקציה, אתה מסכים לתנאים אלה.",
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurface
                         )
@@ -131,7 +131,7 @@ fun TermsOfServiceScreen(
                 TermsSection(
                     title = "1. תיאור השירות",
                     content = listOf(
-                        "ChampionCart היא אפליקציית השוואת מחירים המאפשרת לך להשוות מחירי מוצרים בין רשתות שיווק שונות בישראל.",
+                        "סל ניצחון היא אפליקציית השוואת מחירים המאפשרת לך להשוות מחירי מוצרים בין רשתות שיווק שונות בישראל.",
                         "האפליקציה מספקת מידע על מחירים, יצירת רשימות קניות, וחישוב הסל הזול ביותר.",
                         "המידע באפליקציה מתעדכן באופן שוטף אך איננו מתחייבים לדיוק מוחלט של המחירים."
                     )
@@ -201,18 +201,6 @@ fun TermsOfServiceScreen(
                 )
 
                 Spacer(modifier = Modifier.height(Spacing.l))
-
-                // Section 7: Contact
-                TermsSection(
-                    title = "7. יצירת קשר",
-                    content = listOf(
-                        "לשאלות בנוגע לתנאי השירות ניתן לפנות אלינו בכתובת:",
-                        "support@championcart.co.il",
-                        "נשמח לסייע בכל שאלה או בקשה."
-                    )
-                )
-
-                Spacer(modifier = Modifier.height(Spacing.xl))
             }
         }
     }

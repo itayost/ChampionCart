@@ -242,6 +242,15 @@ class PreferencesManager @Inject constructor(
             .clear()
             .apply()
     }
+
+    fun decrementSavedCartsCount() {
+        val current = getSavedCartsCount()
+        if (current > 0) {
+            sharedPreferences.edit()
+                .putInt(KEY_SAVED_CARTS_COUNT, current - 1)
+                .apply()
+        }
+    }
 }
 
 enum class ThemeMode {

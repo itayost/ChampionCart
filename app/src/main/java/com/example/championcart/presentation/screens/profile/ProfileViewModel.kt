@@ -6,6 +6,7 @@ import com.example.championcart.data.local.CartManager
 import com.example.championcart.data.local.PreferencesManager
 import com.example.championcart.data.local.TokenManager
 import com.example.championcart.domain.models.SavedCart
+import com.example.championcart.domain.usecase.cart.DeleteCartUseCase
 import com.example.championcart.domain.usecase.cart.GetSavedCartsUseCase
 import com.example.championcart.domain.usecase.cart.LoadSavedCartUseCase
 import com.example.championcart.domain.usecase.city.GetCitiesUseCase
@@ -28,7 +29,8 @@ class ProfileViewModel @Inject constructor(
     private val getSavedCartsUseCase: GetSavedCartsUseCase,
     private val loadSavedCartUseCase: LoadSavedCartUseCase,
     private val getCitiesUseCase: GetCitiesUseCase,
-    private val getCityFromLocationUseCase: GetCityFromLocationUseCase
+    private val getCityFromLocationUseCase: GetCityFromLocationUseCase,
+    private val deleteCartUseCase: DeleteCartUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ProfileUiState())
@@ -169,13 +171,39 @@ class ProfileViewModel @Inject constructor(
 
     fun deleteSavedCart(cart: SavedCart) {
         viewModelScope.launch {
-            // TODO: Implement delete cart use case
-            // For now, just remove from local list
-            _uiState.update { state ->
-                state.copy(
-                    savedCarts = state.savedCarts.filter { it.id != cart.id },
-                    savedCartsCount = state.savedCartsCount - 1,
-                    message = "העגלה '${cart.name}' נמחקה בהצלחה."
+            _uiState.update { it.copy(isLoading = true) }
+
+            deleteCartUseCase(cart.id).collect { result ->
+                result.fold(
+                    onSuccess = {
+                        // מחק מהרשימה המקומית
+                        _uiState.update { state ->
+                            state.copy(
+                                savedCarts = state.savedCarts.filter { it.id != cart.id },
+                                savedCartsCount = state.savedCartsCount - 1,
+                                message = "העגלה '${cart.name}' נמחקה בהצלחה.",
+                                isLoading = false
+                            )
+                        }
+                        preferencesManager.decrementSavedCartsCount()
+                    },
+                    onFailure = { error ->
+                        val errorMessage = when {
+                            error.message?.contains("network", ignoreCase = true) == true ->
+                                "בעיית חיבור לאינטרנט. בדוק את החיבור ונסה שוב."
+                            error.message?.contains("404") == true ->
+                                "העגלה לא נמצאה. ייתכן שכבר נמחקה."
+                            error.message?.contains("401") == true ->
+                                "אין הרשאה למחוק את העגלה הזו."
+                            else ->
+                                "לא הצלחנו למחוק את העגלה '${cart.name}'. נסה שוב מאוחר יותר."
+                        }
+
+                        _uiState.update { it.copy(
+                            isLoading = false,
+                            message = errorMessage
+                        ) }
+                    }
                 )
             }
         }

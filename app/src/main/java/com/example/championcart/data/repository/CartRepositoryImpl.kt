@@ -232,4 +232,23 @@ class CartRepositoryImpl @Inject constructor(
             emit(Result.failure(e))
         }
     }
+
+    override suspend fun deleteCart(cartId: String): Flow<Result<Unit>> = flow {
+        try {
+            Log.d(TAG, "Deleting cart with ID: $cartId")
+
+            val response = cartApi.deleteCart(cartId.toInt())
+
+            if (response.success) {
+                Log.d(TAG, "Cart deleted successfully")
+                emit(Result.success(Unit))
+            } else {
+                Log.e(TAG, "Delete cart failed: ${response.message}")
+                emit(Result.failure(Exception(response.message)))
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Delete cart error", e)
+            emit(Result.failure(e))
+        }
+    }
 }

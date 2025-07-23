@@ -94,7 +94,7 @@ fun HomeScreen(
     Scaffold(
         topBar = {
             ChampionTopBar(
-                title = "ChampionCart",
+                title = "סל ניצחון",
                 actions = {
                     // City selector
                     ChampionChip(
