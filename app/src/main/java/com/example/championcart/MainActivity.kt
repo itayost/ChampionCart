@@ -46,7 +46,6 @@ class MainActivity : ComponentActivity() {
                         color = MaterialTheme.colorScheme.background
                     ) {
                         ChampionCartNavHost(
-                            preferencesManager = preferencesManager,
                             cartManager = cartManager
                         )
                     }
