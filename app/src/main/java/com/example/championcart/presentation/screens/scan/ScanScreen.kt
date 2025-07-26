@@ -2,7 +2,6 @@ package com.example.championcart.presentation.screens.scan
 
 import android.Manifest
 import android.content.Context
-import android.util.Size
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
@@ -28,17 +27,12 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.AddShoppingCart
-import androidx.compose.material.icons.rounded.Block
 import androidx.compose.material.icons.rounded.CameraAlt
-import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.FlashOff
 import androidx.compose.material.icons.rounded.FlashOn
 import androidx.compose.material.icons.rounded.Info
@@ -52,10 +46,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
@@ -63,8 +54,6 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -84,25 +73,27 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import com.example.championcart.presentation.components.common.ChampionBottomSheet
+import com.example.championcart.presentation.components.common.ChampionCartTopBar
+import com.example.championcart.presentation.components.common.ChampionDialog
+import com.example.championcart.presentation.components.common.EmptyState
+import com.example.championcart.presentation.components.common.ErrorState
 import com.example.championcart.presentation.components.common.LoadingOverlay
 import com.example.championcart.presentation.components.common.PrimaryButton
 import com.example.championcart.presentation.components.common.SecondaryButton
+import com.example.championcart.presentation.components.common.TextInputDialog
+import com.example.championcart.presentation.components.common.TopBarAction
 import com.example.championcart.ui.theme.BrandColors
-import com.example.championcart.ui.theme.SemanticColors
 import com.example.championcart.ui.theme.Shapes
+import com.example.championcart.ui.theme.Size
 import com.example.championcart.ui.theme.Spacing
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
@@ -144,31 +135,33 @@ fun ScanScreen(
         }
     }
 
-    // No need for RTL wrapper - it's already applied globally
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            TopAppBar(
-                title = { Text("סרוק מוצר") },
+            ChampionCartTopBar(
+                title = "סרוק מוצר",
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "חזור")
                     }
                 },
-                actions = {
-                    IconButton(onClick = { viewModel.showManualEntry() }) {
-                        Icon(Icons.Rounded.Keyboard, contentDescription = "הקלדה ידנית")
-                    }
-                    IconButton(
+                actions = listOf(
+                    TopBarAction(
+                        icon = Icons.Rounded.Keyboard,
+                        contentDescription = "הקלדה ידנית",
+                        onClick = { viewModel.showManualEntry() }
+                    ),
+                    TopBarAction(
+                        icon = if (uiState.isFlashOn) Icons.Rounded.FlashOn else Icons.Rounded.FlashOff,
+                        contentDescription = if (uiState.isFlashOn) "כבה פלאש" else "הפעל פלאש",
                         onClick = { viewModel.toggleFlash() },
-                        enabled = cameraPermissionState.status.isGranted
-                    ) {
-                        Icon(
-                            imageVector = if (uiState.isFlashOn) Icons.Rounded.FlashOn else Icons.Rounded.FlashOff,
-                            contentDescription = if (uiState.isFlashOn) "כבה פלאש" else "הפעל פלאש"
-                        )
-                    }
-                }
+                        tint = if (!cameraPermissionState.status.isGranted)
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                        else null
+                    )
+                ),
+                showTimeBasedGradient = false, // Keep it simple for scan screen
+                elevation = 2.dp
             )
         }
     ) { paddingValues ->
@@ -205,7 +198,7 @@ fun ScanScreen(
                             modifier = Modifier
                                 .align(Alignment.BottomCenter)
                                 .padding(horizontal = Spacing.l)
-                                .padding(bottom = com.example.championcart.ui.theme.Size.bottomNavHeight )
+                                .padding(bottom = Size.bottomNavHeight)
                         )
                     }
                 }
@@ -214,7 +207,7 @@ fun ScanScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(bottom = com.example.championcart.ui.theme.Size.bottomNavHeight) // Account for nav bar
+                            .padding(bottom = Size.bottomNavHeight)
                     ) {
                         PermissionRationaleScreen(
                             onRequestPermission = {
@@ -228,7 +221,7 @@ fun ScanScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(bottom = com.example.championcart.ui.theme.Size.bottomNavHeight) // Account for nav bar
+                            .padding(bottom = Size.bottomNavHeight)
                     ) {
                         PermissionDeniedScreen(
                             onNavigateBack = onNavigateBack
@@ -238,12 +231,10 @@ fun ScanScreen(
             }
 
             // Loading overlay
-            if (uiState.isProcessing) {
-                LoadingOverlay(
-                    visible = true,
-                    message = "מחפש מוצר..."
-                )
-            }
+            LoadingOverlay(
+                visible = uiState.isProcessing,
+                message = "מחפש מוצר..."
+            )
         }
     }
 
@@ -334,7 +325,7 @@ private fun CameraPreviewWithScanner(
     isPaused: Boolean
 ) {
     val context = LocalContext.current
-    val lifecycleOwner = LocalLifecycleOwner.current
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
 
     val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
     val barcodeScanner = remember { BarcodeScanning.getClient() }
@@ -364,11 +355,10 @@ private fun CameraPreviewWithScanner(
                 val preview = Preview.Builder()
                     .build()
                     .also {
-                        it.setSurfaceProvider(previewView.surfaceProvider)
+                        it.surfaceProvider = previewView.surfaceProvider
                     }
 
                 val imageAnalyzer = ImageAnalysis.Builder()
-                    .setTargetResolution(Size(1280, 720))
                     .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                     .build()
                     .also { analysis ->
@@ -460,49 +450,40 @@ private fun ScanningOverlay(
             val cornerLength = 50.dp.toPx()
 
             // Draw corner brackets
-            // Top left
-            drawPath(
-                path = Path().apply {
+            val corners = listOf(
+                // Top left
+                Path().apply {
                     moveTo(0f, cornerLength)
                     lineTo(0f, 0f)
                     lineTo(cornerLength, 0f)
                 },
-                color = BrandColors.ElectricMint,
-                style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
-            )
-
-            // Top right
-            drawPath(
-                path = Path().apply {
+                // Top right
+                Path().apply {
                     moveTo(size.width - cornerLength, 0f)
                     lineTo(size.width, 0f)
                     lineTo(size.width, cornerLength)
                 },
-                color = BrandColors.ElectricMint,
-                style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
-            )
-
-            // Bottom left
-            drawPath(
-                path = Path().apply {
+                // Bottom left
+                Path().apply {
                     moveTo(0f, size.height - cornerLength)
                     lineTo(0f, size.height)
                     lineTo(cornerLength, size.height)
                 },
-                color = BrandColors.ElectricMint,
-                style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
-            )
-
-            // Bottom right
-            drawPath(
-                path = Path().apply {
+                // Bottom right
+                Path().apply {
                     moveTo(size.width - cornerLength, size.height)
                     lineTo(size.width, size.height)
                     lineTo(size.width, size.height - cornerLength)
-                },
-                color = BrandColors.ElectricMint,
-                style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+                }
             )
+
+            corners.forEach { path ->
+                drawPath(
+                    path = path,
+                    color = BrandColors.ElectricMint,
+                    style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+                )
+            }
 
             // Scanning line
             if (isScanning) {
@@ -615,7 +596,6 @@ private fun RecentScansCard(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ProductDetailsSheet(
     visible: Boolean,
@@ -624,16 +604,16 @@ private fun ProductDetailsSheet(
     onAddToCart: (ScannedProduct) -> Unit,
     onViewDetails: (ScannedProduct) -> Unit
 ) {
-    if (visible && product != null) {
-        ModalBottomSheet(
-            onDismissRequest = onDismiss,
-            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    if (product != null) {
+        ChampionBottomSheet(
+            visible = visible,
+            onDismiss = onDismiss,
+            title = product.name
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(Spacing.l)
-                    .navigationBarsPadding()
+                    .padding(horizontal = Spacing.l, vertical = Spacing.m)
             ) {
                 // Product image
                 product.imageUrl?.let { url ->
@@ -649,15 +629,6 @@ private fun ProductDetailsSheet(
 
                     Spacer(modifier = Modifier.height(Spacing.l))
                 }
-
-                // Product name
-                Text(
-                    text = product.name,
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold
-                )
-
-                Spacer(modifier = Modifier.height(Spacing.m))
 
                 // Price range
                 product.priceRange?.let { range ->
@@ -725,86 +696,31 @@ private fun ManualBarcodeDialog(
     onDismiss: () -> Unit,
     onSubmit: (String) -> Unit
 ) {
-    if (visible) {
-        var barcode by remember { mutableStateOf("") }
-
-        Dialog(
-            onDismissRequest = onDismiss,
-            properties = DialogProperties(
-                dismissOnBackPress = true,
-                dismissOnClickOutside = true
-            )
-        ) {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = Spacing.l),
-                shape = Shapes.card,
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                ),
-                elevation = CardDefaults.cardElevation(
-                    defaultElevation = 4.dp
-                )
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(Spacing.xl)
-                ) {
-                    Text(
-                        text = "הקלד ברקוד",
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold
-                    )
-
-                    Spacer(modifier = Modifier.height(Spacing.l))
-
-                    OutlinedTextField(
-                        value = barcode,
-                        onValueChange = { barcode = it.filter { char -> char.isDigit() } },
-                        label = { Text("ברקוד") },
-                        modifier = Modifier.fillMaxWidth(),
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Number
-                        ),
-                        singleLine = true,
-                        textStyle = LocalTextStyle.current.copy(
-                            textDirection = TextDirection.Ltr // Barcodes are always LTR
-                        )
-                    )
-
-                    Spacer(modifier = Modifier.height(Spacing.xl))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(Spacing.m)
-                    ) {
-                        TextButton(
-                            onClick = onDismiss,
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text("ביטול")
-                        }
-
-                        PrimaryButton(
-                            text = "חפש",
-                            onClick = {
-                                if (barcode.isNotBlank()) {
-                                    onSubmit(barcode)
-                                    onDismiss()
-                                }
-                            },
-                            modifier = Modifier.weight(1f),
-                            enabled = barcode.isNotBlank()
-                        )
-                    }
-                }
+    TextInputDialog(
+        visible = visible,
+        onDismiss = onDismiss,
+        onConfirm = { barcode ->
+            onSubmit(barcode)
+            onDismiss()
+        },
+        title = "הקלד ברקוד",
+        description = "הכנס את מספר הברקוד של המוצר",
+        icon = Icons.Rounded.QrCodeScanner,
+        label = "ברקוד",
+        placeholder = "למשל: 7290000000000",
+        validator = { value ->
+            when {
+                value.isBlank() -> "יש להזין ברקוד"
+                !value.all { it.isDigit() } -> "ברקוד חייב להכיל ספרות בלבד"
+                value.length < 8 -> "ברקוד קצר מדי"
+                value.length > 13 -> "ברקוד ארוך מדי"
+                else -> null
             }
-        }
-    }
+        },
+        confirmText = "חפש",
+        dismissText = "ביטול"
+    )
 }
-
 
 @Composable
 private fun ProductNotAvailableDialog(
@@ -814,212 +730,74 @@ private fun ProductNotAvailableDialog(
     onChangeCity: () -> Unit,
     onTryAgain: () -> Unit
 ) {
-    if (visible) {
-        Dialog(
-            onDismissRequest = onDismiss,
-            properties = DialogProperties(
-                dismissOnBackPress = true,
-                dismissOnClickOutside = true
-            )
-        ) {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = Spacing.l),
-                shape = Shapes.card,
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                ),
-                elevation = CardDefaults.cardElevation(
-                    defaultElevation = 4.dp
-                )
+    ChampionDialog(
+        visible = visible,
+        onDismiss = onDismiss,
+        title = "המוצר לא זמין",
+        text = "המוצר לא נמצא ב$currentCity",
+        icon = Icons.Rounded.LocationOff,
+        confirmButton = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(Spacing.s)
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(Spacing.xl),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    // Icon
-                    Box(
-                        modifier = Modifier
-                            .size(80.dp)
-                            .background(
-                                color = SemanticColors.Warning.copy(alpha = 0.1f),
-                                shape = CircleShape
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.LocationOff,
-                            contentDescription = null,
-                            modifier = Modifier.size(48.dp),
-                            tint = SemanticColors.Warning
-                        )
-                    }
+                PrimaryButton(
+                    text = "שנה עיר",
+                    onClick = {
+                        onChangeCity()
+                        onDismiss()
+                    },
+                    icon = Icons.Rounded.LocationOn,
+                    modifier = Modifier.fillMaxWidth()
+                )
 
-                    Spacer(modifier = Modifier.height(Spacing.l))
-
-                    // Title
-                    Text(
-                        text = "המוצר לא זמין",
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-
-                    Spacer(modifier = Modifier.height(Spacing.m))
-
-                    // Message
-                    Text(
-                        text = "המוצר לא נמצא ב$currentCity",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center
-                    )
-
-                    Spacer(modifier = Modifier.height(Spacing.xl))
-
-                    // Actions
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(Spacing.m)
-                    ) {
-                        // Change city button
-                        PrimaryButton(
-                            text = "שנה עיר",
-                            onClick = onChangeCity,
-                            modifier = Modifier.fillMaxWidth(),
-                            icon = Icons.Rounded.LocationOn
-                        )
-
-                        // Try again button
-                        SecondaryButton(
-                            text = "נסה שוב",
-                            onClick = onTryAgain,
-                            modifier = Modifier.fillMaxWidth(),
-                            icon = Icons.Rounded.Refresh
-                        )
-
-                        // Cancel button
-                        TextButton(
-                            onClick = onDismiss,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(
-                                text = "ביטול",
-                                style = MaterialTheme.typography.bodyLarge
-                            )
-                        }
-                    }
-                }
+                SecondaryButton(
+                    text = "נסה שוב",
+                    onClick = {
+                        onTryAgain()
+                        onDismiss()
+                    },
+                    icon = Icons.Rounded.Refresh,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("ביטול")
             }
         }
-    }
+    )
 }
 
 @Composable
 private fun PermissionRationaleScreen(
     onRequestPermission: () -> Unit
 ) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .padding(Spacing.xl),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.CameraAlt,
-                contentDescription = null,
-                modifier = Modifier.size(80.dp),
-                tint = MaterialTheme.colorScheme.primary
-            )
-
-            Spacer(modifier = Modifier.height(Spacing.l))
-
-            Text(
-                text = "נדרשת הרשאת מצלמה",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center
-            )
-
-            Spacer(modifier = Modifier.height(Spacing.m))
-
-            Text(
-                text = "כדי לסרוק ברקודים של מוצרים, האפליקציה זקוקה לגישה למצלמה",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center
-            )
-
-            Spacer(modifier = Modifier.height(Spacing.xl))
-
-            PrimaryButton(
-                text = "אשר הרשאה",
-                onClick = onRequestPermission,
-                modifier = Modifier.fillMaxWidth(),
-                icon = Icons.Rounded.Check
-            )
-        }
-    }
+    EmptyState(
+        icon = Icons.Rounded.CameraAlt,
+        title = "נדרשת הרשאת מצלמה",
+        message = "כדי לסרוק ברקודים של מוצרים, האפליקציה זקוקה לגישה למצלמה",
+        actionText = "אשר הרשאה",
+        onAction = onRequestPermission,
+        modifier = Modifier.fillMaxSize()
+    )
 }
 
 @Composable
 private fun PermissionDeniedScreen(
     onNavigateBack: () -> Unit
 ) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .padding(Spacing.xl),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.Block,
-                contentDescription = null,
-                modifier = Modifier.size(80.dp),
-                tint = SemanticColors.Error
-            )
-
-            Spacer(modifier = Modifier.height(Spacing.l))
-
-            Text(
-                text = "אין הרשאת מצלמה",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center
-            )
-
-            Spacer(modifier = Modifier.height(Spacing.m))
-
-            Text(
-                text = "ללא הרשאת מצלמה לא ניתן לסרוק ברקודים.\nניתן לאשר את ההרשאה בהגדרות המכשיר",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center
-            )
-
-            Spacer(modifier = Modifier.height(Spacing.l))
-
-            SecondaryButton(
-                text = "חזור",
-                onClick = onNavigateBack,
-                modifier = Modifier.fillMaxWidth(),
-                icon = Icons.AutoMirrored.Rounded.ArrowBack
-            )
-        }
-    }
+    ErrorState(
+        title = "אין הרשאת מצלמה",
+        message = "ללא הרשאת מצלמה לא ניתן לסרוק ברקודים.\nניתן לאשר את ההרשאה בהגדרות המכשיר",
+        actionText = "חזור",
+        onAction = onNavigateBack,
+        modifier = Modifier.fillMaxSize()
+    )
 }
 
 private fun formatTimestamp(timestamp: Long): String {

@@ -120,33 +120,6 @@ fun ChampionChip(
 }
 
 @Composable
-fun ChampionTooltip(
-    text: String,
-    visible: Boolean,
-    modifier: Modifier = Modifier
-) {
-    AnimatedVisibility(
-        visible = visible,
-        modifier = modifier,
-        enter = fadeIn() + expandVertically(),
-        exit = fadeOut() + shrinkVertically()
-    ) {
-        Surface(
-            shape = Shapes.cardSmall,
-            color = MaterialTheme.colorScheme.inverseSurface,
-            contentColor = MaterialTheme.colorScheme.inverseOnSurface,
-            shadowElevation = 4.dp
-        ) {
-            Text(
-                text = text,
-                modifier = Modifier.padding(Padding.m),
-                style = MaterialTheme.typography.bodySmall
-            )
-        }
-    }
-}
-
-@Composable
 fun ChampionProgressBar(
     progress: Float,
     modifier: Modifier = Modifier,
@@ -357,25 +330,5 @@ fun InfoCard(
                 action?.invoke()
             }
         }
-    }
-}
-
-@Composable
-fun NotificationDot(
-    visible: Boolean,
-    modifier: Modifier = Modifier,
-    color: Color = BrandColors.NeonCoral
-) {
-    AnimatedVisibility(
-        visible = visible,
-        modifier = modifier,
-        enter = scaleIn() + fadeIn(),
-        exit = scaleOut() + fadeOut()
-    ) {
-        Box(
-            modifier = Modifier
-                .size(8.dp)
-                .background(color, CircleShape)
-        )
     }
 }

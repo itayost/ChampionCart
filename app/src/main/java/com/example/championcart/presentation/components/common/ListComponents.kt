@@ -1,12 +1,19 @@
 package com.example.championcart.presentation.components.common
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -15,7 +22,9 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.example.championcart.ui.theme.*
+import com.example.championcart.ui.theme.Shapes
+import com.example.championcart.ui.theme.Size
+import com.example.championcart.ui.theme.Spacing
 
 /**
  * List components for ChampionCart
@@ -82,66 +91,6 @@ fun ChampionListItem(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun SwipeableListItem(
-    title: String,
-    modifier: Modifier = Modifier,
-    subtitle: String? = null,
-    leadingIcon: ImageVector? = null,
-    onDelete: () -> Unit,
-    content: @Composable () -> Unit = {
-        ChampionListItem(
-            title = title,
-            subtitle = subtitle,
-            leadingIcon = leadingIcon
-        )
-    }
-) {
-    val dismissState = rememberSwipeToDismissBoxState(
-        confirmValueChange = { dismissValue ->
-            when (dismissValue) {
-                SwipeToDismissBoxValue.EndToStart -> {
-                    onDelete()
-                    true
-                }
-                else -> false
-            }
-        }
-    )
-
-    SwipeToDismissBox(
-        state = dismissState,
-        modifier = modifier,
-        backgroundContent = {
-            val color = when (dismissState.targetValue) {
-                SwipeToDismissBoxValue.EndToStart -> SemanticColors.Error
-                else -> Color.Transparent
-            }
-
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(color)
-                    .padding(horizontal = Spacing.xl),
-                contentAlignment = Alignment.CenterEnd
-            ) {
-                if (dismissState.targetValue == SwipeToDismissBoxValue.EndToStart) {
-                    Icon(
-                        imageVector = Icons.Rounded.Delete,
-                        contentDescription = "מחק",
-                        tint = Color.White,
-                        modifier = Modifier.size(Size.icon)
-                    )
-                }
-            }
-        },
-        content = { content() },
-        enableDismissFromStartToEnd = false,
-        enableDismissFromEndToStart = true
-    )
-}
-
 @Composable
 fun SectionHeader(
     title: String,
@@ -171,7 +120,7 @@ fun ChampionDivider(
     thickness: Dp = 1.dp,
     color: Color = MaterialTheme.colorScheme.outlineVariant
 ) {
-    Divider(
+    HorizontalDivider(
         modifier = modifier,
         thickness = thickness,
         color = color

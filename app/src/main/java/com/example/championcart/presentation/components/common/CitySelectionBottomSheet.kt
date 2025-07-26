@@ -18,7 +18,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.ArrowForward
+import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.ChevronLeft
 import androidx.compose.material.icons.rounded.ErrorOutline
@@ -134,7 +134,6 @@ fun CitySelectionBottomSheet(
                             showCitiesList = true
                         },
                         locationError = locationError,
-                        isDetectingLocation = isDetectingLocation
                     )
 
                     // Loading overlay during detection
@@ -210,8 +209,7 @@ private fun CityOptionsContent(
     selectedCity: String,
     onUseLocation: () -> Unit,
     onChooseCity: () -> Unit,
-    locationError: String? = null,
-    isDetectingLocation: Boolean = false
+    locationError: String? = null
 ) {
     Column(
         modifier = Modifier
@@ -382,7 +380,7 @@ private fun CitiesListContent(
                 modifier = Modifier.size(48.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Rounded.ArrowForward, // Changed from ArrowBack for RTL
+                    imageVector = Icons.AutoMirrored.Rounded.ArrowForward,
                     contentDescription = "חזור",
                     tint = MaterialTheme.colorScheme.onSurface
                 )
