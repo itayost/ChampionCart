@@ -83,6 +83,8 @@ ChampionCart is a modern Android application that helps Israeli shoppers find th
 - **Biometric**: AndroidX Biometric 1.4.0
 
 ## 📁 Project Structure
+
+```
 app/src/main/java/com/example/championcart/
 ├── data/
 │   ├── api/              # API interfaces (Retrofit)
@@ -101,6 +103,7 @@ app/src/main/java/com/example/championcart/
 │   └── theme/            # Custom theme (Electric Harmony)
 ├── di/                   # Dependency injection modules
 └── utils/                # Utility functions
+```
 
 ## 🚀 Getting Started
 
@@ -117,32 +120,33 @@ app/src/main/java/com/example/championcart/
    ```bash
    git clone https://github.com/yourusername/ChampionCart.git
    cd ChampionCart
+   ```
 
-Open in Android Studio
+2. **Open in Android Studio**
+   - File → Open → Select the project directory
+   - Wait for Gradle sync to complete
 
-File → Open → Select the project directory
-Wait for Gradle sync to complete
+3. **Configure the backend URL** (optional)
+   - The app is pre-configured to work with the default backend
+   - To use a custom backend, update the base URL in `NetworkModule.kt`
 
+4. **Build and run**
+   ```bash
+   ./gradlew assembleDebug
+   # Or use Android Studio's Run button
+   ```
 
-Configure the backend URL (optional)
+### Running on Device/Emulator
 
-The app is pre-configured to work with the default backend
-To use a custom backend, update the base URL in NetworkModule.kt
+1. **Enable developer options** on your device
+2. **Connect via USB** or start an emulator
+3. **Run the app** from Android Studio
 
+## 🏗️ Architecture
 
-Build and run
-bash./gradlew assembleDebug
-# Or use Android Studio's Run button
+### Clean Architecture Layers
 
-
-Running on Device/Emulator
-
-Enable developer options on your device
-Connect via USB or start an emulator
-Run the app from Android Studio
-
-🏗️ Architecture
-Clean Architecture Layers
+```
 ┌─────────────────────────────────────────┐
 │         Presentation Layer              │
 │  (UI, ViewModels, Navigation)          │
@@ -153,59 +157,93 @@ Clean Architecture Layers
 │            Data Layer                   │
 │  (API, Local Storage, Repositories)    │
 └─────────────────────────────────────────┘
-Key Architecture Components
-Repository Pattern
-kotlininterface ProductRepository {
+```
+
+### Key Architecture Components
+
+#### Repository Pattern
+```kotlin
+interface ProductRepository {
     suspend fun searchProducts(query: String, city: String): Flow<Result<List<Product>>>
     suspend fun getProductByBarcode(barcode: String): Flow<Result<Product>>
 }
-ViewModel with StateFlow
-kotlin@HiltViewModel
+```
+
+#### ViewModel with StateFlow
+```kotlin
+@HiltViewModel
 class SearchViewModel @Inject constructor(
     private val searchProductsUseCase: SearchProductsUseCase
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(SearchUiState())
     val uiState: StateFlow<SearchUiState> = _uiState.asStateFlow()
 }
-📡 API Documentation
-Base URL
+```
+
+## 📡 API Documentation
+
+### Base URL
+```
 https://your-backend-url.com/api/
-Authentication Endpoints
-EndpointMethodDescriptionRequest Body/auth/registerPOSTRegister new user{email, password, name}/auth/loginPOSTUser login{email, password}
-Product Endpoints
-EndpointMethodDescriptionParameters/products/searchGETSearch productsquery, city, limit/products/barcode/{barcode}GETGet product by barcodebarcode, city/prices/by-item/{city}/{item}GETGet prices by itemcity, item_name
-Cart Endpoints
-EndpointMethodDescriptionRequest Body/carts/savePOSTSave shopping cart{cartName, city, items}/carts/savedGETGet saved carts-/carts/{id}GETGet cart details-/cheapest-cartPOSTFind cheapest store{city, items}
-🎨 Design System
-Electric Harmony Theme
+```
+
+### Authentication Endpoints
+
+| Endpoint | Method | Description | Request Body |
+|----------|---------|-------------|--------------|
+| `/auth/register` | POST | Register new user | `{email, password, name}` |
+| `/auth/login` | POST | User login | `{email, password}` |
+
+### Product Endpoints
+
+| Endpoint | Method | Description | Parameters |
+|----------|---------|-------------|------------|
+| `/products/search` | GET | Search products | `query, city, limit` |
+| `/products/barcode/{barcode}` | GET | Get product by barcode | `barcode, city` |
+| `/prices/by-item/{city}/{item}` | GET | Get prices by item | `city, item_name` |
+
+### Cart Endpoints
+
+| Endpoint | Method | Description | Request Body |
+|----------|---------|-------------|--------------|
+| `/carts/save` | POST | Save shopping cart | `{cartName, city, items}` |
+| `/carts/saved` | GET | Get saved carts | - |
+| `/carts/{id}` | GET | Get cart details | - |
+| `/cheapest-cart` | POST | Find cheapest store | `{city, items}` |
+
+## 🎨 Design System
+
+### Electric Harmony Theme
+
 Our custom design system creates an engaging, modern shopping experience:
-Color Palette
 
-Primary: Electric Mint #00D9A3 - CTAs and primary actions
-Secondary: Cosmic Purple #7B3FF2 - Premium features
-Tertiary: Neon Coral #FF6B9D - Deals and urgent actions
-Success: Green #00E676 - Best prices
-Warning: Amber #FFB300 - Mid-range prices
-Error: Red #FF5252 - High prices
+#### Color Palette
+- **Primary**: Electric Mint `#00D9A3` - CTAs and primary actions
+- **Secondary**: Cosmic Purple `#7B3FF2` - Premium features
+- **Tertiary**: Neon Coral `#FF6B9D` - Deals and urgent actions
+- **Success**: Green `#00E676` - Best prices
+- **Warning**: Amber `#FFB300` - Mid-range prices
+- **Error**: Red `#FF5252` - High prices
 
-Typography
+#### Typography
+- **Display**: Space Grotesk Bold / Heebo Black (Hebrew)
+- **Headlines**: Inter Variable (300-800)
+- **Body**: Inter / Rubik (Hebrew)
+- **Prices**: JetBrains Mono (tabular numbers)
 
-Display: Space Grotesk Bold / Heebo Black (Hebrew)
-Headlines: Inter Variable (300-800)
-Body: Inter / Rubik (Hebrew)
-Prices: JetBrains Mono (tabular numbers)
+#### Key Design Features
+- **Glassmorphic effects** with blur and transparency
+- **Spring animations** for natural motion
+- **Time-based theming** that adapts throughout the day
+- **Responsive layouts** for phones and tablets
+- **Accessibility-first** with proper contrast and touch targets
 
-Key Design Features
+## 🧪 Testing
 
-Glassmorphic effects with blur and transparency
-Spring animations for natural motion
-Time-based theming that adapts throughout the day
-Responsive layouts for phones and tablets
-Accessibility-first with proper contrast and touch targets
+### Running Tests
 
-🧪 Testing
-Running Tests
-bash# Run unit tests
+```bash
+# Run unit tests
 ./gradlew test
 
 # Run instrumented tests
@@ -213,65 +251,75 @@ bash# Run unit tests
 
 # Generate test coverage report
 ./gradlew jacocoTestReport
-Test Coverage
+```
 
-Unit Tests: ViewModels, Repositories, Use Cases
-UI Tests: Composable components, Navigation
-Integration Tests: API integration, Database
+### Test Coverage
+- **Unit Tests**: ViewModels, Repositories, Use Cases
+- **UI Tests**: Composable components, Navigation
+- **Integration Tests**: API integration, Database
 
-🤝 Contributing
-We welcome contributions! Please see our Contributing Guidelines for details.
-Quick Start for Contributors
+## 🤝 Contributing
 
-Fork the repository
-Create a feature branch (git checkout -b feature/AmazingFeature)
-Commit your changes (git commit -m 'Add some AmazingFeature')
-Push to the branch (git push origin feature/AmazingFeature)
-Open a Pull Request
+We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
 
-Code Style
+### Quick Start for Contributors
 
-Follow Kotlin Coding Conventions
-Use meaningful variable names
-Write self-documenting code
-Add KDoc comments for public APIs
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-🗺️ Roadmap
-Version 1.0 (Current)
+### Code Style
+- Follow [Kotlin Coding Conventions](https://kotlinlang.org/docs/coding-conventions.html)
+- Use meaningful variable names
+- Write self-documenting code
+- Add KDoc comments for public APIs
 
-✅ Product search and price comparison
-✅ Barcode scanning
-✅ Shopping cart management
-✅ User authentication
-✅ Hebrew/RTL support
+## 🗺️ Roadmap
 
-Version 2.0 (Next Release)
+### Version 1.0 (Current)
+- ✅ Product search and price comparison
+- ✅ Barcode scanning
+- ✅ Shopping cart management
+- ✅ User authentication
+- ✅ Hebrew/RTL support
 
-🔔 Price alerts and notifications
-📍 Store locator with maps integration
-📊 Advanced savings analytics
-🤝 Social features (share lists)
-💾 Offline mode with data caching
+### Version 2.0 (Next Release)
+- 🔔 Price alerts and notifications
+- 📍 Store locator with maps integration
+- 📊 Advanced savings analytics
+- 🤝 Social features (share lists)
+- 💾 Offline mode with data caching
 
-Future Plans
+### Future Plans
+- 🤖 AI-powered shopping recommendations
+- 🎙️ Voice search
+- ⌚ Wear OS companion app
+- 🌍 Multi-language support
+- 📱 iOS version
 
-🤖 AI-powered shopping recommendations
-🎙️ Voice search
-⌚ Wear OS companion app
-🌍 Multi-language support
-📱 iOS version
+## 📄 License
 
-📄 License
-This project is licensed under the MIT License - see the LICENSE file for details.
-🙏 Acknowledgments
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-Material Design 3 for the design system
-Jetpack Compose for modern UI toolkit
-Israeli supermarket chains for price data
-The open-source community for amazing libraries
+## 🙏 Acknowledgments
 
-📞 Support
+- [Material Design 3](https://m3.material.io/) for the design system
+- [Jetpack Compose](https://developer.android.com/jetpack/compose) for modern UI toolkit
+- Israeli supermarket chains for price data
+- The open-source community for amazing libraries
 
-Issues: GitHub Issues
-Discussions: GitHub Discussions
-Email: support@championcart.app
+## 📞 Support
+
+- **Issues**: [GitHub Issues](https://github.com/yourusername/ChampionCart/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/yourusername/ChampionCart/discussions)
+- **Email**: support@championcart.app
+
+---
+
+<p align="center">
+  Made with ❤️ for the Israeli shopping community
+  <br>
+  <i>Making grocery shopping smarter, one comparison at a time</i>
+</p>
