@@ -1,10 +1,6 @@
 # ChampionCart 🛒
 
 <p align="center">
-  <img src="app/src/main/res/drawable/logo_championcart.png" alt="ChampionCart Logo" width="200"/>
-</p>
-
-<p align="center">
   <strong>Smart Grocery Shopping for Israeli Consumers</strong>
 </p>
 
@@ -40,15 +36,6 @@ ChampionCart is a modern Android application that helps Israeli shoppers find th
 - **JWT authentication** - secure login/registration
 - **Guest mode** - try the app without creating an account
 - **Profile management** - save preferences and view shopping history
-
-## 📱 Screenshots
-
-<p align="center">
-  <img src="screenshots/home.png" alt="Home Screen" width="200"/>
-  <img src="screenshots/search.png" alt="Search Screen" width="200"/>
-  <img src="screenshots/cart.png" alt="Cart Screen" width="200"/>
-  <img src="screenshots/scan.png" alt="Barcode Scanner" width="200"/>
-</p>
 
 ## 🛠️ Tech Stack
 
