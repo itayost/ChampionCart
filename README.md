@@ -248,10 +248,6 @@ Our custom design system creates an engaging, modern shopping experience:
 - **UI Tests**: Composable components, Navigation
 - **Integration Tests**: API integration, Database
 
-## 🤝 Contributing
-
-We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
-
 ### Quick Start for Contributors
 
 1. Fork the repository
