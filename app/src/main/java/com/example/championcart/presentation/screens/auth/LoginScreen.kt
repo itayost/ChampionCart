@@ -132,19 +132,6 @@ fun LoginScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Checkbox(
-                            checked = uiState.rememberMe,
-                            onCheckedChange = viewModel::onRememberMeChange,
-                            enabled = !uiState.isLoading,
-                            colors = CheckboxDefaults.colors(
-                                checkedColor = BrandColors.ElectricMint
-                            )
-                        )
-                    }
-
                     TextButton(
                         text = "שכחת סיסמה?",
                         onClick = onNavigateToForgotPassword,

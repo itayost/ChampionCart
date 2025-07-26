@@ -41,8 +41,6 @@ import com.example.championcart.utils.NavigationUtils.openMapForNavigation
 @Composable
 fun ChampionCartNavHost(
     navController: NavHostController = rememberNavController(),
-    tokenManager: TokenManager,
-    preferencesManager: PreferencesManager,
     cartManager: CartManager
 ) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -127,17 +125,8 @@ fun ChampionCartNavHost(
                     onNavigateToProduct = { productId ->
                         navController.navigate(Screen.ProductDetail.createRoute(productId))
                     },
-                    onNavigateToCart = {
-                        navController.navigate(Screen.Cart.route)
-                    },
                     onNavigateToSearch = { query ->
                         navController.navigate(Screen.Search.createRoute(query))
-                    },
-                    onNavigateToProfile = {
-                        navController.navigate(Screen.Profile.route)
-                    },
-                    onNavigateToScan = {
-                        navController.navigate(Screen.Scan.route)
                     }
                 )
             }

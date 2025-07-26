@@ -72,10 +72,8 @@ import com.example.championcart.ui.theme.Spacing
 @Composable
 fun HomeScreen(
     onNavigateToProduct: (String) -> Unit,
-    onNavigateToCart: () -> Unit,
     onNavigateToSearch: (String) -> Unit,  // Now accepts String parameter for search query
-    onNavigateToProfile: () -> Unit,
-    onNavigateToScan: () -> Unit = {},
+
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -167,16 +165,17 @@ fun HomeScreen(
             }
 
             // Featured Products (show only when not searching)
-            if (uiState.featuredProducts.isNotEmpty()) {
-                item {
-                    SectionHeader(
-                        title = "מוצרים פופולריים",
-                        modifier = Modifier.padding(horizontal = Spacing.l)
-                    )
-                }
+            item {
+                SectionHeader(
+                    title = "מוצרים פופולריים",
+                    modifier = Modifier.padding(horizontal = Spacing.l)
+                )
+            }
 
-                item {
-                    if (uiState.isFeaturedLoading) {
+            item {
+                when {
+                    uiState.isFeaturedLoading -> {
+                        // Show loading indicator
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -185,7 +184,24 @@ fun HomeScreen(
                         ) {
                             LoadingIndicator()
                         }
-                    } else {
+                    }
+                    uiState.featuredProducts.isEmpty() -> {
+                        // Show empty state after loading completes
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(200.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "אין מוצרים פופולריים כרגע",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    else -> {
+                        // Show products
                         LazyRow(
                             horizontalArrangement = Arrangement.spacedBy(Spacing.m),
                             contentPadding = PaddingValues(horizontal = Spacing.l)
