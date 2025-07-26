@@ -29,23 +29,13 @@ class SplashViewModel @Inject constructor(
 
     private fun checkAuthenticationStatus() {
         viewModelScope.launch {
-            // Simulate loading time
-            delay(1500)
 
             // Check if user is logged in
             val isLoggedIn = tokenManager.isLoggedIn()
-            val isFirstLaunch = preferencesManager.isFirstLaunch()
-
-            // Optional: Validate token with server
-            if (isLoggedIn && !tokenManager.isGuestMode()) {
-                // You could add a network call here to validate the token
-                // For now, we'll just trust the local token
-            }
 
             _uiState.value = SplashUiState(
                 isLoading = false,
                 isLoggedIn = isLoggedIn,
-                isFirstLaunch = isFirstLaunch
             )
         }
     }
@@ -54,5 +44,4 @@ class SplashViewModel @Inject constructor(
 data class SplashUiState(
     val isLoading: Boolean = true,
     val isLoggedIn: Boolean = false,
-    val isFirstLaunch: Boolean = true
 )

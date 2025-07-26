@@ -16,6 +16,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.championcart.R
 import com.example.championcart.presentation.components.common.*
 import com.example.championcart.ui.theme.*
@@ -25,10 +26,10 @@ import kotlinx.coroutines.delay
 fun SplashScreen(
     onNavigateToHome: () -> Unit,
     onNavigateToLogin: () -> Unit,
-    onNavigateToOnboarding: () -> Unit,
-    isLoggedIn: Boolean,
-    isFirstLaunch: Boolean
+    viewModel: SplashViewModel = hiltViewModel()
 ) {
+    val uiState by viewModel.uiState.collectAsState()
+
     // Animation states
     val infiniteTransition = rememberInfiniteTransition(label = "splash")
     val scale by infiniteTransition.animateFloat(
@@ -51,13 +52,14 @@ fun SplashScreen(
         label = "gradientShift"
     )
 
-    // Navigate after delay
-    LaunchedEffect(key1 = true) {
-        delay(2000) // Show splash for 2 seconds
-        when {
-            isLoggedIn -> onNavigateToHome()
-            isFirstLaunch -> onNavigateToOnboarding()
-            else -> onNavigateToLogin()
+    // Navigate ONLY when the ViewModel has finished loading
+    LaunchedEffect(uiState) {
+        if (!uiState.isLoading) {
+            delay(500)
+            when {
+                uiState.isLoggedIn -> onNavigateToHome()
+                else -> onNavigateToLogin()
+            }
         }
     }
 

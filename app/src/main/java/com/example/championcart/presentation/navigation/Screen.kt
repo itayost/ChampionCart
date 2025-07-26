@@ -39,7 +39,6 @@ sealed class Screen(
     // Auth Screens
     object Login : Screen("login")
     object Register : Screen("register")
-    object Onboarding : Screen("onboarding")
 
     // Product Screens
     object ProductDetail : Screen(

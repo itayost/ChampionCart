@@ -1,22 +1,17 @@
 package com.example.championcart.presentation.navigation
 
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -28,19 +23,18 @@ import com.example.championcart.data.local.TokenManager
 import com.example.championcart.presentation.components.navigation.ChampionNavBar
 import com.example.championcart.presentation.components.navigation.NavigationRoute
 import com.example.championcart.presentation.screens.auth.LoginScreen
-import com.example.championcart.presentation.screens.auth.OnboardingScreen
 import com.example.championcart.presentation.screens.auth.RegisterScreen
+import com.example.championcart.presentation.screens.cart.CartScreen
 import com.example.championcart.presentation.screens.home.HomeScreen
+import com.example.championcart.presentation.screens.info.PrivacyPolicyScreen
+import com.example.championcart.presentation.screens.info.TermsOfServiceScreen
+import com.example.championcart.presentation.screens.product.ProductDetailScreen
+import com.example.championcart.presentation.screens.profile.ProfileScreen
+import com.example.championcart.presentation.screens.scan.ScanScreen
 import com.example.championcart.presentation.screens.search.SearchScreen
 import com.example.championcart.presentation.screens.showcase.ComponentShowcaseScreen
 import com.example.championcart.presentation.screens.splash.SplashScreen
-import com.example.championcart.presentation.screens.cart.CartScreen
-import com.example.championcart.presentation.screens.profile.ProfileScreen
-import com.example.championcart.presentation.screens.scan.ScanScreen
-import com.example.championcart.ui.theme.Spacing
-import com.example.championcart.presentation.screens.info.TermsOfServiceScreen
-import com.example.championcart.presentation.screens.info.PrivacyPolicyScreen
-import com.example.championcart.presentation.screens.product.ProductDetailScreen
+import com.example.championcart.presentation.screens.splash.SplashViewModel
 import com.example.championcart.utils.NavigationUtils.openMapForNavigation
 
 
@@ -58,20 +52,10 @@ fun ChampionCartNavHost(
     val cartItems by cartManager.cartItems.collectAsState()
     val cartItemCount = cartItems.sumOf { it.quantity }
 
-    // Determine start destination based on authentication state
-    val hasToken = remember { tokenManager.getToken() != null }
-    val isFirstLaunch = remember { preferencesManager.isFirstLaunch() }
-
-    val startDestination = when {
-        isFirstLaunch -> Screen.Onboarding.route
-        hasToken -> Screen.Home.route
-        else -> Screen.Login.route
-    }
-
     // Determine if bottom nav should be shown
     val showBottomNav = currentRoute?.let { route ->
         route == Screen.Home.route ||
-                route.startsWith("search") || // This will match both "search" and "search?query=..."
+                route.startsWith("search") ||
                 route == Screen.Cart.route ||
                 route == Screen.Profile.route
     } ?: false
@@ -83,6 +67,10 @@ fun ChampionCartNavHost(
         ) {
             // Splash Screen
             composable(route = Screen.Splash.route) {
+
+                val viewModel: SplashViewModel = hiltViewModel()
+                val uiState by viewModel.uiState.collectAsState()
+
                 SplashScreen(
                     onNavigateToHome = {
                         navController.navigate(Screen.Home.route) {
@@ -93,14 +81,7 @@ fun ChampionCartNavHost(
                         navController.navigate(Screen.Login.route) {
                             popUpTo(Screen.Splash.route) { inclusive = true }
                         }
-                    },
-                    onNavigateToOnboarding = {
-                        navController.navigate(Screen.Onboarding.route) {
-                            popUpTo(Screen.Splash.route) { inclusive = true }
-                        }
-                    },
-                    isLoggedIn = hasToken,
-                    isFirstLaunch = isFirstLaunch
+                    }
                 )
             }
 
@@ -136,23 +117,6 @@ fun ChampionCartNavHost(
                     },
                     onNavigateToPrivacyPolicy = {
                         navController.navigate(Screen.PrivacyPolicy.route)
-                    }
-                )
-            }
-
-            composable(route = Screen.Onboarding.route) {
-                OnboardingScreen(
-                    onComplete = {
-                        preferencesManager.setFirstLaunch(false)
-                        navController.navigate(Screen.Home.route) {
-                            popUpTo(Screen.Onboarding.route) { inclusive = true }
-                        }
-                    },
-                    onSkip = {
-                        preferencesManager.setFirstLaunch(false)
-                        navController.navigate(Screen.Login.route) {
-                            popUpTo(Screen.Onboarding.route) { inclusive = true }
-                        }
                     }
                 )
             }

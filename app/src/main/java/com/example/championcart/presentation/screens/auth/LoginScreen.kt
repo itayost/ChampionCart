@@ -143,13 +143,6 @@ fun LoginScreen(
                                 checkedColor = BrandColors.ElectricMint
                             )
                         )
-                        Text(
-                            text = "זכור אותי",
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.clickable {
-                                viewModel.onRememberMeChange(!uiState.rememberMe)
-                            }
-                        )
                     }
 
                     TextButton(
@@ -280,7 +273,7 @@ private fun AuthHeader(
         Spacer(modifier = Modifier.height(Spacing.l))
 
         Text(
-            text = "ChampionCart",
+            text = "סל ניצחון",
             style = MaterialTheme.typography.headlineLarge,
             fontWeight = FontWeight.Bold,
             color = BrandColors.ElectricMint
