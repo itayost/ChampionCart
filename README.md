@@ -8,16 +8,6 @@
   <strong>Smart Grocery Shopping for Israeli Consumers</strong>
 </p>
 
-<p align="center">
-  <a href="#features">Features</a> •
-  <a href="#screenshots">Screenshots</a> •
-  <a href="#tech-stack">Tech Stack</a> •
-  <a href="#getting-started">Getting Started</a> •
-  <a href="#architecture">Architecture</a> •
-  <a href="#api-documentation">API</a> •
-  <a href="#contributing">Contributing</a>
-</p>
-
 ChampionCart is a modern Android application that helps Israeli shoppers find the best grocery prices across major supermarket chains. With real-time price comparison, smart shopping lists, and an intuitive Hebrew-first interface, ChampionCart makes saving money on groceries effortless.
 
 ## ✨ Features
@@ -149,13 +139,13 @@ app/src/main/java/com/example/championcart/
 ```
 ┌─────────────────────────────────────────┐
 │         Presentation Layer              │
-│  (UI, ViewModels, Navigation)          │
+│  (UI, ViewModels, Navigation)           │
 ├─────────────────────────────────────────┤
 │           Domain Layer                  │
-│  (Use Cases, Repository Interfaces)    │
+│  (Use Cases, Repository Interfaces)     │
 ├─────────────────────────────────────────┤
 │            Data Layer                   │
-│  (API, Local Storage, Repositories)    │
+│  (API, Local Storage, Repositories)     │
 └─────────────────────────────────────────┘
 ```
 
@@ -276,29 +266,6 @@ We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.
 - Write self-documenting code
 - Add KDoc comments for public APIs
 
-## 🗺️ Roadmap
-
-### Version 1.0 (Current)
-- ✅ Product search and price comparison
-- ✅ Barcode scanning
-- ✅ Shopping cart management
-- ✅ User authentication
-- ✅ Hebrew/RTL support
-
-### Version 2.0 (Next Release)
-- 🔔 Price alerts and notifications
-- 📍 Store locator with maps integration
-- 📊 Advanced savings analytics
-- 🤝 Social features (share lists)
-- 💾 Offline mode with data caching
-
-### Future Plans
-- 🤖 AI-powered shopping recommendations
-- 🎙️ Voice search
-- ⌚ Wear OS companion app
-- 🌍 Multi-language support
-- 📱 iOS version
-
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
@@ -310,11 +277,11 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Israeli supermarket chains for price data
 - The open-source community for amazing libraries
 
-## 📞 Support
+## 📞 Contact
 
-- **Issues**: [GitHub Issues](https://github.com/yourusername/ChampionCart/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/ChampionCart/discussions)
-- **Email**: support@championcart.app
+For questions, suggestions, or issues:
+- Yarin Manoah - yarinmanoah1443@gmail.com
+- Itay Ostraich - itayost1@gmail.com
 
 ---
 
