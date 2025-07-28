@@ -18,11 +18,9 @@ ChampionCart is a modern Android application that helps Israeli shoppers find th
 - **Smart cart management** - add items and track quantities
 - **Best store calculator** - automatically finds the cheapest store for your entire cart
 - **Save carts** - save and reload shopping lists for future use
-- **Offline support** - cart persists locally with cloud sync
 
 ### 🎨 Modern User Experience
 - **Electric Harmony Design System** - vibrant, engaging UI with glassmorphic effects
-- **Time-based theming** - UI adapts to time of day (morning, afternoon, evening, night)
 - **Hebrew-first design** - complete RTL support throughout the app
 - **Smooth animations** - spring physics with accessibility support
 - **Dark/Light modes** - automatic theme switching
@@ -30,7 +28,6 @@ ChampionCart is a modern Android application that helps Israeli shoppers find th
 ### 🏙️ Location-Aware
 - **City selection** - prices adjusted based on your location
 - **Store locator** - find nearby stores (coming soon)
-- **Regional deals** - discover local promotions
 
 ### 🔐 User Management
 - **JWT authentication** - secure login/registration
@@ -95,7 +92,7 @@ app/src/main/java/com/example/championcart/
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/ChampionCart.git
+   git clone https://github.com/itayost/ChampionCart.git
    cd ChampionCart
    ```
 
@@ -159,19 +156,44 @@ class SearchViewModel @Inject constructor(
 
 ## 📡 API Documentation
 
-### Base URL
-```
-https://your-backend-url.com/api/
-```
+### Backend Server
 
-### Authentication Endpoints
+The ChampionCart backend is maintained in a separate repository:
+
+🔗 **[Price Comparison Server](https://github.com/itayost/Price-Comparison-Server)**
+
+Please refer to the server repository for:
+- Server setup instructions
+- Database configuration
+- Data import scripts
+- Backend implementation details
+
+### Configuring the Backend URL
+
+1. **Default Configuration**
+   - The app is pre-configured to connect to `http://localhost:5000/api/`
+   - Update this in `NetworkModule.kt` if your server runs on a different port/URL
+
+2. **For Physical Device Testing**
+   - Replace `localhost` with your computer's IP address
+   - Example: `http://192.168.1.100:5000/api/`
+
+3. **For Production**
+   - Update to your deployed server URL
+   - Example: `https://your-server.com/api/`
+
+### API Endpoints
+
+The following endpoints are provided by the [Price Comparison Server](https://github.com/itayost/Price-Comparison-Server):
+
+#### Authentication Endpoints
 
 | Endpoint | Method | Description | Request Body |
 |----------|---------|-------------|--------------|
 | `/auth/register` | POST | Register new user | `{email, password, name}` |
 | `/auth/login` | POST | User login | `{email, password}` |
 
-### Product Endpoints
+#### Product Endpoints
 
 | Endpoint | Method | Description | Parameters |
 |----------|---------|-------------|------------|
@@ -179,7 +201,7 @@ https://your-backend-url.com/api/
 | `/products/barcode/{barcode}` | GET | Get product by barcode | `barcode, city` |
 | `/prices/by-item/{city}/{item}` | GET | Get prices by item | `city, item_name` |
 
-### Cart Endpoints
+#### Cart Endpoints
 
 | Endpoint | Method | Description | Request Body |
 |----------|---------|-------------|--------------|
@@ -187,6 +209,29 @@ https://your-backend-url.com/api/
 | `/carts/saved` | GET | Get saved carts | - |
 | `/carts/{id}` | GET | Get cart details | - |
 | `/cheapest-cart` | POST | Find cheapest store | `{city, items}` |
+
+### Setting Up the Complete System
+
+1. **Clone both repositories**
+   ```bash
+   # Clone the Android app
+   git clone https://github.com/itayost/ChampionCart.git
+   
+   # Clone the backend server
+   git clone https://github.com/itayost/Price-Comparison-Server.git
+   ```
+
+2. **Start the backend server**
+   - Follow the setup instructions in the [server repository](https://github.com/itayost/Price-Comparison-Server)
+   - Ensure the server is running before launching the app
+
+3. **Configure the app**
+   - Update the base URL in `app/src/main/java/com/example/championcart/di/NetworkModule.kt`
+   - Build and run the Android app
+
+### API Response Examples
+
+For detailed API response formats and examples, please refer to the [server documentation](https://github.com/itayost/Price-Comparison-Server).
 
 ## 🎨 Design System
 
